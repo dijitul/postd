@@ -58,6 +58,9 @@ jobs:
           coverage: none
           tools: composer:v2
 
+      - name: Create required directories
+        run: mkdir -p api/bootstrap/cache api/storage/logs api/storage/framework/{cache,sessions,views}
+
       - name: Validate composer.json
         working-directory: api
         run: composer validate
@@ -154,6 +157,9 @@ jobs:
           extensions: mbstring, pgsql, redis, xml, zip, gd, bcmath
           coverage: none
           tools: composer:v2
+
+      - name: Create required directories
+        run: mkdir -p api/bootstrap/cache api/storage/logs api/storage/framework/{cache,sessions,views}
 
       - name: Install production PHP dependencies
         working-directory: api
