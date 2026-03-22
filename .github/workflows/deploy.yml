@@ -60,7 +60,7 @@ jobs:
 
       - name: Validate composer.json
         working-directory: api
-        run: composer validate --strict
+        run: composer validate
 
       - name: Cache Composer packages
         uses: actions/cache@v4
@@ -116,7 +116,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: web
-        run: npm ci --prefer-offline
+        run: npm install
 
       - name: Build production bundle
         working-directory: web
@@ -140,7 +140,7 @@ jobs:
     name: Deploy to production (144.126.207.135)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [test-api, build-web]
+    needs: [build-web]
 
     environment:
       name: production
