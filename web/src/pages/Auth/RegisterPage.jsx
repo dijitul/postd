@@ -15,7 +15,10 @@ const schema = z.object({
     .min(8, 'Password must be at least 8 characters')
     .regex(/[A-Z]/, 'Must include at least one capital letter')
     .regex(/[0-9]/, 'Must include at least one number'),
-  password_confirmation: z.string()
+  password_confirmation: z.string(),
+  terms_accepted: z.boolean().refine((v) => v === true, {
+    message: 'You must accept the Terms of Service and Privacy Policy to continue',
+  }),
 }).refine((d) => d.password === d.password_confirmation, {
   message: 'Passwords do not match',
   path: ['password_confirmation']
@@ -199,6 +202,32 @@ export default function RegisterPage() {
               {errors.password_confirmation && (
                 <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" /> {errors.password_confirmation.message}
+                </p>
+              )}
+            </div>
+
+            {/* Terms acceptance */}
+            <div>
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500 flex-shrink-0 cursor-pointer"
+                  {...register('terms_accepted')}
+                />
+                <span className="text-sm text-slate-500 leading-relaxed">
+                  I agree to the{' '}
+                  <Link to="/terms" target="_blank" className="underline text-slate-600 hover:text-amber-600 transition-colors">
+                    Terms of Service
+                  </Link>
+                  {' '}and{' '}
+                  <Link to="/privacy" target="_blank" className="underline text-slate-600 hover:text-amber-600 transition-colors">
+                    Privacy Policy
+                  </Link>
+                </span>
+              </label>
+              {errors.terms_accepted && (
+                <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" /> {errors.terms_accepted.message}
                 </p>
               )}
             </div>

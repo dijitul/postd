@@ -15,6 +15,8 @@ const PlatformsPage   = lazy(() => import('./pages/Platforms/index.jsx'))
 const BillingPage     = lazy(() => import('./pages/Billing/index.jsx'))
 const SettingsPage    = lazy(() => import('./pages/Settings/index.jsx'))
 const AdminPage       = lazy(() => import('./pages/Admin/index.jsx'))
+const TermsPage       = lazy(() => import('./pages/Legal/TermsPage.jsx'))
+const PrivacyPage     = lazy(() => import('./pages/Legal/PrivacyPage.jsx'))
 
 // ── Loading fallback ─────────────────────────────────────────────────────────
 function PageLoader() {
@@ -71,6 +73,8 @@ export default function App() {
       <Routes>
         {/* Public */}
         <Route path="/" element={<MarketingPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
 
         {/* Auth — guests only */}
         <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
