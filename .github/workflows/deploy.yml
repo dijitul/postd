@@ -89,7 +89,7 @@ jobs:
 
       - name: Run PHPUnit tests
         working-directory: api
-        run: php artisan test --parallel
+        run: php artisan test
 
   # ---------------------------------------------------------------------------
   # Job 2: Build the React frontend
