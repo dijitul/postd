@@ -232,7 +232,7 @@ function Step3({ onNext, onSkip, defaultValues }) {
   return (
     <form onSubmit={handleSubmit(onNext)} className="space-y-6">
       <div>
-        <label htmlFor="google_reviews_url" className="label">Google Reviews URL</label>
+        <label htmlFor="google_reviews_url" className="label">Your Google Reviews link</label>
         <div className="relative">
           <input
             id="google_reviews_url"
@@ -256,27 +256,32 @@ function Step3({ onNext, onSkip, defaultValues }) {
           </p>
         )}
         <p className="mt-2.5 text-xs text-slate-500 leading-relaxed">
-          New 5-star reviews from your customers will automatically inspire fresh posts celebrating your reputation.
+          This is the link your customers use to leave you a Google review. We use it to spot new 5-star reviews and turn them into social posts automatically.
         </p>
       </div>
 
       {/* How to find this accordion */}
-      <div className="border border-slate-200 rounded-xl overflow-hidden">
+      <div className="border border-amber-200 bg-amber-50 rounded-xl overflow-hidden">
         <button
           type="button"
           onClick={() => setShowHelp(!showHelp)}
-          className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+          className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-amber-800 hover:bg-amber-100 transition-colors"
         >
-          How do I find my Google Reviews link?
-          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${showHelp ? 'rotate-180' : ''}`} />
+          <span>📍 How do I find this link?</span>
+          <ChevronDown className={`w-4 h-4 text-amber-500 transition-transform duration-200 ${showHelp ? 'rotate-180' : ''}`} />
         </button>
         {showHelp && (
-          <div className="px-4 pb-4 bg-slate-50 border-t border-slate-200">
-            <ol className="text-xs text-slate-600 space-y-2 mt-3 list-decimal list-inside leading-relaxed">
-              <li>Open Google Maps and search for your business</li>
-              <li>Click on your business listing</li>
-              <li>Scroll down to the &quot;Reviews&quot; section</li>
-              <li>Click &quot;Write a review&quot; — copy the URL from your browser</li>
+          <div className="px-4 pb-5 bg-amber-50 border-t border-amber-200">
+            <ol className="text-sm text-amber-900 space-y-3 mt-4 leading-relaxed">
+              <li className="flex gap-2"><span className="font-bold text-amber-600 flex-shrink-0">1.</span><span>On your phone or computer, open <strong><a href="https://maps.google.com" target="_blank" rel="noopener noreferrer" className="underline">Google Maps</a></strong></span></li>
+              <li className="flex gap-2"><span className="font-bold text-amber-600 flex-shrink-0">2.</span><span>Search for <strong>your business name</strong> — click on your listing when it appears</span></li>
+              <li className="flex gap-2"><span className="font-bold text-amber-600 flex-shrink-0">3.</span><span>Scroll down until you see the <strong>Reviews</strong> section</span></li>
+              <li className="flex gap-2"><span className="font-bold text-amber-600 flex-shrink-0">4.</span><span>Click the button that says <strong>&quot;Write a review&quot;</strong></span></li>
+              <li className="flex gap-2"><span className="font-bold text-amber-600 flex-shrink-0">5.</span><span><strong>Copy the web address</strong> from the top of your browser and paste it into the box above</span></li>
+            </ol>
+            <p className="mt-4 text-xs text-amber-700 bg-amber-100 rounded-lg px-3 py-2">
+              💡 The link will look something like: <span className="font-mono">https://g.page/r/ABC123.../review</span>
+            </p>
               <li>Paste it here</li>
             </ol>
           </div>
@@ -306,7 +311,7 @@ const PLATFORMS = [
 ]
 
 function Step4({ onNext, onSkip, userPlan = 'growth' }) {
-  const [connected, setConnected] = useState(new Set(['google']))
+  const [connected, setConnected] = useState(new Set())
   const [connecting, setConnecting] = useState(null)
 
   const planOrder = { free: 0, starter: 1, growth: 2, pro: 3 }

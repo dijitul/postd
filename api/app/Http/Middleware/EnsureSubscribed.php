@@ -12,6 +12,11 @@ class EnsureSubscribed
     {
         $user = $request->user();
 
+        // Admins bypass subscription checks
+        if ($user?->isAdmin()) {
+            return $next($request);
+        }
+
         if (! $user?->hasActivePlan()) {
             return response()->json([
                 'message' => 'An active subscription is required to access this feature.',
