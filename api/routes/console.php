@@ -31,9 +31,9 @@ Schedule::call(function () {
         dispatch(new \App\Modules\Scraping\Jobs\ScrapeBusinessJob($business));
     });
 })
+    ->name('scrape-business-websites')
     ->dailyAt('03:00')
-    ->withoutOverlapping(120)
-    ->name('scrape-business-websites');
+    ->withoutOverlapping(120);
 
 // Check social tokens expiring in 7 days and refresh them
 Schedule::command('social:refresh-tokens')
