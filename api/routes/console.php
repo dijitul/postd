@@ -14,7 +14,6 @@ Artisan::command('inspire', function () {
 Schedule::job(new \App\Modules\Schedule\Jobs\DispatchScheduledPostsJob, 'posting')
     ->everyMinute()
     ->withoutOverlapping(5)
-    ->runInBackground()
     ->name('dispatch-scheduled-posts');
 
 // Generate weekly content for all active businesses — runs Sunday midnight
