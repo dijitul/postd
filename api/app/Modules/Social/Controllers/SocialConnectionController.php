@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class SocialConnectionController extends Controller
@@ -90,16 +91,23 @@ class SocialConnectionController extends Controller
         $cached = Cache::pull("oauth_state_{$state}");
 
         if (! $cached || $cached['platform'] !== $platform) {
+            Log::warning('OAuth callback: invalid or expired state', [
+                'platform' => $platform,
+                'state'    => $state,
+                'cached'   => $cached,
+            ]);
             return redirect($redirectBase . '?error=invalid_state');
         }
 
         $user = \App\Models\User::find($cached['user_id']);
         if (! $user) {
+            Log::error('OAuth callback: user not found', ['user_id' => $cached['user_id'], 'platform' => $platform]);
             return redirect($redirectBase . '?error=user_not_found');
         }
 
         $business = $user->business;
         if (! $business) {
+            Log::error('OAuth callback: no business for user', ['user_id' => $user->id, 'platform' => $platform]);
             return redirect($redirectBase . '?error=no_business');
         }
 
@@ -108,18 +116,32 @@ class SocialConnectionController extends Controller
                 ->stateless()
                 ->user();
         } catch (\Throwable $e) {
+            Log::error('OAuth callback: Socialite exception', [
+                'platform' => $platform,
+                'error'    => $e->getMessage(),
+                'trace'    => $e->getTraceAsString(),
+            ]);
             return redirect($redirectBase . '?error=oauth_failed');
         }
 
-        $this->connectionService->upsertConnection(
-            businessId: $business->id,
-            platform: $platform,
-            accessToken: $socialUser->token,
-            refreshToken: $socialUser->refreshToken,
-            expiresAt: isset($socialUser->expiresIn) ? now()->addSeconds($socialUser->expiresIn) : null,
-            scopes: $socialUser->approvedScopes ?? [],
-            rawTokenData: ['id' => $socialUser->getId(), 'name' => $socialUser->getName()],
-        );
+        try {
+            $this->connectionService->upsertConnection(
+                businessId: $business->id,
+                platform: $platform,
+                accessToken: $socialUser->token,
+                refreshToken: $socialUser->refreshToken,
+                expiresAt: isset($socialUser->expiresIn) ? now()->addSeconds($socialUser->expiresIn) : null,
+                scopes: $socialUser->approvedScopes ?? [],
+                rawTokenData: ['id' => $socialUser->getId(), 'name' => $socialUser->getName()],
+            );
+        } catch (\Throwable $e) {
+            Log::error('OAuth callback: upsertConnection failed', [
+                'platform' => $platform,
+                'error'    => $e->getMessage(),
+                'trace'    => $e->getTraceAsString(),
+            ]);
+            return redirect($redirectBase . '?error=save_failed');
+        }
 
         return redirect($redirectBase . '?connected=' . $platform);
     }
