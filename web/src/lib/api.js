@@ -90,7 +90,7 @@ export const billingApi = {
 export const settingsApi = {
   get: () => api.get('/settings'),
   update: (data) => api.put('/settings', data),
-  updateBusiness: (data) => api.put('/settings/business', data),
+  updateBusiness: (data) => api.put('/onboarding/business', data),
   updateNotifications: (data) => api.put('/settings/notifications', data),
   deleteAccount: () => api.delete('/settings/account')
 }
