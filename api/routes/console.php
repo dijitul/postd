@@ -16,13 +16,11 @@ Schedule::job(new \App\Modules\Schedule\Jobs\DispatchScheduledPostsJob, 'posting
     ->withoutOverlapping(5)
     ->name('dispatch-scheduled-posts');
 
-// Generate weekly content for all active businesses — runs Sunday midnight
+// Generate daily content for all active businesses — runs at 2am every day
 Schedule::job(new \App\Modules\Content\Jobs\GenerateWeeklyContentJob, 'generation')
-    ->weekly()
-    ->sundays()
-    ->at('00:00')
+    ->dailyAt('02:00')
     ->withoutOverlapping(60)
-    ->name('generate-weekly-content');
+    ->name('generate-daily-content');
 
 // Scrape websites for updated info — runs daily at 3am
 // Dispatches one ScrapeBusinessJob per active business into the scraping queue

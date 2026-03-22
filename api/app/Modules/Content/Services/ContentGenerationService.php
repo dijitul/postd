@@ -7,16 +7,19 @@ use App\Models\ContentBrief;
 use App\Models\ContentSource;
 use App\Models\Post;
 use App\Modules\Schedule\Services\SchedulingService;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use OpenAI\Laravel\Facades\OpenAI;
 
 class ContentGenerationService
 {
+    // Claude model to use for content generation
+    private const MODEL = 'claude-3-5-sonnet-20241022';
+
     // Model costs (USD per 1M tokens) for cost tracking
     private const MODEL_COSTS = [
-        'gpt-4o' => ['input' => 5.00, 'output' => 15.00],
-        'gpt-4o-mini' => ['input' => 0.15, 'output' => 0.60],
-        'dall-e-3' => ['per_image' => 0.04],
+        'claude-3-5-sonnet-20241022' => ['input' => 3.00,  'output' => 15.00],
+        'claude-3-5-haiku-20241022'  => ['input' => 0.80,  'output' => 4.00],
+        'dall-e-3'                   => ['per_image' => 0.04],
     ];
 
     // Platform-specific generation rules from the spec
@@ -80,7 +83,7 @@ class ContentGenerationService
 
     /**
      * Generate a full cascade of posts from a ContentBrief.
-     * One brief → 6 platform-native posts.
+     * One brief → one platform-native post per connected platform.
      */
     public function generateFromBrief(ContentBrief $brief): array
     {
@@ -125,7 +128,7 @@ class ContentGenerationService
     }
 
     /**
-     * Generate a post for a single platform.
+     * Generate a post for a single platform using Claude.
      */
     private function generateForPlatform(
         Business $business,
@@ -139,25 +142,41 @@ class ContentGenerationService
         }
 
         $systemPrompt = $this->buildSystemPrompt($business, $platform, $platformRules);
-        $userPrompt = $this->buildUserPrompt($brief, $businessContext, $platform);
+        $userPrompt   = $this->buildUserPrompt($brief, $businessContext, $platform);
 
         $startTime = microtime(true);
 
-        $response = OpenAI::chat()->create([
-            'model' => 'gpt-4o',
-            'messages' => [
-                ['role' => 'system', 'content' => $systemPrompt],
+        $response = Http::withHeaders([
+            'x-api-key'         => config('services.anthropic.key'),
+            'anthropic-version' => config('services.anthropic.version'),
+            'content-type'      => 'application/json',
+        ])->post(config('services.anthropic.base_url').'/messages', [
+            'model'      => self::MODEL,
+            'max_tokens' => $platform === 'tiktok' ? 600 : 400,
+            'system'     => $systemPrompt,
+            'messages'   => [
                 ['role' => 'user', 'content' => $userPrompt],
             ],
-            'temperature' => 0.8,
-            'max_tokens' => $platform === 'tiktok' ? 600 : 400,
-            'response_format' => ['type' => 'json_object'],
         ]);
 
         $durationMs = (microtime(true) - $startTime) * 1000;
 
-        $rawContent = $response->choices[0]->message->content;
-        $parsed = json_decode($rawContent, true);
+        if ($response->failed()) {
+            Log::error("ContentGenerationService: Anthropic API error for {$platform}", [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
+            return null;
+        }
+
+        $body       = $response->json();
+        $rawContent = $body['content'][0]['text'] ?? '';
+        $usage      = $body['usage'] ?? [];
+
+        $inputTokens  = $usage['input_tokens']  ?? 0;
+        $outputTokens = $usage['output_tokens'] ?? 0;
+
+        $parsed = $this->extractJson($rawContent);
 
         if (! $parsed || ! isset($parsed['content'])) {
             Log::error("ContentGenerationService: Bad response format for {$platform}", [
@@ -167,11 +186,10 @@ class ContentGenerationService
         }
 
         // Calculate token costs
-        $usage = $response->usage;
-        $costUsd = $this->calculateCost('gpt-4o', $usage->promptTokens, $usage->completionTokens);
+        $costUsd = $this->calculateCost(self::MODEL, $inputTokens, $outputTokens);
 
         // Log AI cost
-        $this->logAiCost($business, null, 'text_generation', 'gpt-4o', $usage->promptTokens, $usage->completionTokens, $costUsd);
+        $this->logAiCost($business, null, 'text_generation', self::MODEL, $inputTokens, $outputTokens, $costUsd);
 
         // Determine the connection for this platform
         $connection = $business->getConnectionForPlatform($platform);
@@ -184,23 +202,23 @@ class ContentGenerationService
         $requiresApproval = $settings ? ! $settings->auto_approve_posts : true;
 
         $post = Post::create([
-            'business_id' => $business->id,
-            'brief_id' => $brief->id,
-            'connection_id' => $connection?->id,
-            'platform' => $platform,
-            'content' => $parsed['content'],
-            'hashtags' => $parsed['hashtags'] ?? [],
-            'status' => $requiresApproval ? Post::STATUS_PENDING : Post::STATUS_APPROVED,
-            'scheduled_at' => $scheduledAt,
+            'business_id'       => $business->id,
+            'brief_id'          => $brief->id,
+            'connection_id'     => $connection?->id,
+            'platform'          => $platform,
+            'content'           => $parsed['content'],
+            'hashtags'          => $parsed['hashtags'] ?? [],
+            'status'            => $requiresApproval ? Post::STATUS_PENDING : Post::STATUS_APPROVED,
+            'scheduled_at'      => $scheduledAt,
             'requires_approval' => $requiresApproval,
-            'ai_metadata' => [
-                'model' => 'gpt-4o',
-                'prompt_tokens' => $usage->promptTokens,
-                'completion_tokens' => $usage->completionTokens,
-                'cost_usd' => $costUsd,
-                'duration_ms' => round($durationMs, 2),
-                'brief_id' => $brief->id,
-                'source_type' => $brief->source_type,
+            'ai_metadata'       => [
+                'model'             => self::MODEL,
+                'prompt_tokens'     => $inputTokens,
+                'completion_tokens' => $outputTokens,
+                'cost_usd'          => $costUsd,
+                'duration_ms'       => round($durationMs, 2),
+                'brief_id'          => $brief->id,
+                'source_type'       => $brief->source_type,
             ],
         ]);
 
@@ -226,9 +244,9 @@ class ContentGenerationService
     {
         $toneDescription = match ($business->tone) {
             'professional' => 'polished and authoritative — like a trusted expert speaking',
-            'friendly' => 'warm and approachable — like a knowledgeable friend recommending something',
-            'casual' => 'relaxed and conversational — like chatting over a coffee',
-            default => 'friendly and approachable',
+            'friendly'     => 'warm and approachable — like a knowledgeable friend recommending something',
+            'casual'       => 'relaxed and conversational — like chatting over a coffee',
+            default        => 'friendly and approachable',
         };
 
         $platformName = $this->getPlatformDisplayName($platform);
@@ -251,11 +269,11 @@ CRITICAL RULES:
 - {$this->getHashtagRule($rules)}
 - {$this->getLengthRule($rules)}
 
-You must respond with valid JSON in this exact format:
+Respond with ONLY a valid JSON object — no markdown, no code fences, no commentary before or after. Use this exact structure:
 {
   "content": "the full post text ready to publish",
   "hashtags": ["hashtag1", "hashtag2"],
-  "image_prompt": "a detailed DALL-E prompt for an accompanying image (UK-appropriate, not generic stock photo style)"
+  "image_prompt": "a detailed prompt for an accompanying image (UK-appropriate, authentic photography style, not generic stock photo)"
 }
 PROMPT;
     }
@@ -292,12 +310,12 @@ PROMPT;
     private function buildBusinessContext(Business $business, ContentBrief $brief): array
     {
         $context = [
-            'business_name' => $business->name,
-            'industry' => $business->industry,
-            'location' => implode(', ', array_filter([$business->city, $business->postcode, 'UK'])),
-            'description' => $business->description,
-            'usp_notes' => $business->usp_notes,
-            'tone_preference' => $business->tone,
+            'business_name'    => $business->name,
+            'industry'         => $business->industry,
+            'location'         => implode(', ', array_filter([$business->city, $business->postcode, 'UK'])),
+            'description'      => $business->description,
+            'usp_notes'        => $business->usp_notes,
+            'tone_preference'  => $business->tone,
         ];
 
         // Pull recent website data if available
@@ -309,9 +327,9 @@ PROMPT;
         if ($websiteSource && $websiteSource->structured_data) {
             $data = $websiteSource->structured_data;
             $context['website_data'] = [
-                'page_title' => $data['page_title'] ?? null,
+                'page_title'  => $data['page_title'] ?? null,
                 'description' => $data['meta_description'] ?? null,
-                'services' => array_slice($data['services'] ?? [], 0, 5),
+                'services'    => array_slice($data['services'] ?? [], 0, 5),
                 'key_phrases' => array_slice($data['key_phrases'] ?? [], 0, 10),
             ];
         }
@@ -325,7 +343,7 @@ PROMPT;
 
         if ($recentReviews->isNotEmpty()) {
             $context['recent_reviews'] = $recentReviews->map(fn ($r) => [
-                'excerpt' => substr($r->raw_data, 0, 200),
+                'excerpt'   => substr($r->raw_data, 0, 200),
                 'sentiment' => $r->sentiment_score,
             ])->toArray();
         }
@@ -334,7 +352,31 @@ PROMPT;
     }
 
     /**
-     * Calculate cost of an OpenAI API call.
+     * Extract a JSON object from Claude's response text.
+     * Handles cases where Claude wraps the JSON in markdown code fences.
+     */
+    private function extractJson(string $text): ?array
+    {
+        $text = trim($text);
+
+        // Strip markdown code fences if present (```json ... ``` or ``` ... ```)
+        if (preg_match('/```(?:json)?\s*([\s\S]+?)\s*```/i', $text, $m)) {
+            $text = trim($m[1]);
+        }
+
+        // Try to find the first complete JSON object
+        $start = strpos($text, '{');
+        $end   = strrpos($text, '}');
+        if ($start !== false && $end !== false && $end > $start) {
+            $text = substr($text, $start, $end - $start + 1);
+        }
+
+        $decoded = json_decode($text, true);
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    /**
+     * Calculate cost of an Anthropic API call.
      */
     private function calculateCost(string $model, int $promptTokens, int $completionTokens): float
     {
@@ -356,14 +398,14 @@ PROMPT;
         float $costUsd
     ): void {
         \App\Models\AiCostLog::create([
-            'business_id' => $business->id,
-            'post_id' => $post?->id,
-            'operation' => $operation,
-            'model' => $model,
-            'prompt_tokens' => $promptTokens,
+            'business_id'       => $business->id,
+            'post_id'           => $post?->id,
+            'operation'         => $operation,
+            'model'             => $model,
+            'prompt_tokens'     => $promptTokens,
             'completion_tokens' => $completionTokens,
-            'total_tokens' => $promptTokens + $completionTokens,
-            'cost_usd' => $costUsd,
+            'total_tokens'      => $promptTokens + $completionTokens,
+            'cost_usd'          => $costUsd,
         ]);
     }
 
@@ -376,8 +418,8 @@ PROMPT;
     {
         return match ($platform) {
             'google_business_profile' => 'Google Business Profile',
-            'twitter' => 'X (Twitter)',
-            default => ucfirst($platform),
+            'twitter'                 => 'X (Twitter)',
+            default                   => ucfirst($platform),
         };
     }
 

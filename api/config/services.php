@@ -60,6 +60,13 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    // AI providers
+    'anthropic' => [
+        'key'     => env('ANTHROPIC_API_KEY'),
+        'version' => '2023-06-01',
+        'base_url' => 'https://api.anthropic.com/v1',
+    ],
+
     // External API keys
     'google_places' => [
         'key' => env('GOOGLE_PLACES_API_KEY'),
