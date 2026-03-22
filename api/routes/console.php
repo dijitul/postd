@@ -25,7 +25,12 @@ Schedule::job(new \App\Modules\Content\Jobs\GenerateWeeklyContentJob, 'generatio
     ->name('generate-weekly-content');
 
 // Scrape websites for updated info — runs daily at 3am
-Schedule::job(new \App\Modules\Scraping\Jobs\ScrapeBusinessJob, 'scraping')
+// Dispatches one ScrapeBusinessJob per active business into the scraping queue
+Schedule::call(function () {
+    \App\Models\Business::where('is_active', true)->each(function ($business) {
+        dispatch(new \App\Modules\Scraping\Jobs\ScrapeBusinessJob($business));
+    });
+})
     ->dailyAt('03:00')
     ->withoutOverlapping(120)
     ->name('scrape-business-websites');
