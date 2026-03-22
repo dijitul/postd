@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import Logo from '../../components/ui/Logo.jsx'
 import PlatformIcon from '../../components/ui/PlatformIcon.jsx'
+import BusinessSearch from '../../components/ui/BusinessSearch.jsx'
 import useAuthStore from '../../stores/authStore.js'
 
 // ── Progress bar ──────────────────────────────────────────────────────────────
@@ -63,17 +64,24 @@ function Step1({ onNext, defaultValues }) {
   })
   const selectedTone = watch('tone')
 
+  const handlePlaceSelect = ({ name, website, address }) => {
+    if (name) setValue('business_name', name, { shouldValidate: true })
+    // Pass website back up so Step 2 can pre-fill it
+    if (website) handleSubmit._websiteHint = website
+  }
+
   return (
-    <form onSubmit={handleSubmit(onNext)} className="space-y-6">
+    <form onSubmit={handleSubmit((data) => onNext({ ...data, _websiteHint: handleSubmit._websiteHint }))} className="space-y-6">
       <div>
-        <label htmlFor="business_name" className="label">Business name</label>
-        <input
-          id="business_name"
-          type="text"
-          placeholder="Acme Plumbing Ltd"
-          className={`input ${errors.business_name ? 'border-red-400' : ''}`}
-          {...register('business_name')}
+        <label className="label">Business name</label>
+        <BusinessSearch
+          defaultValue={defaultValues?.business_name ?? ''}
+          onSelect={handlePlaceSelect}
+          onNameChange={(val) => setValue('business_name', val, { shouldValidate: !!val })}
+          error={!!errors.business_name}
         />
+        {/* Hidden field keeps react-hook-form in sync */}
+        <input type="hidden" {...register('business_name')} />
         {errors.business_name && (
           <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
             <AlertCircle className="w-3 h-3" /> {errors.business_name.message}
@@ -521,7 +529,13 @@ export default function OnboardingPage() {
   const businessName = formData.business_name || user?.business?.name || ''
 
   const handleNext = (data = {}) => {
-    setFormData((prev) => ({ ...prev, ...data }))
+    // If Places API returned a website hint, pre-fill website_url for Step 2
+    const merged = { ...data }
+    if (data._websiteHint && !formData.website_url) {
+      merged.website_url = data._websiteHint
+    }
+    delete merged._websiteHint
+    setFormData((prev) => ({ ...prev, ...merged }))
     setStep((s) => s + 1)
   }
 

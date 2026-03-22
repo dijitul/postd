@@ -667,6 +667,66 @@
     border: 1px solid transparent;
   }
 
+  /* Form label */
+  .label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-navy-800);
+    margin-bottom: 0.5rem;
+    line-height: 1.25;
+  }
+
+  /* Form input — main reusable input class */
+  .input {
+    width: 100%;
+    background-color: var(--color-white);
+    border: 1.5px solid var(--color-slate-200);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: var(--color-navy);
+    line-height: 1.5;
+    transition:
+      border-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .input::placeholder {
+    color: var(--color-slate-400);
+  }
+
+  .input:hover {
+    border-color: var(--color-slate-300);
+  }
+
+  .input:focus {
+    border-color: var(--color-amber);
+    box-shadow: 0 0 0 3px rgb(224 123 48 / 0.2);
+  }
+
+  .input:disabled {
+    background-color: var(--color-slate-50);
+    color: var(--color-slate-400);
+    cursor: not-allowed;
+  }
+
+  /* Badge — inline status/label pill */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 0.2rem 0.55rem;
+    border-radius: 9999px;
+    white-space: nowrap;
+    line-height: 1.4;
+  }
+
   /* Input base — reused across components */
   .input-base {
     width: 100%;
