@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { Suspense, lazy } from 'react'
 import useAuthStore from './stores/authStore.js'
 import AppLayout from './components/layout/AppLayout.jsx'
+import CookieBanner from './components/ui/CookieBanner.jsx'
 
 // ── Pages — lazy loaded for better performance ──────────────────────────────
 const MarketingPage   = lazy(() => import('./pages/Marketing/index.jsx'))
@@ -70,6 +71,7 @@ function ProtectedLayout({ children }) {
 export default function App() {
   return (
     <Suspense fallback={<PageLoader />}>
+      <CookieBanner />
       <Routes>
         {/* Public */}
         <Route path="/" element={<MarketingPage />} />

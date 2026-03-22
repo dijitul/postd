@@ -89,14 +89,18 @@
       }
     }
     </script>
-    <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QLSYF2DZCL"></script>
+    <!-- Google Analytics — consent denied by default until user accepts cookies -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
+      gtag('consent', 'default', {
+        analytics_storage: 'denied',
+        ad_storage: 'denied',
+      });
       gtag('js', new Date());
       gtag('config', 'G-QLSYF2DZCL');
     </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QLSYF2DZCL"></script>
   </head>
   <body>
     <div id="root"></div>
