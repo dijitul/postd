@@ -200,9 +200,8 @@ jobs:
             mkdir -p "$API_DIR/storage/framework/views"
             mkdir -p "$API_DIR/bootstrap/cache"
 
-            # Fix permissions
+            # Fix permissions (postduk owns these, no chown needed)
             chmod -R 775 "$API_DIR/storage" "$API_DIR/bootstrap/cache"
-            chown -R postduk:www-data "$APP_DIR"
 
             # Only run artisan commands if .env exists
             if [ -f "$API_DIR/.env" ]; then
