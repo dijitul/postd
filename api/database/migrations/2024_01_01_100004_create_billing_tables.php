@@ -8,10 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Laravel Cashier subscriptions (managed by Cashier, but we define here)
+        // Laravel Cashier subscriptions
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->id();
-            $table->uuidMorphs('billable');
+            $table->uuid('user_id');
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
             $table->string('type');
             $table->string('stripe_id')->unique();
             $table->string('stripe_status');
@@ -21,7 +22,7 @@ return new class extends Migration
             $table->timestamp('ends_at')->nullable();
             $table->timestamps();
 
-            $table->index(['billable_id', 'billable_type']);
+            $table->index('user_id');
         });
 
         Schema::create('subscription_items', function (Blueprint $table) {

@@ -59,7 +59,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function business(): HasOne
     {
-        return $this->hasOne(Business::class)->latestOfMany();
+        return $this->hasOne(Business::class)->latestOfMany('created_at');
     }
 
     // Scopes
