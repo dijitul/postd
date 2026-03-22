@@ -1,71 +1,27 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { CheckCircle2, XCircle, RefreshCw, Lock, Plus, Share2 } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { CheckCircle2, XCircle, RefreshCw, Lock, Plus, Share2, AlertCircle, CheckCheck } from 'lucide-react'
 import PlatformIcon from '../../components/ui/PlatformIcon.jsx'
+import { platformsApi } from '../../lib/api.js'
 
-// Mock platform data
-const INITIAL_PLATFORMS = [
-  {
-    id: 'facebook',
-    label: 'Facebook',
-    status: 'connected',
-    lastPost: '2 hours ago',
-    account: 'Acme Plumbing Ltd',
-    plan: 'starter'
-  },
-  {
-    id: 'instagram',
-    label: 'Instagram',
-    status: 'connected',
-    lastPost: '1 day ago',
-    account: '@acmeplumbing',
-    plan: 'starter'
-  },
-  {
-    id: 'linkedin',
-    label: 'LinkedIn',
-    status: 'expired',
-    lastPost: '5 days ago',
-    account: 'Acme Plumbing Ltd',
-    plan: 'growth'
-  },
-  {
-    id: 'x',
-    label: 'X (Twitter)',
-    status: 'disconnected',
-    lastPost: null,
-    account: null,
-    plan: 'growth'
-  },
-  {
-    id: 'tiktok',
-    label: 'TikTok',
-    status: 'locked',
-    lastPost: null,
-    account: null,
-    plan: 'pro'
-  },
-  {
-    id: 'google',
-    label: 'Google Business Profile',
-    status: 'connected',
-    lastPost: '3 hours ago',
-    account: 'Acme Plumbing — Mansfield',
-    plan: 'free',
-    alwaysFree: true
-  }
+// Platform definitions — display config only, no mock status
+const PLATFORM_DEFS = [
+  { id: 'facebook',              backendId: 'facebook',              label: 'Facebook',               plan: 'starter' },
+  { id: 'instagram',             backendId: 'instagram',             label: 'Instagram',              plan: 'starter' },
+  { id: 'linkedin',              backendId: 'linkedin',              label: 'LinkedIn',               plan: 'growth'  },
+  { id: 'x',                     backendId: 'twitter',               label: 'X (Twitter)',            plan: 'growth'  },
+  { id: 'tiktok',                backendId: 'tiktok',                label: 'TikTok',                 plan: 'pro'     },
+  { id: 'google',                backendId: 'google_business_profile', label: 'Google Business Profile', plan: 'free', alwaysFree: true },
 ]
 
-// User plan — would come from auth store in production
-const USER_PLAN = 'growth'
 const PLAN_ORDER = { free: 0, starter: 1, growth: 2, pro: 3 }
 
 function StatusBadge({ status }) {
   const map = {
-    connected: { label: 'Connected', cls: 'bg-green-100 text-green-700', Icon: CheckCircle2 },
-    expired: { label: 'Token expired', cls: 'bg-amber-100 text-amber-700', Icon: RefreshCw },
-    disconnected: { label: 'Not connected', cls: 'bg-slate-100 text-slate-500', Icon: XCircle },
-    locked: { label: 'Upgrade to unlock', cls: 'bg-purple-100 text-purple-700', Icon: Lock }
+    connected:    { label: 'Connected',        cls: 'bg-green-100 text-green-700',   Icon: CheckCircle2 },
+    expired:      { label: 'Token expired',    cls: 'bg-amber-100 text-amber-700',   Icon: RefreshCw    },
+    disconnected: { label: 'Not connected',    cls: 'bg-slate-100 text-slate-500',   Icon: XCircle      },
+    locked:       { label: 'Upgrade to unlock',cls: 'bg-purple-100 text-purple-700', Icon: Lock         },
   }
   const { label, cls, Icon } = map[status] ?? map.disconnected
   return (
@@ -76,55 +32,107 @@ function StatusBadge({ status }) {
   )
 }
 
-function PlatformCard({ platform, onConnect, onDisconnect, onReconnect }) {
+function PlatformCard({ def, connection, userPlanLevel, onConnect, onDisconnect, onReconnect }) {
   const [loading, setLoading] = useState(false)
 
-  const isLocked = platform.plan !== 'free' && PLAN_ORDER[platform.plan] > PLAN_ORDER[USER_PLAN]
+  const isLocked = def.plan !== 'free' && PLAN_ORDER[def.plan] > userPlanLevel
+  const isConnected = !!connection && connection.is_active && !connection.is_expired
+  const isExpired = !!connection && connection.is_expired
 
-  const handleAction = async (action) => {
+  const status = isLocked ? 'locked' : isConnected ? 'connected' : isExpired ? 'expired' : 'disconnected'
+
+  const connectedAccount = connection?.accounts?.find((a) => a.is_selected) ?? connection?.accounts?.[0]
+
+  const handleConnect = async () => {
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 1200))
-    action()
-    setLoading(false)
+    try {
+      const res = await platformsApi.connect(def.backendId)
+      if (res.data?.redirect_url) {
+        window.location.href = res.data.redirect_url
+      }
+    } catch (e) {
+      console.error('Connect failed', e)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDisconnect = async () => {
+    setLoading(true)
+    try {
+      await platformsApi.disconnect(connection.id)
+      onDisconnect(def.backendId)
+    } catch (e) {
+      console.error('Disconnect failed', e)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleReconnect = async () => {
+    setLoading(true)
+    try {
+      // Try token refresh first, fall back to full re-auth
+      if (connection?.id) {
+        try {
+          await platformsApi.refreshToken(connection.id)
+          onReconnect(def.backendId)
+          setLoading(false)
+          return
+        } catch {
+          // Fall through to full re-auth
+        }
+      }
+      const res = await platformsApi.connect(def.backendId)
+      if (res.data?.redirect_url) {
+        window.location.href = res.data.redirect_url
+      }
+    } catch (e) {
+      console.error('Reconnect failed', e)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div className={`bg-white rounded-2xl p-5 sm:p-6 border transition-all duration-200 ${isLocked ? 'border-slate-200 opacity-75' : 'border-cream-300 hover:border-cream-400'}`}
-      style={{ boxShadow: isLocked ? 'none' : '0 2px 8px rgb(30 45 74 / 0.06)' }}>
-
+    <div
+      className={`bg-white rounded-2xl p-5 sm:p-6 border transition-all duration-200 ${
+        isLocked ? 'border-slate-200 opacity-75' : 'border-cream-300 hover:border-cream-400'
+      }`}
+      style={{ boxShadow: isLocked ? 'none' : '0 2px 8px rgb(30 45 74 / 0.06)' }}
+    >
       {/* Header */}
       <div className="flex items-start gap-4 mb-4">
         <div className="relative flex-shrink-0">
-          <PlatformIcon platform={platform.id} size="xl" container="soft" />
-          {platform.status === 'connected' && (
+          <PlatformIcon platform={def.id} size="xl" container="soft" />
+          {isConnected && (
             <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-green-500 border-2 border-white flex items-center justify-center">
               <CheckCircle2 className="w-2.5 h-2.5 text-white" />
             </span>
           )}
         </div>
-
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <h3 className="font-display font-bold text-base text-navy-800">{platform.label}</h3>
-            {platform.alwaysFree && (
-              <span className="badge-honey text-2xs">Always free</span>
-            )}
+            <h3 className="font-display font-bold text-base text-navy-800">{def.label}</h3>
+            {def.alwaysFree && <span className="badge-honey text-2xs">Always free</span>}
           </div>
-          <StatusBadge status={isLocked ? 'locked' : platform.status} />
+          <StatusBadge status={status} />
         </div>
       </div>
 
-      {/* Account details */}
-      {platform.account && !isLocked && (
+      {/* Connected account */}
+      {connectedAccount && !isLocked && (
         <div className="bg-cream-200 rounded-xl px-3 py-2 mb-4">
           <p className="text-xs text-slate-500 mb-0.5">Connected account</p>
-          <p className="text-sm font-semibold text-navy-800">{platform.account}</p>
+          <p className="text-sm font-semibold text-navy-800">{connectedAccount.name}</p>
         </div>
       )}
 
-      {/* Last post */}
-      {platform.lastPost && !isLocked && (
-        <p className="text-xs text-slate-400 mb-4">Last post: {platform.lastPost}</p>
+      {/* Last used */}
+      {connection?.last_used_at && !isLocked && (
+        <p className="text-xs text-slate-400 mb-4">
+          Last used: {new Date(connection.last_used_at).toLocaleDateString('en-GB')}
+        </p>
       )}
 
       {/* Action button */}
@@ -133,21 +141,20 @@ function PlatformCard({ platform, onConnect, onDisconnect, onReconnect }) {
           to="/billing"
           className="w-full flex items-center justify-center gap-2 bg-purple-50 text-purple-700 font-semibold text-sm py-2.5 rounded-xl border border-purple-200 hover:bg-purple-100 transition-all"
         >
-          <Lock className="w-4 h-4" />
-          Upgrade to unlock
+          <Lock className="w-4 h-4" /> Upgrade to unlock
         </Link>
-      ) : platform.status === 'connected' ? (
+      ) : isConnected ? (
         <button
-          onClick={() => handleAction(() => onDisconnect(platform.id))}
+          onClick={handleDisconnect}
           disabled={loading}
           className="w-full flex items-center justify-center gap-2 bg-slate-50 text-slate-600 font-semibold text-sm py-2.5 rounded-xl border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all disabled:opacity-50"
         >
           {loading ? <span className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" /> : <XCircle className="w-4 h-4" />}
           {loading ? 'Disconnecting...' : 'Disconnect'}
         </button>
-      ) : platform.status === 'expired' ? (
+      ) : isExpired ? (
         <button
-          onClick={() => handleAction(() => onReconnect(platform.id))}
+          onClick={handleReconnect}
           disabled={loading}
           className="w-full flex items-center justify-center gap-2 bg-amber-50 text-amber-700 font-semibold text-sm py-2.5 rounded-xl border border-amber-200 hover:bg-amber-100 transition-all disabled:opacity-50"
         >
@@ -156,7 +163,7 @@ function PlatformCard({ platform, onConnect, onDisconnect, onReconnect }) {
         </button>
       ) : (
         <button
-          onClick={() => handleAction(() => onConnect(platform.id))}
+          onClick={handleConnect}
           disabled={loading}
           className="w-full flex items-center justify-center gap-2 bg-navy-800 text-white font-semibold text-sm py-2.5 rounded-xl hover:bg-navy-700 active:scale-[0.98] transition-all disabled:opacity-50"
         >
@@ -169,27 +176,61 @@ function PlatformCard({ platform, onConnect, onDisconnect, onReconnect }) {
 }
 
 export default function PlatformsPage() {
-  const [platforms, setPlatforms] = useState(INITIAL_PLATFORMS)
+  const [connections, setConnections] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [userPlanLevel, setUserPlanLevel] = useState(PLAN_ORDER.growth)
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  const handleConnect = (id) => {
-    setPlatforms((prev) =>
-      prev.map((p) => p.id === id ? { ...p, status: 'connected', account: 'Your Account' } : p)
+  const connectedPlatform = searchParams.get('connected')
+  const oauthError = searchParams.get('error')
+
+  const loadConnections = useCallback(async () => {
+    try {
+      const res = await platformsApi.getAll()
+      setConnections(res.data?.connections ?? [])
+    } catch (e) {
+      console.error('Failed to load connections', e)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadConnections()
+    // Clear URL params after reading them
+    if (connectedPlatform || oauthError) {
+      const t = setTimeout(() => setSearchParams({}, { replace: true }), 3000)
+      return () => clearTimeout(t)
+    }
+  }, [loadConnections, connectedPlatform, oauthError, setSearchParams])
+
+  const getConnection = (backendId) =>
+    connections.find((c) => c.platform === backendId) ?? null
+
+  const handleDisconnect = (backendId) => {
+    setConnections((prev) => prev.filter((c) => c.platform !== backendId))
+  }
+
+  const handleReconnect = (backendId) => {
+    setConnections((prev) =>
+      prev.map((c) => c.platform === backendId ? { ...c, is_expired: false, is_active: true } : c)
     )
   }
 
-  const handleDisconnect = (id) => {
-    setPlatforms((prev) =>
-      prev.map((p) => p.id === id ? { ...p, status: 'disconnected', account: null, lastPost: null } : p)
+  const connectedCount = PLATFORM_DEFS.filter((def) => {
+    const conn = getConnection(def.backendId)
+    return conn && conn.is_active && !conn.is_expired
+  }).length
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-4">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="bg-white rounded-2xl h-32 border border-cream-300 animate-pulse" />
+        ))}
+      </div>
     )
   }
-
-  const handleReconnect = (id) => {
-    setPlatforms((prev) =>
-      prev.map((p) => p.id === id ? { ...p, status: 'connected' } : p)
-    )
-  }
-
-  const connectedCount = platforms.filter((p) => p.status === 'connected').length
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-in-up space-y-6">
@@ -200,13 +241,41 @@ export default function PlatformsPage() {
           <Share2 className="w-5 h-5 text-amber-500" />
           <div>
             <h1 className="font-display font-black text-2xl text-navy-800">Platforms</h1>
-            <p className="text-slate-500 text-sm mt-0.5">{connectedCount} of {platforms.length} platforms connected</p>
+            <p className="text-slate-500 text-sm mt-0.5">{connectedCount} of {PLATFORM_DEFS.length} platforms connected</p>
           </div>
         </div>
       </div>
 
+      {/* OAuth success banner */}
+      {connectedPlatform && (
+        <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-2xl p-4">
+          <CheckCheck className="w-5 h-5 text-green-600 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-bold text-green-800">
+              {PLATFORM_DEFS.find((d) => d.backendId === connectedPlatform)?.label ?? connectedPlatform} connected successfully!
+            </p>
+            <p className="text-xs text-green-600 mt-0.5">Your account is now active and ready to post.</p>
+          </div>
+        </div>
+      )}
+
+      {/* OAuth error banner */}
+      {oauthError && (
+        <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-2xl p-4">
+          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-bold text-red-800">Connection failed</p>
+            <p className="text-xs text-red-600 mt-0.5">
+              {oauthError === 'invalid_state' ? 'The authorisation request expired. Please try again.' :
+               oauthError === 'oauth_failed' ? 'The platform rejected the authorisation. Please try again.' :
+               'Something went wrong. Please try connecting again.'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Expired token alert */}
-      {platforms.some((p) => p.status === 'expired') && (
+      {connections.some((c) => c.is_expired) && (
         <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
           <RefreshCw className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <div>
@@ -218,11 +287,12 @@ export default function PlatformsPage() {
 
       {/* Platform grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {platforms.map((platform) => (
+        {PLATFORM_DEFS.map((def) => (
           <PlatformCard
-            key={platform.id}
-            platform={platform}
-            onConnect={handleConnect}
+            key={def.id}
+            def={def}
+            connection={getConnection(def.backendId)}
+            userPlanLevel={userPlanLevel}
             onDisconnect={handleDisconnect}
             onReconnect={handleReconnect}
           />

@@ -76,10 +76,10 @@ export const postsApi = {
 
 // ─── Platforms endpoints ──────────────────────────────────────────────────────
 export const platformsApi = {
-  getAll: () => api.get('/platforms'),
-  connect: (platform) => api.post(`/platforms/${platform}/connect`),
-  disconnect: (platform) => api.delete(`/platforms/${platform}`),
-  getOAuthUrl: (platform) => api.get(`/platforms/${platform}/oauth-url`)
+  getAll: () => api.get('/social/connections'),
+  connect: (platform) => api.post(`/social/connect/${platform}`),
+  disconnect: (connectionId) => api.delete(`/social/connections/${connectionId}`),
+  refreshToken: (connectionId) => api.post(`/social/connections/${connectionId}/refresh`),
 }
 
 // ─── Billing endpoints ────────────────────────────────────────────────────────

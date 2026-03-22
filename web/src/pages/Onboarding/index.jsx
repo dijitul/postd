@@ -282,8 +282,6 @@ function Step3({ onNext, onSkip, defaultValues }) {
             <p className="mt-4 text-xs text-amber-700 bg-amber-100 rounded-lg px-3 py-2">
               💡 The link will look something like: <span className="font-mono">https://g.page/r/ABC123.../review</span>
             </p>
-              <li>Paste it here</li>
-            </ol>
           </div>
         )}
       </div>

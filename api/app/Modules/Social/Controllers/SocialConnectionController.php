@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SocialConnection;
 use App\Modules\Social\Services\SocialConnectionService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Cache;
@@ -75,10 +76,13 @@ class SocialConnectionController extends Controller
     }
 
     /**
-     * Handle the OAuth callback and save the connection.
+     * Handle the OAuth callback and save the connection, then redirect back to the frontend.
      */
-    public function callback(Request $request, string $platform): JsonResponse
+    public function callback(Request $request, string $platform): \Illuminate\Http\RedirectResponse
     {
+        $frontendUrl = rtrim(config('app.frontend_url', 'https://postd.uk'), '/');
+        $redirectBase = $frontendUrl . '/platforms';
+
         $this->validatePlatform($platform);
 
         // Verify state to prevent CSRF
@@ -86,20 +90,17 @@ class SocialConnectionController extends Controller
         $cached = Cache::pull("oauth_state_{$state}");
 
         if (! $cached || $cached['platform'] !== $platform) {
-            return response()->json([
-                'message' => 'Invalid or expired OAuth state. Please try connecting again.',
-                'error' => 'invalid_state',
-            ], 400);
+            return redirect($redirectBase . '?error=invalid_state');
         }
 
         $user = \App\Models\User::find($cached['user_id']);
         if (! $user) {
-            return response()->json(['message' => 'User not found.'], 404);
+            return redirect($redirectBase . '?error=user_not_found');
         }
 
         $business = $user->business;
         if (! $business) {
-            return response()->json(['message' => 'Please complete business setup first.'], 422);
+            return redirect($redirectBase . '?error=no_business');
         }
 
         try {
@@ -107,13 +108,10 @@ class SocialConnectionController extends Controller
                 ->stateless()
                 ->user();
         } catch (\Throwable $e) {
-            return response()->json([
-                'message' => 'OAuth failed. Please try connecting again.',
-                'error' => 'oauth_failed',
-            ], 400);
+            return redirect($redirectBase . '?error=oauth_failed');
         }
 
-        $connection = $this->connectionService->upsertConnection(
+        $this->connectionService->upsertConnection(
             businessId: $business->id,
             platform: $platform,
             accessToken: $socialUser->token,
@@ -123,20 +121,7 @@ class SocialConnectionController extends Controller
             rawTokenData: ['id' => $socialUser->getId(), 'name' => $socialUser->getName()],
         );
 
-        return response()->json([
-            'message' => ucfirst($this->getPlatformDisplayName($platform)).' connected successfully.',
-            'connection' => [
-                'id' => $connection->id,
-                'platform' => $connection->platform,
-                'is_active' => $connection->is_active,
-                'accounts' => $connection->platformAccounts->map(fn ($a) => [
-                    'id' => $a->id,
-                    'name' => $a->account_name,
-                    'type' => $a->account_type,
-                    'is_selected' => $a->is_selected,
-                ]),
-            ],
-        ], 201);
+        return redirect($redirectBase . '?connected=' . $platform);
     }
 
     /**
