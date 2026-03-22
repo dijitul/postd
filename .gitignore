@@ -1,0 +1,43 @@
+# Laravel
+api/.env
+api/.env.*
+!api/.env.example
+api/vendor/
+api/storage/app/*
+!api/storage/app/.gitkeep
+api/storage/framework/cache/*
+!api/storage/framework/cache/.gitkeep
+api/storage/framework/sessions/*
+!api/storage/framework/sessions/.gitkeep
+api/storage/framework/views/*
+!api/storage/framework/views/.gitkeep
+api/storage/logs/*
+!api/storage/logs/.gitkeep
+api/bootstrap/cache/*
+!api/bootstrap/cache/.gitkeep
+api/node_modules/
+
+# React / Vite
+web/node_modules/
+web/dist/
+web/.env
+web/.env.*
+!web/.env.example
+web/.vite/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Secrets — NEVER commit
+*.pem
+*.key
+.env.local
+.env.production

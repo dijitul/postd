@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" fill="none" role="img" aria-label="postd.uk — reversed">
+  <title>postd.uk</title>
+
+  <!-- Dark background pill for context (remove if placing on own navy bg) -->
+  <!-- Hexagon mark — light version on dark -->
+  <polygon
+    points="32,4 56,18 56,46 32,60 8,46 8,18"
+    fill="#FFFFFF"
+    opacity="0.12"
+  />
+
+  <!-- Inner hex fill — slightly lighter -->
+  <polygon
+    points="32,10 52,21.5 52,42.5 32,54 12,42.5 12,21.5"
+    fill="#FFFFFF"
+    opacity="0.18"
+  />
+
+  <!-- Hex outline for clarity -->
+  <polygon
+    points="32,4 56,18 56,46 32,60 8,46 8,18"
+    stroke="#FFFFFF"
+    stroke-width="1.5"
+    fill="none"
+  />
+
+  <!-- Speech bubble — white -->
+  <rect x="15" y="18" width="34" height="22" rx="5" ry="5" fill="#FFFFFF"/>
+  <path d="M20 40 L17 48 L27 40 Z" fill="#FFFFFF"/>
+
+  <!-- Lightning bolt — amber on white bubble -->
+  <path
+    d="M33 22 L27 32 L31.5 32 L29 42 L35 31 L30.5 31 Z"
+    fill="#E07B30"
+  />
+
+  <!-- Wordmark white -->
+  <text
+    x="74"
+    y="42"
+    font-family="Syne, 'Helvetica Neue', Arial, sans-serif"
+    font-weight="700"
+    font-size="32"
+    letter-spacing="-0.5"
+    fill="#FFFFFF"
+  >postd</text>
+
+  <!-- Amber dot -->
+  <circle cx="208" cy="41" r="4.5" fill="#E07B30"/>
+
+  <!-- ".uk" in white -->
+  <text
+    x="216"
+    y="42"
+    font-family="Syne, 'Helvetica Neue', Arial, sans-serif"
+    font-weight="700"
+    font-size="16"
+    letter-spacing="0"
+    fill="#FFFFFF"
+  >uk</text>
+</svg>
