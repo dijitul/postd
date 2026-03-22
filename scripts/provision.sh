@@ -86,12 +86,7 @@ apt-get install -y \
     php8.3-bcmath \
     php8.3-intl \
     php8.3-gd \
-    php8.3-tokenizer \
-    php8.3-dom \
-    php8.3-fileinfo \
-    php8.3-ctype \
-    php8.3-openssl \
-    php8.3-pcntl
+    php8.3-common
 
 # Increase PHP-FPM limits for queue workers and long scraping jobs
 PHP_FPM_INI="/etc/php/8.3/fpm/conf.d/99-postd.ini"
@@ -240,6 +235,7 @@ SSH_DIR="/home/postduk/.ssh"
 DEPLOY_KEY="$SSH_DIR/deploy_key"
 
 mkdir -p "$SSH_DIR"
+chown postduk:postduk "$SSH_DIR"
 chmod 700 "$SSH_DIR"
 
 if [ ! -f "$DEPLOY_KEY" ]; then
