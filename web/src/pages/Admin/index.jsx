@@ -53,14 +53,16 @@ export default function AdminPage() {
   const loadData = async (showRefresh = false) => {
     if (showRefresh) setRefreshing(true)
     try {
-      const [metricsRes, healthRes] = await Promise.all([
+      const [metricsRes, atRiskRes, healthRes, bizRes] = await Promise.all([
         adminApi.getMetrics(),
+        adminApi.getAtRisk(),
         adminApi.getSystemHealth(),
+        adminApi.getBusinesses({ per_page: 10 }),
       ])
       const data = metricsRes.data
       setMetrics(data?.stats ?? data)
-      setAtRisk(data?.at_risk ?? [])
-      setBusinesses(data?.recent_businesses ?? data?.businesses ?? [])
+      setAtRisk(atRiskRes.data?.businesses ?? atRiskRes.data ?? [])
+      setBusinesses(bizRes.data?.data ?? bizRes.data?.businesses ?? [])
       setHealth(healthRes.data?.services ?? healthRes.data ?? [])
     } catch (e) {
       console.error('Admin load failed', e)

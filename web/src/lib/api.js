@@ -58,20 +58,15 @@ export const onboardingApi = {
   complete: () => api.post('/onboarding/complete')
 }
 
-// ─── Dashboard endpoints ──────────────────────────────────────────────────────
-export const dashboardApi = {
-  getSummary: () => api.get('/dashboard'),
-  submitPostIdea: (content) => api.post('/dashboard/ideas', { content })
-}
-
 // ─── Posts endpoints ──────────────────────────────────────────────────────────
 export const postsApi = {
-  getPending: (params) => api.get('/posts/pending', { params }),
+  getPending: (params) => api.get('/posts/inbox', { params }),
   getAll: (params) => api.get('/posts', { params }),
   approve: (id) => api.post(`/posts/${id}/approve`),
   reject: (id) => api.post(`/posts/${id}/reject`),
   update: (id, data) => api.put(`/posts/${id}`, data),
-  generate: (data) => api.post('/posts/generate', data)
+  generate: (data) => api.post('/posts/generate', data),
+  submitIdea: (data) => api.post('/posts/idea', data),
 }
 
 // ─── Platforms endpoints ──────────────────────────────────────────────────────
@@ -102,7 +97,8 @@ export const settingsApi = {
 
 // ─── Admin endpoints ──────────────────────────────────────────────────────────
 export const adminApi = {
-  getMetrics: () => api.get('/admin/metrics'),
+  getMetrics: () => api.get('/admin/stats'),
+  getAtRisk: () => api.get('/admin/at-risk'),
   getBusinesses: (params) => api.get('/admin/businesses', { params }),
   getBusiness: (id) => api.get(`/admin/businesses/${id}`),
   getSystemHealth: () => api.get('/admin/health')

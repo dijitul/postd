@@ -1,59 +1,21 @@
-import { useState, useRef } from 'react'
-import { Check, X, Edit2, ChevronDown, ChevronUp, CheckCircle2, Inbox } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { Check, X, Edit2, ChevronDown, ChevronUp, CheckCircle2, Inbox, RefreshCw } from 'lucide-react'
 import PlatformIcon from '../../components/ui/PlatformIcon.jsx'
+import { postsApi } from '../../lib/api.js'
 
-// ── Mock data ─────────────────────────────────────────────────────────────────
-const MOCK_PENDING = [
-  {
-    id: 1,
-    platform: 'facebook',
-    content: 'What a brilliant week it\'s been! Our team has been working incredibly hard to make sure every single customer leaves with a smile. We\'re so proud of what we do here, and it\'s all down to the amazing people we get to work with. Whether you\'ve been a customer for years or you\'re thinking of getting in touch for the first time, we\'d love to hear from you. What can we help you with today?',
-    scheduledAt: 'Today at 2:30 PM',
-    status: 'pending'
-  },
-  {
-    id: 2,
-    platform: 'instagram',
-    content: 'Sundays are made for this. Quality work, happy customers, and a team that genuinely cares. Swipe to see what we\'ve been up to behind the scenes this week. Proud doesn\'t even cover it. #localBusiness #smallBusiness #Mansfield #community',
-    scheduledAt: 'Today at 4:00 PM',
-    status: 'pending'
-  },
-  {
-    id: 3,
-    platform: 'google',
-    content: 'Thank you so much to everyone who has taken the time to leave us a review recently. We read every single one, and your kind words genuinely make our day. If you\'ve visited us recently and haven\'t left a review yet, we\'d be truly grateful — it means the world to a small business like ours.',
-    scheduledAt: 'Tomorrow at 9:00 AM',
-    status: 'pending'
-  },
-  {
-    id: 4,
-    platform: 'linkedin',
-    content: 'Reflecting on Q1 and feeling genuinely grateful. Our team has grown, our processes have improved, and most importantly, our customers keep coming back. That\'s the real measure of success. Looking forward to sharing some exciting news in the coming weeks.',
-    scheduledAt: 'Tomorrow at 11:00 AM',
-    status: 'pending'
-  }
-]
+// Normalise backend platform IDs to frontend display IDs
+function normalisePlatform(platform) {
+  if (platform === 'google_business_profile') return 'google'
+  if (platform === 'twitter') return 'x'
+  return platform
+}
 
-const MOCK_ALL = [
-  ...MOCK_PENDING,
-  {
-    id: 5,
-    platform: 'facebook',
-    content: 'Happy Monday! Here\'s to a great week ahead for everyone.',
-    scheduledAt: 'Yesterday at 9:00 AM',
-    status: 'published'
-  },
-  {
-    id: 6,
-    platform: 'x',
-    content: 'Quick update: we\'re open as usual this bank holiday. Come see us!',
-    scheduledAt: '2 days ago',
-    status: 'published'
-  }
-]
+function normalisePost(post) {
+  return { ...post, platform: normalisePlatform(post.platform) }
+}
 
-// ── Edit modal ────────────────────────────────────────────────────────────────
-function EditModal({ post, onSave, onClose }) {
+// ── Edit modal ─────────────────────────────────────────────────────────────────
+function EditModal({ post, onSave, onClose, saving }) {
   const [content, setContent] = useState(post.content)
 
   return (
@@ -78,12 +40,20 @@ function EditModal({ post, onSave, onClose }) {
         <div className="flex items-center gap-3">
           <button
             onClick={() => onSave(post.id, content)}
-            className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-700 active:scale-[0.98] transition-all"
+            disabled={saving || !content.trim()}
+            className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Check className="w-4 h-4" />
-            Save and approve
+            {saving
+              ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              : <Check className="w-4 h-4" />
+            }
+            {saving ? 'Saving...' : 'Save and approve'}
           </button>
-          <button onClick={onClose} className="flex-1 flex items-center justify-center gap-2 border border-slate-200 text-slate-600 font-semibold py-3 rounded-xl hover:bg-slate-50 transition-all">
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className="flex-1 flex items-center justify-center gap-2 border border-slate-200 text-slate-600 font-semibold py-3 rounded-xl hover:bg-slate-50 transition-all disabled:opacity-50"
+          >
             Cancel
           </button>
         </div>
@@ -92,12 +62,11 @@ function EditModal({ post, onSave, onClose }) {
   )
 }
 
-// ── Post card ─────────────────────────────────────────────────────────────────
-function PostCard({ post, onApprove, onReject, onEdit, showActions = true }) {
+// ── Post card ──────────────────────────────────────────────────────────────────
+function PostCard({ post, onApprove, onReject, onEdit, showActions = true, actioning }) {
   const [expanded, setExpanded] = useState(false)
-  const [swiping, setSwiping] = useState(null) // 'left' | 'right'
+  const [swiping, setSwiping] = useState(null)
   const touchStart = useRef(null)
-  const cardRef = useRef(null)
 
   const PREVIEW_LENGTH = 120
   const isLong = post.content.length > PREVIEW_LENGTH
@@ -105,13 +74,12 @@ function PostCard({ post, onApprove, onReject, onEdit, showActions = true }) {
     ? post.content
     : post.content.slice(0, PREVIEW_LENGTH) + '...'
 
-  // Swipe gesture handling
   const handleTouchStart = (e) => {
     touchStart.current = e.touches[0].clientX
   }
 
   const handleTouchEnd = (e) => {
-    if (!touchStart.current || !showActions) return
+    if (!touchStart.current || !showActions || actioning) return
     const diff = e.changedTouches[0].clientX - touchStart.current
     if (diff > 80) {
       setSwiping('right')
@@ -124,79 +92,87 @@ function PostCard({ post, onApprove, onReject, onEdit, showActions = true }) {
   }
 
   const statusColour = {
-    pending: 'bg-amber-100 text-amber-700',
+    pending:   'bg-amber-100 text-amber-700',
     published: 'bg-green-100 text-green-700',
-    approved: 'bg-blue-100 text-blue-700',
-    rejected: 'bg-red-100 text-red-700'
+    approved:  'bg-blue-100 text-blue-700',
+    rejected:  'bg-red-100 text-red-700',
+    scheduled: 'bg-navy-100 text-navy-700',
   }
+
+  const platformLabel = post.platform === 'x' ? 'X (Twitter)'
+    : post.platform === 'google' ? 'Google Business'
+    : post.platform.charAt(0).toUpperCase() + post.platform.slice(1)
+
+  const dateStr = post.scheduled_at
+    ? new Date(post.scheduled_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+    : ''
 
   return (
     <div
-      ref={cardRef}
       className={`bg-white rounded-2xl border border-cream-300 overflow-hidden transition-all duration-300 ${
         swiping === 'right' ? 'translate-x-24 opacity-0' :
-        swiping === 'left' ? '-translate-x-24 opacity-0' : ''
+        swiping === 'left'  ? '-translate-x-24 opacity-0' : ''
       }`}
       style={{ boxShadow: '0 2px 8px rgb(30 45 74 / 0.06)' }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Swipe hints */}
       {showActions && (
-        <div className="flex items-center justify-between px-4 pt-3 pb-0 opacity-0 sm:hidden">
+        <div className="flex items-center justify-between px-4 pt-3 pb-0 opacity-40 sm:hidden">
           <span className="text-xs text-green-600 font-semibold">Swipe right to approve</span>
           <span className="text-xs text-red-500 font-semibold">Swipe left to reject</span>
         </div>
       )}
 
       <div className="p-5">
-        {/* Header */}
         <div className="flex items-center gap-3 mb-3">
           <PlatformIcon platform={post.platform} size="sm" container="soft" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-bold text-navy-800 capitalize">
-                {post.platform === 'x' ? 'X (Twitter)' : post.platform === 'google' ? 'Google Business' : post.platform.charAt(0).toUpperCase() + post.platform.slice(1)}
-              </span>
+              <span className="text-sm font-bold text-navy-800">{platformLabel}</span>
               <span className={`badge text-2xs ${statusColour[post.status] ?? 'bg-slate-100 text-slate-600'}`}>
                 {post.status.charAt(0).toUpperCase() + post.status.slice(1)}
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">Scheduled: {post.scheduledAt}</p>
+            {dateStr && <p className="text-xs text-slate-400 mt-0.5">Scheduled: {dateStr}</p>}
           </div>
         </div>
 
-        {/* Content */}
         <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{displayContent}</p>
         {isLong && (
           <button
             onClick={() => setExpanded(!expanded)}
             className="flex items-center gap-1 text-xs font-semibold text-amber-600 hover:text-amber-700 mt-2 transition-colors"
           >
-            {expanded ? <><ChevronUp className="w-3.5 h-3.5" /> Show less</> : <><ChevronDown className="w-3.5 h-3.5" /> Show more</>}
+            {expanded
+              ? <><ChevronUp className="w-3.5 h-3.5" /> Show less</>
+              : <><ChevronDown className="w-3.5 h-3.5" /> Show more</>
+            }
           </button>
         )}
 
-        {/* Actions */}
         {showActions && post.status === 'pending' && (
           <div className="flex items-center gap-2 mt-4 pt-4 border-t border-cream-300">
             <button
               onClick={() => onApprove(post.id)}
-              className="flex-1 flex items-center justify-center gap-1.5 bg-green-50 text-green-700 font-bold text-sm py-2.5 rounded-xl hover:bg-green-100 active:scale-[0.97] transition-all border border-green-200"
+              disabled={actioning}
+              className="flex-1 flex items-center justify-center gap-1.5 bg-green-50 text-green-700 font-bold text-sm py-2.5 rounded-xl hover:bg-green-100 active:scale-[0.97] transition-all border border-green-200 disabled:opacity-50"
             >
               <Check className="w-4 h-4" />
               Approve
             </button>
             <button
               onClick={() => onEdit(post)}
-              className="flex-1 flex items-center justify-center gap-1.5 bg-slate-50 text-slate-600 font-bold text-sm py-2.5 rounded-xl hover:bg-slate-100 active:scale-[0.97] transition-all border border-slate-200"
+              disabled={actioning}
+              className="flex-1 flex items-center justify-center gap-1.5 bg-slate-50 text-slate-600 font-bold text-sm py-2.5 rounded-xl hover:bg-slate-100 active:scale-[0.97] transition-all border border-slate-200 disabled:opacity-50"
             >
               <Edit2 className="w-4 h-4" />
               Edit
             </button>
             <button
               onClick={() => onReject(post.id)}
-              className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 text-red-600 font-bold text-sm py-2.5 rounded-xl hover:bg-red-100 active:scale-[0.97] transition-all border border-red-200"
+              disabled={actioning}
+              className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 text-red-600 font-bold text-sm py-2.5 rounded-xl hover:bg-red-100 active:scale-[0.97] transition-all border border-red-200 disabled:opacity-50"
             >
               <X className="w-4 h-4" />
               Reject
@@ -208,11 +184,11 @@ function PostCard({ post, onApprove, onReject, onEdit, showActions = true }) {
   )
 }
 
-// ── Empty state ───────────────────────────────────────────────────────────────
+// ── Empty state ────────────────────────────────────────────────────────────────
 function EmptyInbox() {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
-      <div className="w-20 h-20 bg-amber-50 rounded-3xl flex items-center justify-center mb-5 animate-bounce-subtle">
+      <div className="w-20 h-20 bg-amber-50 rounded-3xl flex items-center justify-center mb-5">
         <CheckCircle2 className="w-10 h-10 text-amber-500" />
       </div>
       <h3 className="font-display font-bold text-lg text-navy-800 mb-2">You&apos;re all caught up!</h3>
@@ -223,42 +199,148 @@ function EmptyInbox() {
   )
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+// ── Skeleton loader ────────────────────────────────────────────────────────────
+function SkeletonCard() {
+  return (
+    <div className="bg-white rounded-2xl border border-cream-300 p-5" style={{ boxShadow: '0 2px 8px rgb(30 45 74 / 0.06)' }}>
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-8 h-8 bg-cream-300 rounded-lg animate-pulse flex-shrink-0" />
+        <div className="flex-1 space-y-1.5">
+          <div className="h-3 bg-cream-300 rounded animate-pulse w-1/3" />
+          <div className="h-2.5 bg-cream-300 rounded animate-pulse w-1/4" />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <div className="h-3 bg-cream-300 rounded animate-pulse" />
+        <div className="h-3 bg-cream-300 rounded animate-pulse w-5/6" />
+        <div className="h-3 bg-cream-300 rounded animate-pulse w-3/4" />
+      </div>
+    </div>
+  )
+}
+
+// ── Main page ──────────────────────────────────────────────────────────────────
 export default function InboxPage() {
   const [activeTab, setActiveTab] = useState('pending')
-  const [posts, setPosts] = useState(MOCK_PENDING)
-  const [allPosts] = useState(MOCK_ALL)
+  const [pendingPosts, setPendingPosts] = useState([])
+  const [allPosts, setAllPosts] = useState([])
+  const [loadingPending, setLoadingPending] = useState(true)
+  const [loadingAll, setLoadingAll] = useState(false)
   const [editingPost, setEditingPost] = useState(null)
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [actioningId, setActioningId] = useState(null)
+  const [error, setError] = useState(null)
 
-  const handleApprove = (id) => {
-    setPosts((prev) => prev.filter((p) => p.id !== id))
+  const loadPending = useCallback(async () => {
+    setLoadingPending(true)
+    setError(null)
+    try {
+      const res = await postsApi.getPending({ per_page: 50 })
+      const raw = res.data?.data ?? res.data?.posts ?? []
+      setPendingPosts(raw.map(normalisePost))
+    } catch (e) {
+      console.error('Failed to load inbox', e)
+      setError('Failed to load posts. Please try again.')
+    } finally {
+      setLoadingPending(false)
+    }
+  }, [])
+
+  const loadAll = useCallback(async () => {
+    setLoadingAll(true)
+    try {
+      const res = await postsApi.getAll({ per_page: 50 })
+      const raw = res.data?.data ?? res.data?.posts ?? []
+      setAllPosts(raw.map(normalisePost))
+    } catch (e) {
+      console.error('Failed to load all posts', e)
+    } finally {
+      setLoadingAll(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadPending()
+  }, [loadPending])
+
+  useEffect(() => {
+    if (activeTab === 'all' && allPosts.length === 0 && !loadingAll) {
+      loadAll()
+    }
+  }, [activeTab, allPosts.length, loadingAll, loadAll])
+
+  const handleApprove = async (id) => {
+    setActioningId(id)
+    try {
+      await postsApi.approve(id)
+      setPendingPosts((prev) => prev.filter((p) => p.id !== id))
+    } catch (e) {
+      console.error('Approve failed', e)
+    } finally {
+      setActioningId(null)
+    }
   }
 
-  const handleReject = (id) => {
-    setPosts((prev) => prev.filter((p) => p.id !== id))
+  const handleReject = async (id) => {
+    setActioningId(id)
+    try {
+      await postsApi.reject(id)
+      setPendingPosts((prev) => prev.filter((p) => p.id !== id))
+    } catch (e) {
+      console.error('Reject failed', e)
+    } finally {
+      setActioningId(null)
+    }
   }
 
-  const handleSaveEdit = (id, content) => {
-    setPosts((prev) => prev.filter((p) => p.id !== id))
-    setEditingPost(null)
+  const handleSaveEdit = async (id, content) => {
+    setSavingEdit(true)
+    try {
+      await postsApi.update(id, { content })
+      await postsApi.approve(id)
+      setPendingPosts((prev) => prev.filter((p) => p.id !== id))
+      setEditingPost(null)
+    } catch (e) {
+      console.error('Save edit failed', e)
+    } finally {
+      setSavingEdit(false)
+    }
   }
 
-  const displayedPosts = activeTab === 'pending' ? posts : allPosts
+  const displayedPosts = activeTab === 'pending' ? pendingPosts : allPosts
+  const loadingCurrent = activeTab === 'pending' ? loadingPending : loadingAll
 
   return (
     <div className="max-w-2xl mx-auto animate-fade-in-up">
 
       {/* Header */}
       <div className="mb-6">
-        <div className="flex items-center gap-3 mb-1">
-          <Inbox className="w-5 h-5 text-amber-500" />
-          <h1 className="font-display font-black text-2xl text-navy-800">Post Inbox</h1>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-3">
+            <Inbox className="w-5 h-5 text-amber-500" />
+            <h1 className="font-display font-black text-2xl text-navy-800">Post Inbox</h1>
+          </div>
+          <button
+            onClick={loadPending}
+            disabled={loadingPending}
+            className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors disabled:opacity-40"
+            title="Refresh"
+          >
+            <RefreshCw className={`w-4 h-4 ${loadingPending ? 'animate-spin' : ''}`} />
+          </button>
         </div>
         <p className="text-slate-500 text-sm">Review and approve posts before they go live.</p>
       </div>
 
+      {/* Error */}
+      {error && (
+        <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
       {/* Swipe hint — mobile */}
-      {posts.length > 0 && (
+      {!loadingPending && pendingPosts.length > 0 && activeTab === 'pending' && (
         <div className="sm:hidden mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 flex items-center gap-2 text-xs text-amber-700">
           <span>Swipe right to approve, left to reject</span>
         </div>
@@ -275,9 +357,9 @@ export default function InboxPage() {
           }`}
         >
           Pending
-          {posts.length > 0 && (
+          {!loadingPending && pendingPosts.length > 0 && (
             <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white text-2xs font-bold">
-              {posts.length}
+              {pendingPosts.length}
             </span>
           )}
         </button>
@@ -294,7 +376,11 @@ export default function InboxPage() {
       </div>
 
       {/* Post list */}
-      {displayedPosts.length === 0 ? (
+      {loadingCurrent ? (
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      ) : displayedPosts.length === 0 ? (
         <EmptyInbox />
       ) : (
         <div className="space-y-4">
@@ -306,6 +392,7 @@ export default function InboxPage() {
               onApprove={handleApprove}
               onReject={handleReject}
               onEdit={setEditingPost}
+              actioning={actioningId === post.id}
             />
           ))}
         </div>
@@ -317,6 +404,7 @@ export default function InboxPage() {
           post={editingPost}
           onSave={handleSaveEdit}
           onClose={() => setEditingPost(null)}
+          saving={savingEdit}
         />
       )}
     </div>

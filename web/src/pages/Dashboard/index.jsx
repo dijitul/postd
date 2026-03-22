@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import PlatformIcon from '../../components/ui/PlatformIcon.jsx'
 import useAuthStore from '../../stores/authStore.js'
-import { dashboardApi, postsApi } from '../../lib/api.js'
+import { postsApi, platformsApi } from '../../lib/api.js'
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
 function StatCard({ icon: Icon, label, value, sub, colour = 'amber' }) {
@@ -153,12 +153,28 @@ export default function Dashboard() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [summaryRes, postsRes] = await Promise.all([
-          dashboardApi.getSummary(),
-          postsApi.getAll({ per_page: 5 })
+        const [connectionsRes, postsRes, pendingRes] = await Promise.all([
+          platformsApi.getAll(),
+          postsApi.getAll({ per_page: 5 }),
+          postsApi.getPending({ per_page: 1 }),
         ])
-        setSummary(summaryRes.data)
-        setRecentPosts(postsRes.data?.data ?? postsRes.data?.posts ?? [])
+        const connections = connectionsRes.data?.connections ?? []
+        const posts = postsRes.data?.data ?? postsRes.data?.posts ?? []
+        const pendingTotal = pendingRes.data?.total ?? pendingRes.data?.meta?.total ?? 0
+        const nextPost = posts.find((p) => p.status === 'scheduled' || p.status === 'approved') ?? null
+
+        setSummary({
+          connections,
+          pending_count: pendingTotal,
+          posts_this_week: posts.filter((p) => {
+            const d = new Date(p.created_at)
+            const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7)
+            return d > weekAgo
+          }).length,
+          connected_count: connections.filter((c) => c.is_active && !c.is_expired).length,
+          next_post: nextPost,
+        })
+        setRecentPosts(posts)
       } catch (e) {
         console.error('Dashboard load failed', e)
       } finally {
