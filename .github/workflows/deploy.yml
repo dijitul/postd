@@ -159,7 +159,7 @@ jobs:
         working-directory: api
         run: composer install --prefer-dist --no-dev --no-interaction --no-progress --optimize-autoloader
 
-      - name: Copy production build to server
+      - name: Copy web dist to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -169,13 +169,13 @@ jobs:
           target: "/var/www/postd/"
           strip_components: 0
 
-      - name: Copy PHP vendor to server
+      - name: Copy API code to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "api/vendor/"
+          source: "api/"
           target: "/var/www/postd/"
           strip_components: 0
 
@@ -189,81 +189,36 @@ jobs:
             set -e
 
             echo "=== postd.uk deployment — $(date) ==="
-            echo "=== Commit: ${{ github.sha }} ==="
-            echo "=== Triggered by: ${{ github.actor }} ==="
 
             APP_DIR="/var/www/postd"
             API_DIR="$APP_DIR/api"
 
-            # ------------------------------------------------------------------
-            # 1. Enable maintenance mode (shows a clean 503 to users)
-            # ------------------------------------------------------------------
-            echo "--- Enabling maintenance mode..."
-            php "$API_DIR/artisan" down \
-              --render="errors::503" \
-              --retry=60 \
-              --secret="${{ secrets.DEPLOY_BYPASS_SECRET }}" || true
+            # Ensure storage dirs exist (first deploy)
+            mkdir -p "$API_DIR/storage/logs"
+            mkdir -p "$API_DIR/storage/framework/cache"
+            mkdir -p "$API_DIR/storage/framework/sessions"
+            mkdir -p "$API_DIR/storage/framework/views"
+            mkdir -p "$API_DIR/bootstrap/cache"
 
-            # ------------------------------------------------------------------
-            # 2. Pull latest code
-            # ------------------------------------------------------------------
-            echo "--- Pulling latest code..."
-            cd "$APP_DIR"
-            git fetch --all
-            git reset --hard origin/main
-
-            # ------------------------------------------------------------------
-            # 3. Run database migrations
-            # ------------------------------------------------------------------
-            echo "--- Running migrations..."
-            php "$API_DIR/artisan" migrate --force
-
-            # ------------------------------------------------------------------
-            # 4. Clear and rebuild all Laravel caches
-            # ------------------------------------------------------------------
-            echo "--- Rebuilding caches..."
-            php "$API_DIR/artisan" config:cache
-            php "$API_DIR/artisan" route:cache
-            php "$API_DIR/artisan" view:cache
-            php "$API_DIR/artisan" event:cache
-
-            # ------------------------------------------------------------------
-            # 5. Fix storage permissions (in case new log/cache dirs were created)
-            # ------------------------------------------------------------------
-            echo "--- Fixing storage permissions..."
+            # Fix permissions
             chmod -R 775 "$API_DIR/storage" "$API_DIR/bootstrap/cache"
+            chown -R postduk:www-data "$APP_DIR"
 
-            # ------------------------------------------------------------------
-            # 6. Bring the application back up
-            # ------------------------------------------------------------------
-            echo "--- Bringing application back online..."
-            php "$API_DIR/artisan" up
+            # Only run artisan commands if .env exists
+            if [ -f "$API_DIR/.env" ]; then
+              echo "--- Running migrations..."
+              php "$API_DIR/artisan" migrate --force
 
-            # ------------------------------------------------------------------
-            # 7. Restart Horizon gracefully
-            # The horizon:terminate command tells the current Horizon process to
-            # finish its current jobs then exit. Supervisor will immediately
-            # start a fresh Horizon process with the new code.
-            # ------------------------------------------------------------------
-            echo "--- Restarting Horizon queue workers..."
-            php "$API_DIR/artisan" horizon:terminate || true
-            sudo /usr/bin/supervisorctl restart postd-horizon
+              echo "--- Rebuilding caches..."
+              php "$API_DIR/artisan" config:cache
+              php "$API_DIR/artisan" route:cache
+              php "$API_DIR/artisan" view:cache
 
-            # ------------------------------------------------------------------
-            # 8. Health check — verify the API responds
-            # ------------------------------------------------------------------
-            echo "--- Running health check..."
-            sleep 5
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-              --max-time 30 \
-              https://api.postd.uk/health 2>/dev/null || echo "000")
-
-            if [ "$HTTP_STATUS" = "200" ]; then
-              echo "--- Health check PASSED (HTTP $HTTP_STATUS)"
+              echo "--- Restarting queue workers..."
+              php "$API_DIR/artisan" horizon:terminate || true
+              sudo /usr/bin/supervisorctl restart postd-horizon || true
             else
-              echo "--- Health check FAILED (HTTP $HTTP_STATUS) — manual review needed!"
-              # Note: we don't fail the deploy here as the health endpoint
-              # may not exist yet. Remove this comment once /health is implemented.
+              echo "--- No .env found — skipping artisan commands. Add .env to server manually."
             fi
 
             echo "=== Deployment complete at $(date) ==="
