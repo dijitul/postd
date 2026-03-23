@@ -3,7 +3,6 @@
 namespace App\Modules\Auth\Controllers;
 
 use App\Models\User;
-use App\Modules\Social\Platforms\GoogleBusinessProfilePlatform;
 use App\Modules\Social\Services\SocialConnectionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -104,17 +103,8 @@ class GoogleAuthController
             Log::info('GoogleAuth: Tokens cached for onboarding', ['user_id' => $user->id]);
         }
 
-        // Cache GBP locations so onboarding can show a location picker
-        try {
-            $platform  = new GoogleBusinessProfilePlatform();
-            $locations = $platform->getAccountsWithToken($tokenData['access_token']);
-            if (! empty($locations)) {
-                Cache::put("gbp_locations_{$user->id}", $locations, now()->addMinutes(30));
-                Log::info('GoogleAuth: GBP locations cached', ['user_id' => $user->id, 'count' => count($locations)]);
-            }
-        } catch (\Throwable $e) {
-            Log::warning('GoogleAuth: Could not cache GBP locations', ['error' => $e->getMessage()]);
-        }
+        // GBP locations are fetched lazily when onboarding/gbp-locations is called,
+        // not here — avoids burning quota on every sign-in and keeps the redirect fast.
 
         $token      = $user->createToken('google-auth')->plainTextToken;
         $onboarded  = $user->business()->where('onboarding_complete', true)->exists();

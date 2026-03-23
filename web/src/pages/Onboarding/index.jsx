@@ -85,6 +85,7 @@ function GBPLocationPicker({ locations, onSelect }) {
 
 function Step1({ onNext, defaultValues, isSubmitting, submitError }) {
   const [gbpLocations, setGbpLocations] = useState(null) // null = loading, [] = none found
+  const [gbpRateLimited, setGbpRateLimited] = useState(false)
   const [selectedLocation, setSelectedLocation] = useState(null)
   const hints = useRef({})
 
@@ -94,11 +95,18 @@ function Step1({ onNext, defaultValues, isSubmitting, submitError }) {
   })
   const selectedTone = watch('tone')
 
-  useEffect(() => {
+  const fetchGbpLocations = () => {
+    setGbpRateLimited(false)
+    setGbpLocations(null)
     onboardingApi.gbpLocations()
-      .then(({ data }) => setGbpLocations(data.locations ?? []))
+      .then(({ data }) => {
+        setGbpRateLimited(data.rate_limited === true)
+        setGbpLocations(data.locations ?? [])
+      })
       .catch(() => setGbpLocations([]))
-  }, [])
+  }
+
+  useEffect(() => { fetchGbpLocations() }, [])
 
   const handleLocationSelect = (loc) => {
     setValue('business_name', loc.name, { shouldValidate: true })
@@ -128,6 +136,24 @@ function Step1({ onNext, defaultValues, isSubmitting, submitError }) {
           <div className="flex items-center gap-2 py-3 text-sm text-slate-400">
             <span className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
             Looking up your Google Business Profile...
+          </div>
+        )}
+
+        {/* Rate-limited — Google quota exhausted, try again shortly */}
+        {gbpRateLimited && (
+          <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3.5 mb-2">
+            <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-amber-800">Google is a bit busy right now</p>
+              <p className="text-xs text-amber-700 mt-0.5">We couldn&apos;t load your business profiles. You can try again in a moment, or type your business name below.</p>
+            </div>
+            <button
+              type="button"
+              onClick={fetchGbpLocations}
+              className="text-xs font-semibold text-amber-700 hover:text-amber-900 bg-amber-100 hover:bg-amber-200 px-2.5 py-1.5 rounded-lg transition-colors flex-shrink-0"
+            >
+              Retry
+            </button>
           </div>
         )}
 

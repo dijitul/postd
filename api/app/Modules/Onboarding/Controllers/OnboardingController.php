@@ -274,32 +274,58 @@ class OnboardingController extends Controller
      * Return the user's Google Business Profile locations for the onboarding picker.
      *
      * Priority order:
-     *   1. Cached locations set during the Google auth callback (fastest, no extra API call)
-     *   2. Live lookup using the cached raw Google token (for new users whose auth-callback
-     *      GBP fetch failed — the token is still valid, so we retry here)
+     *   1. Cached locations (set on a previous successful fetch)
+     *   2. Live lookup using the cached raw Google token (new user, no business yet)
      *   3. Live lookup via an existing SocialConnection (returning users)
+     *
+     * A 90-second rate-limit cooldown prevents hammering the GBP API when Google
+     * returns 429. The frontend receives rate_limited: true so it can show a retry button.
      */
     public function gbpLocations(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $user     = $request->user();
         $platform = new GoogleBusinessProfilePlatform();
 
-        // 1. Cached locations from the Google auth callback
+        // 1. Already have cached locations — return immediately, no API call
         $cached = Cache::get("gbp_locations_{$user->id}");
         if ($cached) {
-            Log::info('OnboardingController: gbpLocations served from cache', ['user_id' => $user->id]);
             return response()->json(['locations' => $cached]);
         }
 
-        // 2. Cached raw token — new user, no business yet, auth-callback GBP fetch may have failed
+        // Honour rate-limit cooldown — don't hammer Google while quota is exhausted
+        if (Cache::get("gbp_ratelimit_{$user->id}")) {
+            Log::info('OnboardingController: gbpLocations skipped — rate-limit cooldown active', ['user_id' => $user->id]);
+            return response()->json(['locations' => [], 'rate_limited' => true]);
+        }
+
+        // Helper to make the GBP call and cache the result (or set cooldown on 429)
+        $fetchAndCache = function (callable $fetchFn) use ($user): array {
+            try {
+                $locations = $fetchFn();
+                if (! empty($locations)) {
+                    Cache::put("gbp_locations_{$user->id}", $locations, now()->addHours(2));
+                }
+                return $locations;
+            } catch (\GuzzleHttp\Exception\ClientException $e) {
+                if ($e->getResponse()?->getStatusCode() === 429) {
+                    Cache::put("gbp_ratelimit_{$user->id}", true, now()->addSeconds(90));
+                    Log::warning('OnboardingController: GBP 429 — cooldown set', ['user_id' => $user->id]);
+                    throw $e;
+                }
+                throw $e;
+            }
+        };
+
+        // 2. Cached raw Google token (new user — no business/connection yet)
         $tokenData = Cache::get("google_tokens_{$user->id}");
         if ($tokenData && ! empty($tokenData['access_token'])) {
-            Log::info('OnboardingController: gbpLocations retrying with cached token', ['user_id' => $user->id]);
-            $locations = $platform->getAccountsWithToken($tokenData['access_token']);
-            if (! empty($locations)) {
-                Cache::put("gbp_locations_{$user->id}", $locations, now()->addMinutes(30));
+            Log::info('OnboardingController: gbpLocations fetching with cached token', ['user_id' => $user->id]);
+            try {
+                $locations = $fetchAndCache(fn () => $platform->getAccountsWithToken($tokenData['access_token']));
+                return response()->json(['locations' => $locations]);
+            } catch (\Throwable) {
+                return response()->json(['locations' => [], 'rate_limited' => true]);
             }
-            return response()->json(['locations' => $locations]);
         }
 
         // 3. Live lookup via existing SocialConnection (returning / reconnecting user)
@@ -312,8 +338,12 @@ class OnboardingController extends Controller
             return response()->json(['locations' => []]);
         }
 
-        $locations = $platform->getAccounts($connection);
-        return response()->json(['locations' => $locations]);
+        try {
+            $locations = $fetchAndCache(fn () => $platform->getAccounts($connection));
+            return response()->json(['locations' => $locations]);
+        } catch (\Throwable) {
+            return response()->json(['locations' => [], 'rate_limited' => true]);
+        }
     }
 
     /**
