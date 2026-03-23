@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -6,7 +6,7 @@ import { z } from 'zod'
 import {
   Building2, Globe, Star, Share2, Sparkles,
   ArrowRight, ArrowLeft, Check, AlertCircle,
-  ChevronDown, Clipboard, MapPin, ChevronRight
+  ChevronDown, Clipboard, MapPin, ChevronRight, Loader2
 } from 'lucide-react'
 import Logo from '../../components/ui/Logo.jsx'
 import PlatformIcon from '../../components/ui/PlatformIcon.jsx'
@@ -83,9 +83,10 @@ function GBPLocationPicker({ locations, onSelect }) {
   )
 }
 
-function Step1({ onNext, defaultValues }) {
+function Step1({ onNext, defaultValues, isSubmitting, submitError }) {
   const [gbpLocations, setGbpLocations] = useState(null) // null = loading, [] = none found
-  const [locationSelected, setLocationSelected] = useState(false)
+  const [selectedLocation, setSelectedLocation] = useState(null)
+  const hints = useRef({})
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(step1Schema),
@@ -101,26 +102,24 @@ function Step1({ onNext, defaultValues }) {
 
   const handleLocationSelect = (loc) => {
     setValue('business_name', loc.name, { shouldValidate: true })
-    handleSubmit._websiteHint = loc.url
-    handleSubmit._reviewUrlHint = loc.review_url
-    handleSubmit._addressHint = loc.address
-    setLocationSelected(true)
+    hints.current = {
+      _websiteHint:   loc.url,
+      _reviewUrlHint: loc.review_url,
+      _addressHint:   loc.address,
+      _gbpLocationId: loc.id,
+    }
+    setSelectedLocation(loc)
   }
 
   const handlePlaceSelect = ({ name, website }) => {
     if (name) setValue('business_name', name, { shouldValidate: true })
-    if (website) handleSubmit._websiteHint = website
+    if (website) hints.current._websiteHint = website
   }
 
-  const showPicker = gbpLocations && gbpLocations.length > 0 && !locationSelected
+  const showPicker = gbpLocations && gbpLocations.length > 0 && !selectedLocation
 
   return (
-    <form onSubmit={handleSubmit((data) => onNext({
-      ...data,
-      _websiteHint: handleSubmit._websiteHint,
-      _reviewUrlHint: handleSubmit._reviewUrlHint,
-      _addressHint: handleSubmit._addressHint,
-    }))} className="space-y-6">
+    <form onSubmit={handleSubmit((data) => onNext({ ...data, ...hints.current }))} className="space-y-6">
       <div>
         <label className="label">Business name</label>
 
@@ -138,24 +137,31 @@ function Step1({ onNext, defaultValues }) {
         )}
 
         {/* Selected location confirmation */}
-        {locationSelected && (
+        {selectedLocation && (
           <div className="flex items-center gap-2 p-3 rounded-xl bg-green-50 border border-green-200 mb-2">
             <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
-            <span className="text-sm font-medium text-green-800">{watch('business_name')}</span>
-            <button type="button" onClick={() => setLocationSelected(false)} className="ml-auto text-xs text-slate-400 hover:text-slate-600 transition-colors">Change</button>
+            <span className="text-sm font-medium text-green-800">{selectedLocation.name}</span>
+            {selectedLocation.address && (
+              <span className="text-xs text-green-600 truncate">&mdash; {selectedLocation.address}</span>
+            )}
+            <button
+              type="button"
+              onClick={() => { setSelectedLocation(null); hints.current = {} }}
+              className="ml-auto text-xs text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0"
+            >
+              Change
+            </button>
           </div>
         )}
 
-        {/* Manual search fallback — shown when no GBP locations or after dismissing */}
+        {/* Manual search fallback — shown when no GBP locations or picker dismissed */}
         {(gbpLocations !== null && gbpLocations.length === 0) && (
-          <>
-            <BusinessSearch
-              defaultValue={defaultValues?.business_name ?? ''}
-              onSelect={handlePlaceSelect}
-              onNameChange={(val) => setValue('business_name', val, { shouldValidate: !!val })}
-              error={!!errors.business_name}
-            />
-          </>
+          <BusinessSearch
+            defaultValue={defaultValues?.business_name ?? ''}
+            onSelect={handlePlaceSelect}
+            onNameChange={(val) => setValue('business_name', val, { shouldValidate: !!val })}
+            error={!!errors.business_name}
+          />
         )}
 
         {/* Hidden field keeps react-hook-form in sync */}
@@ -211,8 +217,24 @@ function Step1({ onNext, defaultValues }) {
         </div>
       </div>
 
-      <button type="submit" className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3.5 rounded-xl hover:bg-amber-700 active:scale-[0.98] transition-all duration-200" style={{ boxShadow: '0 4px 16px rgb(224 123 48 / 0.3)' }}>
-        Continue <ArrowRight className="w-4 h-4" />
+      {submitError && (
+        <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-3.5">
+          <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-red-700">{submitError}</p>
+        </div>
+      )}
+
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3.5 rounded-xl hover:bg-amber-700 active:scale-[0.98] transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
+        style={{ boxShadow: '0 4px 16px rgb(224 123 48 / 0.3)' }}
+      >
+        {isSubmitting ? (
+          <><Loader2 className="w-4 h-4 animate-spin" /> Setting up your business...</>
+        ) : (
+          <>Continue <ArrowRight className="w-4 h-4" /></>
+        )}
       </button>
     </form>
   )
@@ -303,9 +325,11 @@ const step3Schema = z.object({
 
 function Step3({ onNext, onSkip, defaultValues }) {
   const [showHelp, setShowHelp] = useState(false)
+  // Auto-fill from GBP review_url hint if available
+  const reviewDefault = defaultValues?.google_reviews_url || defaultValues?._reviewUrlHint || ''
   const { register, handleSubmit, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(step3Schema),
-    defaultValues
+    defaultValues: { google_reviews_url: reviewDefault }
   })
 
   const handlePaste = async () => {
@@ -319,6 +343,12 @@ function Step3({ onNext, onSkip, defaultValues }) {
     <form onSubmit={handleSubmit(onNext)} className="space-y-6">
       <div>
         <label htmlFor="google_reviews_url" className="label">Your Google Reviews link</label>
+        {reviewDefault && (
+          <div className="flex items-center gap-2 mb-2 p-2.5 bg-green-50 border border-green-200 rounded-xl">
+            <Check className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
+            <p className="text-xs text-green-700">We found your review link from Google — feel free to confirm or change it.</p>
+          </div>
+        )}
         <div className="relative">
           <input
             id="google_reviews_url"
@@ -366,7 +396,7 @@ function Step3({ onNext, onSkip, defaultValues }) {
               <li className="flex gap-2"><span className="font-bold text-amber-600 flex-shrink-0">5.</span><span><strong>Copy the web address</strong> from the top of your browser and paste it into the box above</span></li>
             </ol>
             <p className="mt-4 text-xs text-amber-700 bg-amber-100 rounded-lg px-3 py-2">
-              💡 The link will look something like: <span className="font-mono">https://g.page/r/ABC123.../review</span>
+              The link will look something like: <span className="font-mono">https://g.page/r/ABC123.../review</span>
             </p>
           </div>
         )}
@@ -394,7 +424,7 @@ const PLATFORMS = [
   { id: 'google', label: 'Google Business', plan: 'free', alwaysFree: true }
 ]
 
-function Step4({ onNext, onSkip, userPlan = 'growth' }) {
+function Step4({ onNext, onSkip, userPlan = 'growth', gbpAlreadyConnected = false }) {
   const [connected, setConnected] = useState(new Set())
   const [connecting, setConnecting] = useState(null)
 
@@ -412,23 +442,30 @@ function Step4({ onNext, onSkip, userPlan = 'growth' }) {
       return
     }
     setConnecting(platformId)
-    // Simulate OAuth delay
+    // Simulate OAuth delay (other platforms not yet implemented)
     await new Promise((r) => setTimeout(r, 1200))
     setConnected((prev) => new Set([...prev, platformId]))
     setConnecting(null)
   }
 
+  // GBP is "connected" either from Google auth or from local state
+  const isGbpConnected = (platformId) => platformId === 'google' && gbpAlreadyConnected
+  const hasAnyConnection = gbpAlreadyConnected || connected.size > 0
+
   return (
     <div className="space-y-6">
       <p className="text-sm text-slate-500 leading-relaxed">
-        Connect at least one platform to get started. You can always add more later.
+        {gbpAlreadyConnected
+          ? 'Your Google Business Profile is already connected. You can add more platforms now, or come back to it later.'
+          : 'Connect at least one platform to get started. You can always add more later.'}
       </p>
 
       <div className="space-y-3">
         {PLATFORMS.map((platform) => {
           const locked = isLocked(platform.plan)
-          const isConnected = connected.has(platform.id)
+          const isConnected = isGbpConnected(platform.id) || connected.has(platform.id)
           const isConnecting = connecting === platform.id
+          const isGbpAutoConnected = platform.id === 'google' && gbpAlreadyConnected
 
           return (
             <div
@@ -453,13 +490,19 @@ function Step4({ onNext, onSkip, userPlan = 'growth' }) {
                   )}
                 </div>
                 {isConnected && (
-                  <p className="text-xs text-green-600 font-medium mt-0.5">Connected</p>
+                  <p className="text-xs text-green-600 font-medium mt-0.5">
+                    {isGbpAutoConnected ? 'Connected via Google sign-in' : 'Connected'}
+                  </p>
                 )}
               </div>
               {locked ? (
                 <button className="text-xs font-semibold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200">
                   Upgrade
                 </button>
+              ) : isGbpAutoConnected ? (
+                <div className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl bg-green-100 text-green-700">
+                  <Check className="w-3.5 h-3.5" /> Connected
+                </div>
               ) : (
                 <button
                   onClick={() => handleConnect(platform.id)}
@@ -482,7 +525,7 @@ function Step4({ onNext, onSkip, userPlan = 'growth' }) {
         })}
       </div>
 
-      {connected.size === 0 && (
+      {!hasAnyConnection && (
         <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3.5">
           <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-amber-700">We recommend connecting at least one platform to get the most out of your trial.</p>
@@ -506,7 +549,7 @@ function Step4({ onNext, onSkip, userPlan = 'growth' }) {
 }
 
 // ── Step 5 — All done ─────────────────────────────────────────────────────────
-function Step5({ businessName, onGoToDashboard }) {
+function Step5({ businessName, onGoToDashboard, isCompleting }) {
   const [showButton, setShowButton] = useState(false)
   const [progress, setProgress] = useState(0)
 
@@ -529,7 +572,6 @@ function Step5({ businessName, onGoToDashboard }) {
           style={{ boxShadow: '0 12px 32px rgb(224 123 48 / 0.4)' }}>
           <Sparkles className="w-12 h-12 text-white" />
         </div>
-        {/* Orbiting dots */}
         {[0, 72, 144, 216, 288].map((deg, i) => (
           <div
             key={deg}
@@ -578,10 +620,15 @@ function Step5({ businessName, onGoToDashboard }) {
       {showButton && (
         <button
           onClick={onGoToDashboard}
-          className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3.5 rounded-xl hover:bg-amber-700 active:scale-[0.98] transition-all duration-200 animate-fade-in-up"
+          disabled={isCompleting}
+          className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3.5 rounded-xl hover:bg-amber-700 active:scale-[0.98] transition-all duration-200 animate-fade-in-up disabled:opacity-70"
           style={{ boxShadow: '0 4px 16px rgb(224 123 48 / 0.3)' }}
         >
-          Go to dashboard <ArrowRight className="w-4 h-4" />
+          {isCompleting ? (
+            <><Loader2 className="w-4 h-4 animate-spin" /> Finishing up...</>
+          ) : (
+            <>Go to dashboard <ArrowRight className="w-4 h-4" /></>
+          )}
         </button>
       )}
     </div>
@@ -601,23 +648,104 @@ const STEPS = [
 export default function OnboardingPage() {
   const [step, setStep] = useState(1)
   const [formData, setFormData] = useState({})
+  const [businessId, setBusinessId] = useState(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isCompleting, setIsCompleting] = useState(false)
+  const [submitError, setSubmitError] = useState(null)
   const navigate = useNavigate()
   const { user } = useAuthStore()
 
   const businessName = formData.business_name || user?.business?.name || ''
 
-  const handleNext = (data = {}) => {
-    // If Places API returned a website hint, pre-fill website_url for Step 2
-    const merged = { ...data }
-    if (data._websiteHint && !formData.website_url) {
-      merged.website_url = data._websiteHint
+  // Did the user pick a GBP location? That means GBP is already connected.
+  const gbpConnected = !!formData._gbpLocationId
+
+  const handleNext = async (data = {}) => {
+    setSubmitError(null)
+    const merged = { ...formData, ...data }
+
+    if (step === 1) {
+      // Carry website hint into step 2 default
+      if (data._websiteHint && !merged.website_url) {
+        merged.website_url = data._websiteHint
+      }
+
+      // Save business to backend
+      setIsSubmitting(true)
+      try {
+        const payload = {
+          name:            merged.business_name,
+          industry:        merged.industry,
+          tone:            merged.tone || 'friendly',
+          website_url:     merged._websiteHint || null,
+          google_reviews_url: merged._reviewUrlHint || null,
+          gbp_location_id: merged._gbpLocationId || null,
+        }
+
+        let res
+        try {
+          res = await onboardingApi.createBusiness(payload)
+        } catch (err) {
+          if (err.response?.status === 409) {
+            // Business already exists (e.g. returning user) — update instead
+            res = await onboardingApi.updateBusiness(payload)
+          } else {
+            throw err
+          }
+        }
+
+        setBusinessId(res.data.business?.id || null)
+      } catch (err) {
+        setSubmitError(err.response?.data?.message || 'Something went wrong saving your business. Please try again.')
+        setIsSubmitting(false)
+        return
+      }
+      setIsSubmitting(false)
+
+      setFormData(merged)
+
+      // If a GBP location was selected, we already have website + reviews URL
+      // from the GBP API — skip steps 2 & 3 and go straight to platforms.
+      if (merged._gbpLocationId) {
+        setStep(4)
+      } else {
+        setStep(2)
+      }
+      return
     }
-    delete merged._websiteHint
-    setFormData((prev) => ({ ...prev, ...merged }))
+
+    if (step === 2 && data.website_url && businessId) {
+      // Fire-and-forget update — user shouldn't wait
+      onboardingApi.updateBusiness({ website_url: data.website_url }).catch(() => {})
+    }
+
+    if (step === 3 && data.google_reviews_url && businessId) {
+      onboardingApi.updateBusiness({ google_reviews_url: data.google_reviews_url }).catch(() => {})
+    }
+
+    setFormData(merged)
     setStep((s) => s + 1)
   }
 
-  const handleBack = () => setStep((s) => Math.max(1, s - 1))
+  const handleBack = () => {
+    // If we skipped steps 2 & 3 (GBP flow), go back to step 1
+    if (step === 4 && gbpConnected) {
+      setStep(1)
+    } else {
+      setStep((s) => Math.max(1, s - 1))
+    }
+  }
+
+  const handleGoToDashboard = async () => {
+    setIsCompleting(true)
+    try {
+      await onboardingApi.complete()
+    } catch (err) {
+      // Non-blocking — log and continue
+      console.error('Onboarding complete failed:', err?.response?.data || err.message)
+    }
+    navigate('/dashboard', { replace: true })
+  }
 
   const currentStep = STEPS[step - 1]
 
@@ -661,14 +789,40 @@ export default function OnboardingPage() {
           )}
 
           {/* Step content */}
-          {step === 1 && <Step1 onNext={handleNext} defaultValues={formData} />}
-          {step === 2 && <Step2 onNext={handleNext} onSkip={() => handleNext()} defaultValues={formData} />}
-          {step === 3 && <Step3 onNext={handleNext} onSkip={() => handleNext()} defaultValues={formData} />}
-          {step === 4 && <Step4 onNext={() => handleNext()} onSkip={() => handleNext()} />}
+          {step === 1 && (
+            <Step1
+              onNext={handleNext}
+              defaultValues={formData}
+              isSubmitting={isSubmitting}
+              submitError={submitError}
+            />
+          )}
+          {step === 2 && (
+            <Step2
+              onNext={handleNext}
+              onSkip={() => handleNext()}
+              defaultValues={{ website_url: formData.website_url || formData._websiteHint || '' }}
+            />
+          )}
+          {step === 3 && (
+            <Step3
+              onNext={handleNext}
+              onSkip={() => handleNext()}
+              defaultValues={formData}
+            />
+          )}
+          {step === 4 && (
+            <Step4
+              onNext={() => handleNext()}
+              onSkip={() => handleNext()}
+              gbpAlreadyConnected={gbpConnected}
+            />
+          )}
           {step === 5 && (
             <Step5
               businessName={businessName}
-              onGoToDashboard={() => navigate('/dashboard', { replace: true })}
+              onGoToDashboard={handleGoToDashboard}
+              isCompleting={isCompleting}
             />
           )}
         </div>

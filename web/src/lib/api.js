@@ -52,7 +52,8 @@ export const authApi = {
 
 // ─── Onboarding endpoints ─────────────────────────────────────────────────────
 export const onboardingApi = {
-  updateBusiness: (data) => api.post('/onboarding/business', data),
+  createBusiness: (data) => api.post('/onboarding/business', data),
+  updateBusiness: (data) => api.put('/onboarding/business', data),
   scrapeWebsite: (url) => api.post('/onboarding/scrape', { url }),
   setGoogleReviews: (url) => api.post('/onboarding/google-reviews', { url }),
   connectPlatform: (platform) => api.post(`/onboarding/platforms/${platform}/connect`),

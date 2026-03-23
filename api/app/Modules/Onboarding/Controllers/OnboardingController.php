@@ -5,12 +5,15 @@ namespace App\Modules\Onboarding\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Business;
 use App\Models\BusinessSetting;
+use App\Models\PlatformAccount;
 use App\Modules\Onboarding\Requests\BusinessSetupRequest;
 use App\Modules\Scraping\Jobs\ScrapeBusinessJob;
 use App\Modules\Social\Platforms\GoogleBusinessProfilePlatform;
+use App\Modules\Social\Services\SocialConnectionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class OnboardingController extends Controller
 {
@@ -57,7 +60,7 @@ class OnboardingController extends Controller
     /**
      * Create a new business during onboarding.
      */
-    public function createBusiness(BusinessSetupRequest $request): JsonResponse
+    public function createBusiness(BusinessSetupRequest $request, SocialConnectionService $connectionService): JsonResponse
     {
         $user = $request->user();
 
@@ -86,6 +89,62 @@ class OnboardingController extends Controller
             'auto_approve_posts' => false,
             'approval_window_hours' => 24,
         ]);
+
+        // Pick up cached Google tokens (set during Google auth callback)
+        // and create the GBP connection immediately so the user doesn't need to connect again.
+        $tokenData = Cache::get("google_tokens_{$user->id}");
+        if ($tokenData) {
+            try {
+                $connection = $connectionService->upsertConnection(
+                    businessId:   $business->id,
+                    platform:     'google_business_profile',
+                    accessToken:  $tokenData['access_token'],
+                    refreshToken: $tokenData['refresh_token'],
+                    expiresAt:    $tokenData['expires_in'] ? now()->addSeconds($tokenData['expires_in']) : now()->addHour(),
+                    scopes:       $tokenData['scopes'] ?? [],
+                    rawTokenData: $tokenData['raw'] ?? [],
+                );
+
+                // If a specific GBP location was chosen in onboarding, create its PlatformAccount
+                // directly from the cache (avoids an extra live API call that can be rate-limited).
+                $gbpLocationId = $request->gbp_location_id;
+                if ($gbpLocationId) {
+                    $cachedLocations = Cache::get("gbp_locations_{$user->id}", []);
+                    $chosen = collect($cachedLocations)->firstWhere('id', $gbpLocationId);
+                    if ($chosen) {
+                        $account = PlatformAccount::updateOrCreate(
+                            [
+                                'connection_id'       => $connection->id,
+                                'platform_account_id' => $chosen['id'],
+                            ],
+                            [
+                                'account_name' => $chosen['name'],
+                                'account_type' => 'location',
+                                'account_url'  => $chosen['url'] ?? null,
+                                'metadata'     => $chosen['metadata'] ?? [],
+                            ]
+                        );
+                        // Mark as selected, deselect others
+                        $connection->platformAccounts()->where('id', '!=', $account->id)->update(['is_selected' => false]);
+                        $account->update(['is_selected' => true]);
+                    }
+                }
+
+                // Clear both caches — they've served their purpose
+                Cache::forget("google_tokens_{$user->id}");
+                Cache::forget("gbp_locations_{$user->id}");
+
+                Log::info('OnboardingController: GBP connection created from cached tokens', [
+                    'business_id'     => $business->id,
+                    'gbp_location_id' => $gbpLocationId,
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('OnboardingController: Could not create GBP connection from cached tokens', [
+                    'business_id' => $business->id,
+                    'error'       => $e->getMessage(),
+                ]);
+            }
+        }
 
         // Kick off background scraping immediately
         ScrapeBusinessJob::dispatch($business)->onQueue('scraping');
@@ -158,10 +217,12 @@ class OnboardingController extends Controller
         }
 
         if ($business->socialConnections()->where('is_active', true)->doesntExist()) {
-            return response()->json([
-                'message' => 'Please connect at least one social platform before completing setup.',
-                'error' => 'no_platforms_connected',
-            ], 422);
+            Log::warning('OnboardingController: complete() called with no active connections', [
+                'business_id' => $business->id,
+                'user_id'     => $user->id,
+            ]);
+            // Non-blocking — allow completion so the user isn't stuck.
+            // The GBP connection should have been created in createBusiness() for Google users.
         }
 
         $business->update([

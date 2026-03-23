@@ -83,15 +83,13 @@ class GoogleAuthController
         if ($business) {
             try {
                 $connectionService->upsertConnection(
-                    businessId:      $business->id,
-                    platform:        'google_business_profile',
-                    accessToken:     $tokenData['access_token'],
-                    refreshToken:    $tokenData['refresh_token'],
-                    tokenExpiresAt:  $tokenData['expires_in'] ? now()->addSeconds($tokenData['expires_in']) : now()->addHour(),
-                    platformUserId:  $tokenData['platform_user_id'],
-                    platformUsername: $tokenData['platform_username'],
-                    scopes:          $tokenData['scopes'],
-                    rawTokenData:    $tokenData['raw'],
+                    businessId:   $business->id,
+                    platform:     'google_business_profile',
+                    accessToken:  $tokenData['access_token'],
+                    refreshToken: $tokenData['refresh_token'],
+                    expiresAt:    $tokenData['expires_in'] ? now()->addSeconds($tokenData['expires_in']) : now()->addHour(),
+                    scopes:       $tokenData['scopes'] ?? [],
+                    rawTokenData: $tokenData['raw'] ?? [],
                 );
                 Log::info('GoogleAuth: GBP connection saved', ['business_id' => $business->id]);
             } catch (\Throwable $e) {

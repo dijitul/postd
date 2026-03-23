@@ -25,6 +25,7 @@ class BusinessSetupRequest extends FormRequest
             'address_line_1' => ['nullable', 'string', 'max:255'],
             'address_line_2' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'gbp_location_id' => ['nullable', 'string', 'max:500'],
         ];
     }
 
