@@ -46,7 +46,8 @@ export const authApi = {
   logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/user'),
   forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
-  resetPassword: (data) => api.post('/auth/reset-password', data)
+  resetPassword: (data) => api.post('/auth/reset-password', data),
+  googleRedirect: () => api.get('/auth/google/redirect')
 }
 
 // ─── Onboarding endpoints ─────────────────────────────────────────────────────
