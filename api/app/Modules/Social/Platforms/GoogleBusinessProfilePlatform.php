@@ -120,18 +120,25 @@ class GoogleBusinessProfilePlatform implements SocialPlatformInterface
                     $infoClient = new Client(['base_uri' => self::BUSINESS_INFO_URL, 'timeout' => 30]);
                     $locationsResponse = $infoClient->get("{$account['name']}/locations", [
                         'headers' => $this->buildHeaders($connection),
-                        'query' => ['readMask' => 'name,title,websiteUri,phoneNumbers,profile'],
+                        'query' => ['readMask' => 'name,title,websiteUri,phoneNumbers,profile,metadata,storefrontAddress'],
                     ]);
 
                     $locData = json_decode((string) $locationsResponse->getBody(), true);
                     foreach ($locData['locations'] ?? [] as $location) {
+                        $addressParts = $location['storefrontAddress']['addressLines'] ?? [];
+                        $city = $location['storefrontAddress']['locality'] ?? null;
+                        $postcode = $location['storefrontAddress']['postalCode'] ?? null;
+
                         $locations[] = [
-                            'id' => $location['name'],
-                            'name' => $location['title'] ?? 'Business Location',
-                            'type' => 'location',
-                            'url' => $location['websiteUri'] ?? null,
-                            'metadata' => [
-                                'phone' => $location['phoneNumbers']['primaryPhone'] ?? null,
+                            'id'          => $location['name'],
+                            'name'        => $location['title'] ?? 'Business Location',
+                            'type'        => 'location',
+                            'url'         => $location['websiteUri'] ?? null,
+                            'review_url'  => $location['metadata']['newReviewUri'] ?? null,
+                            'maps_url'    => $location['metadata']['mapsUrl'] ?? null,
+                            'address'     => implode(', ', array_filter(array_merge($addressParts, [$city, $postcode]))),
+                            'metadata'    => [
+                                'phone'               => $location['phoneNumbers']['primaryPhone'] ?? null,
                                 'profile_description' => $location['profile']['description'] ?? null,
                             ],
                         ];

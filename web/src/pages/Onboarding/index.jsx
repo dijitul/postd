@@ -6,12 +6,13 @@ import { z } from 'zod'
 import {
   Building2, Globe, Star, Share2, Sparkles,
   ArrowRight, ArrowLeft, Check, AlertCircle,
-  ChevronDown, Clipboard
+  ChevronDown, Clipboard, MapPin, ChevronRight
 } from 'lucide-react'
 import Logo from '../../components/ui/Logo.jsx'
 import PlatformIcon from '../../components/ui/PlatformIcon.jsx'
 import BusinessSearch from '../../components/ui/BusinessSearch.jsx'
 import useAuthStore from '../../stores/authStore.js'
+import { onboardingApi } from '../../lib/api.js'
 
 // ── Progress bar ──────────────────────────────────────────────────────────────
 function ProgressBar({ step, total }) {
@@ -57,29 +58,106 @@ const TONES = [
   { value: 'casual', label: 'Casual', desc: 'Relaxed and conversational' }
 ]
 
+function GBPLocationPicker({ locations, onSelect }) {
+  return (
+    <div className="space-y-2">
+      <p className="text-sm text-slate-500 mb-3">We found the following business profiles linked to your Google account. Choose the one you want to post for:</p>
+      {locations.map((loc) => (
+        <button
+          key={loc.id}
+          type="button"
+          onClick={() => onSelect(loc)}
+          className="w-full flex items-center gap-3 p-4 rounded-xl border-2 border-slate-200 bg-white hover:border-amber-400 hover:bg-amber-50/30 active:scale-[0.99] transition-all duration-150 text-left group"
+        >
+          <div className="w-9 h-9 rounded-lg bg-green-50 border border-green-200 flex items-center justify-center flex-shrink-0">
+            <MapPin className="w-4 h-4 text-green-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-navy-800 text-sm truncate">{loc.name}</p>
+            {loc.address && <p className="text-xs text-slate-500 truncate mt-0.5">{loc.address}</p>}
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-amber-500 flex-shrink-0 transition-colors" />
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function Step1({ onNext, defaultValues }) {
+  const [gbpLocations, setGbpLocations] = useState(null) // null = loading, [] = none found
+  const [locationSelected, setLocationSelected] = useState(false)
+
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(step1Schema),
     defaultValues: { tone: 'friendly', ...defaultValues }
   })
   const selectedTone = watch('tone')
 
-  const handlePlaceSelect = ({ name, website, address }) => {
+  useEffect(() => {
+    onboardingApi.gbpLocations()
+      .then(({ data }) => setGbpLocations(data.locations ?? []))
+      .catch(() => setGbpLocations([]))
+  }, [])
+
+  const handleLocationSelect = (loc) => {
+    setValue('business_name', loc.name, { shouldValidate: true })
+    handleSubmit._websiteHint = loc.url
+    handleSubmit._reviewUrlHint = loc.review_url
+    handleSubmit._addressHint = loc.address
+    setLocationSelected(true)
+  }
+
+  const handlePlaceSelect = ({ name, website }) => {
     if (name) setValue('business_name', name, { shouldValidate: true })
-    // Pass website back up so Step 2 can pre-fill it
     if (website) handleSubmit._websiteHint = website
   }
 
+  const showPicker = gbpLocations && gbpLocations.length > 0 && !locationSelected
+
   return (
-    <form onSubmit={handleSubmit((data) => onNext({ ...data, _websiteHint: handleSubmit._websiteHint }))} className="space-y-6">
+    <form onSubmit={handleSubmit((data) => onNext({
+      ...data,
+      _websiteHint: handleSubmit._websiteHint,
+      _reviewUrlHint: handleSubmit._reviewUrlHint,
+      _addressHint: handleSubmit._addressHint,
+    }))} className="space-y-6">
       <div>
         <label className="label">Business name</label>
-        <BusinessSearch
-          defaultValue={defaultValues?.business_name ?? ''}
-          onSelect={handlePlaceSelect}
-          onNameChange={(val) => setValue('business_name', val, { shouldValidate: !!val })}
-          error={!!errors.business_name}
-        />
+
+        {/* Loading state */}
+        {gbpLocations === null && (
+          <div className="flex items-center gap-2 py-3 text-sm text-slate-400">
+            <span className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+            Looking up your Google Business Profile...
+          </div>
+        )}
+
+        {/* GBP location picker */}
+        {showPicker && (
+          <GBPLocationPicker locations={gbpLocations} onSelect={handleLocationSelect} />
+        )}
+
+        {/* Selected location confirmation */}
+        {locationSelected && (
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-green-50 border border-green-200 mb-2">
+            <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
+            <span className="text-sm font-medium text-green-800">{watch('business_name')}</span>
+            <button type="button" onClick={() => setLocationSelected(false)} className="ml-auto text-xs text-slate-400 hover:text-slate-600 transition-colors">Change</button>
+          </div>
+        )}
+
+        {/* Manual search fallback — shown when no GBP locations or after dismissing */}
+        {(gbpLocations !== null && gbpLocations.length === 0) && (
+          <>
+            <BusinessSearch
+              defaultValue={defaultValues?.business_name ?? ''}
+              onSelect={handlePlaceSelect}
+              onNameChange={(val) => setValue('business_name', val, { shouldValidate: !!val })}
+              error={!!errors.business_name}
+            />
+          </>
+        )}
+
         {/* Hidden field keeps react-hook-form in sync */}
         <input type="hidden" {...register('business_name')} />
         {errors.business_name && (

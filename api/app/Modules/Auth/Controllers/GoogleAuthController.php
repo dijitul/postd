@@ -3,6 +3,7 @@
 namespace App\Modules\Auth\Controllers;
 
 use App\Models\User;
+use App\Modules\Social\Platforms\GoogleBusinessProfilePlatform;
 use App\Modules\Social\Services\SocialConnectionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -103,6 +104,28 @@ class GoogleAuthController
             // Cache tokens for onboarding to pick up
             Cache::put("google_tokens_{$user->id}", $tokenData, now()->addMinutes(30));
             Log::info('GoogleAuth: Tokens cached for onboarding', ['user_id' => $user->id]);
+        }
+
+        // Cache GBP locations so onboarding can show a location picker
+        try {
+            $tempConnection = new \App\Models\SocialConnection([
+                'access_token'  => $tokenData['access_token'],
+                'refresh_token' => $tokenData['refresh_token'],
+            ]);
+            // Bypass encryption by setting raw attributes
+            $tempConnection->setRawAttributes([
+                'access_token'  => $tokenData['access_token'],
+                'refresh_token' => $tokenData['refresh_token'] ?? '',
+            ]);
+
+            $platform  = new GoogleBusinessProfilePlatform();
+            $locations = $platform->getAccounts($tempConnection);
+            if (! empty($locations)) {
+                Cache::put("gbp_locations_{$user->id}", $locations, now()->addMinutes(30));
+                Log::info('GoogleAuth: GBP locations cached', ['user_id' => $user->id, 'count' => count($locations)]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('GoogleAuth: Could not cache GBP locations', ['error' => $e->getMessage()]);
         }
 
         $token      = $user->createToken('google-auth')->plainTextToken;

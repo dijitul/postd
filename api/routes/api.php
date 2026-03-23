@@ -78,6 +78,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // ── Onboarding ────────────────────────────────────────────────────────
     Route::prefix('onboarding')->group(function () {
         Route::get('/status', [OnboardingController::class, 'status'])->name('onboarding.status');
+        Route::get('/gbp-locations', [OnboardingController::class, 'gbpLocations'])->name('onboarding.gbp-locations');
         Route::post('/business', [OnboardingController::class, 'createBusiness'])->name('onboarding.business.create');
         Route::put('/business', [OnboardingController::class, 'updateBusiness'])->name('onboarding.business.update');
         Route::post('/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');

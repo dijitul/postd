@@ -7,8 +7,10 @@ use App\Models\Business;
 use App\Models\BusinessSetting;
 use App\Modules\Onboarding\Requests\BusinessSetupRequest;
 use App\Modules\Scraping\Jobs\ScrapeBusinessJob;
+use App\Modules\Social\Platforms\GoogleBusinessProfilePlatform;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class OnboardingController extends Controller
 {
@@ -205,6 +207,34 @@ class OnboardingController extends Controller
         ];
 
         return response()->json(['industries' => $industries]);
+    }
+
+    /**
+     * Return the user's Google Business Profile locations for the onboarding picker.
+     * Works from cached locations (set during Google auth) or live from the connection.
+     */
+    public function gbpLocations(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        // Prefer cached locations from the Google auth flow
+        $cached = Cache::get("gbp_locations_{$user->id}");
+        if ($cached) {
+            return response()->json(['locations' => $cached]);
+        }
+
+        // Fall back to live lookup via existing connection
+        $connection = $user->business?->socialConnections()
+            ->where('platform', 'google_business_profile')
+            ->where('is_active', true)
+            ->first();
+
+        if (! $connection) {
+            return response()->json(['locations' => []]);
+        }
+
+        $locations = (new GoogleBusinessProfilePlatform())->getAccounts($connection);
+        return response()->json(['locations' => $locations]);
     }
 
     /**

@@ -56,7 +56,8 @@ export const onboardingApi = {
   scrapeWebsite: (url) => api.post('/onboarding/scrape', { url }),
   setGoogleReviews: (url) => api.post('/onboarding/google-reviews', { url }),
   connectPlatform: (platform) => api.post(`/onboarding/platforms/${platform}/connect`),
-  complete: () => api.post('/onboarding/complete')
+  complete: () => api.post('/onboarding/complete'),
+  gbpLocations: () => api.get('/onboarding/gbp-locations')
 }
 
 // ─── Posts endpoints ──────────────────────────────────────────────────────────
