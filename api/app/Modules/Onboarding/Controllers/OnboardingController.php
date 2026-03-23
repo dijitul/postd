@@ -272,19 +272,37 @@ class OnboardingController extends Controller
 
     /**
      * Return the user's Google Business Profile locations for the onboarding picker.
-     * Works from cached locations (set during Google auth) or live from the connection.
+     *
+     * Priority order:
+     *   1. Cached locations set during the Google auth callback (fastest, no extra API call)
+     *   2. Live lookup using the cached raw Google token (for new users whose auth-callback
+     *      GBP fetch failed — the token is still valid, so we retry here)
+     *   3. Live lookup via an existing SocialConnection (returning users)
      */
     public function gbpLocations(Request $request): JsonResponse
     {
         $user = $request->user();
+        $platform = new GoogleBusinessProfilePlatform();
 
-        // Prefer cached locations from the Google auth flow
+        // 1. Cached locations from the Google auth callback
         $cached = Cache::get("gbp_locations_{$user->id}");
         if ($cached) {
+            Log::info('OnboardingController: gbpLocations served from cache', ['user_id' => $user->id]);
             return response()->json(['locations' => $cached]);
         }
 
-        // Fall back to live lookup via existing connection
+        // 2. Cached raw token — new user, no business yet, auth-callback GBP fetch may have failed
+        $tokenData = Cache::get("google_tokens_{$user->id}");
+        if ($tokenData && ! empty($tokenData['access_token'])) {
+            Log::info('OnboardingController: gbpLocations retrying with cached token', ['user_id' => $user->id]);
+            $locations = $platform->getAccountsWithToken($tokenData['access_token']);
+            if (! empty($locations)) {
+                Cache::put("gbp_locations_{$user->id}", $locations, now()->addMinutes(30));
+            }
+            return response()->json(['locations' => $locations]);
+        }
+
+        // 3. Live lookup via existing SocialConnection (returning / reconnecting user)
         $connection = $user->business?->socialConnections()
             ->where('platform', 'google_business_profile')
             ->where('is_active', true)
@@ -294,7 +312,7 @@ class OnboardingController extends Controller
             return response()->json(['locations' => []]);
         }
 
-        $locations = (new GoogleBusinessProfilePlatform())->getAccounts($connection);
+        $locations = $platform->getAccounts($connection);
         return response()->json(['locations' => $locations]);
     }
 
