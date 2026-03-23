@@ -67,9 +67,20 @@ class SocialConnectionController extends Controller
             'platform' => $platform,
         ], now()->addMinutes(10));
 
-        $redirectUrl = Socialite::driver($this->getSocialiteDriver($platform))
-            ->stateless()
-            ->with(['state' => $state])
+        $extraParams = ['state' => $state];
+        $driver = Socialite::driver($this->getSocialiteDriver($platform))->stateless();
+
+        // Google requires offline access_type to issue a refresh token,
+        // prompt=consent to guarantee one is returned every time, and
+        // the business.manage scope to access the Business Profile API.
+        if ($platform === 'google_business_profile') {
+            $extraParams['access_type'] = 'offline';
+            $extraParams['prompt']      = 'consent';
+            $driver = $driver->scopes(['https://www.googleapis.com/auth/business.manage']);
+        }
+
+        $redirectUrl = $driver
+            ->with($extraParams)
             ->redirect()
             ->getTargetUrl();
 

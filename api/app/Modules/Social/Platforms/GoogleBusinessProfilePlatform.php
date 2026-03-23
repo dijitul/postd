@@ -9,15 +9,10 @@ use Illuminate\Support\Facades\Log;
 
 class GoogleBusinessProfilePlatform implements SocialPlatformInterface
 {
-    private readonly Client $client;
-
-    public function __construct()
-    {
-        $this->client = new Client([
-            'base_uri' => 'https://mybusiness.googleapis.com/v4/',
-            'timeout' => 30,
-        ]);
-    }
+    // Google split the My Business API into separate APIs in 2022
+    private const ACCOUNT_MGMT_URL = 'https://mybusinessaccountmanagement.googleapis.com/v1/';
+    private const BUSINESS_INFO_URL = 'https://mybusinessinformation.googleapis.com/v1/';
+    private const LOCAL_POSTS_URL   = 'https://mybusiness.googleapis.com/v4/';
 
     public function publishPost(SocialConnection $connection, string $content, array $mediaUrls = []): array
     {
@@ -49,7 +44,8 @@ class GoogleBusinessProfilePlatform implements SocialPlatformInterface
             ]];
         }
 
-        $response = $this->client->post("{$locationName}/localPosts", [
+        $client = new Client(['base_uri' => self::LOCAL_POSTS_URL, 'timeout' => 30]);
+        $response = $client->post("{$locationName}/localPosts", [
             'headers' => $this->buildHeaders($connection),
             'json' => $localPost,
         ]);
@@ -71,7 +67,8 @@ class GoogleBusinessProfilePlatform implements SocialPlatformInterface
     public function validateToken(SocialConnection $connection): bool
     {
         try {
-            $response = $this->client->get('accounts', [
+            $client = new Client(['base_uri' => self::ACCOUNT_MGMT_URL, 'timeout' => 30]);
+            $response = $client->get('accounts', [
                 'headers' => $this->buildHeaders($connection),
             ]);
             return $response->getStatusCode() === 200;
@@ -108,17 +105,19 @@ class GoogleBusinessProfilePlatform implements SocialPlatformInterface
     public function getAccounts(SocialConnection $connection): array
     {
         try {
-            // Get all GBP accounts
-            $accountsResponse = $this->client->get('accounts', [
+            // Use the Account Management API (accounts endpoint moved from v4)
+            $acctClient = new Client(['base_uri' => self::ACCOUNT_MGMT_URL, 'timeout' => 30]);
+            $accountsResponse = $acctClient->get('accounts', [
                 'headers' => $this->buildHeaders($connection),
             ]);
             $accounts = json_decode((string) $accountsResponse->getBody(), true);
 
             $locations = [];
             foreach ($accounts['accounts'] ?? [] as $account) {
-                // Get locations for each account
+                // Use the Business Information API (locations endpoint moved from v4)
                 try {
-                    $locationsResponse = $this->client->get("{$account['name']}/locations", [
+                    $infoClient = new Client(['base_uri' => self::BUSINESS_INFO_URL, 'timeout' => 30]);
+                    $locationsResponse = $infoClient->get("{$account['name']}/locations", [
                         'headers' => $this->buildHeaders($connection),
                         'query' => ['readMask' => 'name,title,websiteUri,phoneNumbers,profile'],
                     ]);

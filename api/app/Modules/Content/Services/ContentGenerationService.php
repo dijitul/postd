@@ -13,12 +13,12 @@ use Illuminate\Support\Facades\Log;
 class ContentGenerationService
 {
     // Claude model to use for content generation
-    private const MODEL = 'claude-3-5-sonnet-20241022';
+    private const MODEL = 'claude-haiku-4-5-20251001';
 
     // Model costs (USD per 1M tokens) for cost tracking
     private const MODEL_COSTS = [
-        'claude-3-5-sonnet-20241022' => ['input' => 3.00,  'output' => 15.00],
-        'claude-3-5-haiku-20241022'  => ['input' => 0.80,  'output' => 4.00],
+        'claude-sonnet-4-6'          => ['input' => 3.00,  'output' => 15.00],
+        'claude-haiku-4-5-20251001'  => ['input' => 0.80,  'output' => 4.00],
         'dall-e-3'                   => ['per_image' => 0.04],
     ];
 
