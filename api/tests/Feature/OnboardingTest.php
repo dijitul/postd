@@ -55,8 +55,11 @@ class OnboardingTest extends TestCase
         $this->assertNotEmpty($response->json('industries'));
     }
 
-    public function test_cannot_complete_onboarding_without_platforms(): void
+    public function test_can_complete_onboarding_without_platforms(): void
     {
+        // Completing without social connections is allowed — Google sign-in users
+        // have GBP auto-connected during createBusiness(), so a hard block here
+        // would permanently strand those users if something went wrong upstream.
         $user = User::factory()->create();
         $user->businesses()->create([
             'name' => 'Test Business',
@@ -66,7 +69,12 @@ class OnboardingTest extends TestCase
 
         $response = $this->actingAs($user)->postJson('/api/onboarding/complete');
 
-        $response->assertStatus(422)
-            ->assertJsonPath('error', 'no_platforms_connected');
+        $response->assertStatus(200)
+            ->assertJsonPath('message', 'Setup complete! Your first posts are being generated now.');
+
+        $this->assertDatabaseHas('businesses', [
+            'user_id' => $user->id,
+            'onboarding_complete' => true,
+        ]);
     }
 }
