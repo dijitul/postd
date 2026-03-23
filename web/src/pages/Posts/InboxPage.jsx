@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Check, X, Edit2, ChevronDown, ChevronUp, CheckCircle2, Inbox, RefreshCw } from 'lucide-react'
+import { Check, X, Edit2, ChevronDown, ChevronUp, CheckCircle2, Inbox, RefreshCw, RotateCcw, AlertCircle } from 'lucide-react'
 import PlatformIcon from '../../components/ui/PlatformIcon.jsx'
 import { postsApi } from '../../lib/api.js'
 
@@ -63,7 +63,7 @@ function EditModal({ post, onSave, onClose, saving }) {
 }
 
 // ── Post card ──────────────────────────────────────────────────────────────────
-function PostCard({ post, onApprove, onReject, onEdit, showActions = true, actioning }) {
+function PostCard({ post, onApprove, onReject, onEdit, onRetry, showActions = true, actioning }) {
   const [expanded, setExpanded] = useState(false)
   const [swiping, setSwiping] = useState(null)
   const touchStart = useRef(null)
@@ -94,8 +94,10 @@ function PostCard({ post, onApprove, onReject, onEdit, showActions = true, actio
   const statusColour = {
     pending:   'bg-amber-100 text-amber-700',
     published: 'bg-green-100 text-green-700',
+    posted:    'bg-green-100 text-green-700',
     approved:  'bg-blue-100 text-blue-700',
     rejected:  'bg-red-100 text-red-700',
+    failed:    'bg-red-100 text-red-700',
     scheduled: 'bg-navy-100 text-navy-700',
   }
 
@@ -176,6 +178,28 @@ function PostCard({ post, onApprove, onReject, onEdit, showActions = true, actio
             >
               <X className="w-4 h-4" />
               Reject
+            </button>
+          </div>
+        )}
+
+        {post.status === 'failed' && (
+          <div className="mt-4 pt-4 border-t border-cream-300 space-y-3">
+            {post.failure_reason && (
+              <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5">
+                <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-red-700 leading-relaxed">{post.failure_reason}</p>
+              </div>
+            )}
+            <button
+              onClick={() => onRetry(post.id)}
+              disabled={actioning}
+              className="w-full flex items-center justify-center gap-1.5 bg-amber-50 text-amber-700 font-bold text-sm py-2.5 rounded-xl hover:bg-amber-100 active:scale-[0.97] transition-all border border-amber-200 disabled:opacity-50"
+            >
+              {actioning
+                ? <span className="w-4 h-4 border-2 border-amber-300 border-t-amber-600 rounded-full animate-spin" />
+                : <RotateCcw className="w-4 h-4" />
+              }
+              {actioning ? 'Retrying...' : 'Retry post'}
             </button>
           </div>
         )}
@@ -293,6 +317,19 @@ export default function InboxPage() {
     }
   }
 
+  const handleRetry = async (id) => {
+    setActioningId(id)
+    try {
+      await postsApi.retry(id)
+      // Refresh the all-posts list to show updated status
+      setAllPosts((prev) => prev.map((p) => p.id === id ? { ...p, status: 'scheduled', failure_reason: null } : p))
+    } catch (e) {
+      console.error('Retry failed', e)
+    } finally {
+      setActioningId(null)
+    }
+  }
+
   const handleSaveEdit = async (id, content) => {
     setSavingEdit(true)
     try {
@@ -388,10 +425,11 @@ export default function InboxPage() {
             <PostCard
               key={post.id}
               post={post}
-              showActions={activeTab === 'pending'}
+              showActions={activeTab === 'pending' || post.status === 'failed'}
               onApprove={handleApprove}
               onReject={handleReject}
               onEdit={setEditingPost}
+              onRetry={handleRetry}
               actioning={actioningId === post.id}
             />
           ))}

@@ -44,7 +44,7 @@ export const authApi = {
   login: (data) => api.post('/auth/login', data),
   register: (data) => api.post('/auth/register', data),
   logout: () => api.post('/auth/logout'),
-  me: () => api.get('/auth/me'),
+  me: () => api.get('/auth/user'),
   forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
   resetPassword: (data) => api.post('/auth/reset-password', data)
 }
@@ -67,6 +67,7 @@ export const postsApi = {
   update: (id, data) => api.put(`/posts/${id}`, data),
   generate: (data) => api.post('/posts/generate', data),
   submitIdea: (data) => api.post('/posts/idea', data),
+  retry: (id) => api.post(`/posts/${id}/retry`),
 }
 
 // ─── Platforms endpoints ──────────────────────────────────────────────────────

@@ -61,10 +61,13 @@ const useAuthStore = create(
           const { data } = await authApi.me()
           const user = data.data ?? data
           set({ user, isAuthenticated: true, isLoading: false })
-        } catch (_) {
-          // Token expired
-          localStorage.removeItem('postd_token')
-          set({ user: null, token: null, isAuthenticated: false, isLoading: false })
+        } catch (err) {
+          set({ isLoading: false })
+          // Only clear auth on a genuine 401 — network errors or 500s should not log the user out
+          if (err.response?.status === 401) {
+            localStorage.removeItem('postd_token')
+            set({ user: null, token: null, isAuthenticated: false })
+          }
         }
       },
 
