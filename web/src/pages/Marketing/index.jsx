@@ -502,9 +502,9 @@ export default function MarketingPage() {
             </nav>
 
             <p className="text-xs text-white/30 text-center sm:text-right">
-              Built by{' '}
-              <a href="https://dijitul.io" className="text-white/50 hover:text-white/70 transition-colors" target="_blank" rel="noopener noreferrer">
-                Dijitul
+              Made by{' '}
+              <a href="https://dijitul.uk" className="text-white/50 hover:text-white/70 transition-colors" target="_blank" rel="noopener noreferrer">
+                dijitul
               </a>{' '}
               in Mansfield, UK
             </p>
