@@ -103,6 +103,63 @@ class GoogleBusinessProfilePlatform implements SocialPlatformInterface
         ];
     }
 
+    /**
+     * Fetch GBP accounts using a plain access token string (used during Google auth
+     * before a SocialConnection record exists).
+     */
+    public function getAccountsWithToken(string $accessToken): array
+    {
+        $headers = [
+            'Authorization' => "Bearer {$accessToken}",
+            'Content-Type'  => 'application/json',
+        ];
+
+        try {
+            $acctClient     = new Client(['base_uri' => self::ACCOUNT_MGMT_URL, 'timeout' => 30]);
+            $accountsResp   = $acctClient->get('accounts', ['headers' => $headers]);
+            $accounts       = json_decode((string) $accountsResp->getBody(), true);
+            $locations      = [];
+
+            foreach ($accounts['accounts'] ?? [] as $account) {
+                try {
+                    $infoClient = new Client(['base_uri' => self::BUSINESS_INFO_URL, 'timeout' => 30]);
+                    $locResp    = $infoClient->get("{$account['name']}/locations", [
+                        'headers' => $headers,
+                        'query'   => ['readMask' => 'name,title,websiteUri,phoneNumbers,profile,metadata,storefrontAddress'],
+                    ]);
+                    $locData = json_decode((string) $locResp->getBody(), true);
+
+                    foreach ($locData['locations'] ?? [] as $location) {
+                        $addressParts = $location['storefrontAddress']['addressLines'] ?? [];
+                        $city         = $location['storefrontAddress']['locality'] ?? null;
+                        $postcode     = $location['storefrontAddress']['postalCode'] ?? null;
+
+                        $locations[] = [
+                            'id'         => $location['name'],
+                            'name'       => $location['title'] ?? 'Business Location',
+                            'type'       => 'location',
+                            'url'        => $location['websiteUri'] ?? null,
+                            'review_url' => $location['metadata']['newReviewUri'] ?? null,
+                            'maps_url'   => $location['metadata']['mapsUrl'] ?? null,
+                            'address'    => implode(', ', array_filter(array_merge($addressParts, [$city, $postcode]))),
+                            'metadata'   => [
+                                'phone'               => $location['phoneNumbers']['primaryPhone'] ?? null,
+                                'profile_description' => $location['profile']['description'] ?? null,
+                            ],
+                        ];
+                    }
+                } catch (\Throwable) {
+                    // Skip locations that fail
+                }
+            }
+
+            return $locations;
+        } catch (\Throwable $e) {
+            Log::error('GoogleBusinessProfilePlatform: getAccountsWithToken failed', ['error' => $e->getMessage()]);
+            return [];
+        }
+    }
+
     public function getAccounts(SocialConnection $connection): array
     {
         try {

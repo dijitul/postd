@@ -108,18 +108,8 @@ class GoogleAuthController
 
         // Cache GBP locations so onboarding can show a location picker
         try {
-            $tempConnection = new \App\Models\SocialConnection([
-                'access_token'  => $tokenData['access_token'],
-                'refresh_token' => $tokenData['refresh_token'],
-            ]);
-            // Bypass encryption by setting raw attributes
-            $tempConnection->setRawAttributes([
-                'access_token'  => $tokenData['access_token'],
-                'refresh_token' => $tokenData['refresh_token'] ?? '',
-            ]);
-
             $platform  = new GoogleBusinessProfilePlatform();
-            $locations = $platform->getAccounts($tempConnection);
+            $locations = $platform->getAccountsWithToken($tokenData['access_token']);
             if (! empty($locations)) {
                 Cache::put("gbp_locations_{$user->id}", $locations, now()->addMinutes(30));
                 Log::info('GoogleAuth: GBP locations cached', ['user_id' => $user->id, 'count' => count($locations)]);
@@ -129,7 +119,8 @@ class GoogleAuthController
         }
 
         $token      = $user->createToken('google-auth')->plainTextToken;
-        $redirectTo = $isNew ? 'onboarding' : 'dashboard';
+        $onboarded  = $user->business()->where('onboarding_complete', true)->exists();
+        $redirectTo = $onboarded ? 'dashboard' : 'onboarding';
 
         return redirect("{$frontendUrl}/auth/callback?token={$token}&redirect={$redirectTo}");
     }
