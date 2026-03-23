@@ -6,8 +6,9 @@ import CookieBanner from './components/ui/CookieBanner.jsx'
 
 // ── Pages — lazy loaded for better performance ──────────────────────────────
 const MarketingPage   = lazy(() => import('./pages/Marketing/index.jsx'))
-const LoginPage       = lazy(() => import('./pages/Auth/LoginPage.jsx'))
-const RegisterPage    = lazy(() => import('./pages/Auth/RegisterPage.jsx'))
+const LoginPage        = lazy(() => import('./pages/Auth/LoginPage.jsx'))
+const RegisterPage     = lazy(() => import('./pages/Auth/RegisterPage.jsx'))
+const AuthCallbackPage = lazy(() => import('./pages/Auth/AuthCallbackPage.jsx'))
 const OnboardingPage  = lazy(() => import('./pages/Onboarding/index.jsx'))
 const Dashboard       = lazy(() => import('./pages/Dashboard/index.jsx'))
 const PostsPage       = lazy(() => import('./pages/Posts/PostsPage.jsx'))
@@ -81,6 +82,9 @@ export default function App() {
         {/* Auth — guests only */}
         <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
         <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+
+        {/* OAuth callback — public, handles token from Google auth */}
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
         {/* Onboarding — auth required, own layout */}
         <Route

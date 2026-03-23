@@ -3,6 +3,7 @@
 use App\Modules\Admin\Controllers\AdminController;
 use App\Modules\Analytics\Controllers\AnalyticsController;
 use App\Modules\Auth\Controllers\AuthController;
+use App\Modules\Auth\Controllers\GoogleAuthController;
 use App\Modules\Billing\Controllers\BillingController;
 use App\Modules\Billing\Webhooks\StripeWebhookController;
 use App\Modules\Content\Controllers\ContentController;
@@ -49,7 +50,11 @@ Route::prefix('auth')->group(function () {
         ->middleware('throttle:3,1')
         ->name('verification.send');
 
-    // Social OAuth flows
+    // Google login/register (no auth required)
+    Route::get('/google/redirect', [GoogleAuthController::class, 'redirect'])->name('auth.google.redirect');
+    Route::get('/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
+
+    // Social OAuth flows (platform connect — requires existing session state)
     Route::prefix('social')->group(function () {
         Route::get('/{platform}/redirect', [SocialConnectionController::class, 'redirect'])
             ->name('social.redirect');

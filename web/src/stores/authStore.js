@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { authApi } from '../lib/api.js'
 
+const GOOGLE_AUTH_URL = `${import.meta.env.VITE_API_URL ?? 'https://api.postd.uk/api'}/auth/google/redirect`
+
 const useAuthStore = create(
   persist(
     (set, get) => ({
@@ -69,6 +71,29 @@ const useAuthStore = create(
             set({ user: null, token: null, isAuthenticated: false })
           }
         }
+      },
+
+      loginWithGoogle: async () => {
+        try {
+          const res = await fetch(GOOGLE_AUTH_URL)
+          const { redirect_url } = await res.json()
+          window.location.href = redirect_url
+        } catch {
+          set({ error: 'Could not connect to Google. Please try again.' })
+        }
+      },
+
+      loginWithToken: async (token) => {
+        localStorage.setItem('postd_token', token)
+        set({ token, isAuthenticated: true, isLoading: true })
+        try {
+          const { data } = await authApi.me()
+          const user = data.data ?? data
+          set({ user, isLoading: false })
+        } catch {
+          set({ isLoading: false })
+        }
+        return { success: true }
       },
 
       setError: (error) => set({ error }),
