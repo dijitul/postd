@@ -5,6 +5,7 @@ namespace App\Modules\Social\Platforms;
 use App\Models\SocialConnection;
 use App\Modules\Social\Contracts\SocialPlatformInterface;
 use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class GoogleBusinessProfilePlatform implements SocialPlatformInterface
@@ -159,7 +160,16 @@ class GoogleBusinessProfilePlatform implements SocialPlatformInterface
 
     private function getFirstLocation(SocialConnection $connection): ?string
     {
-        $accounts = $this->getAccounts($connection);
-        return $accounts[0]['id'] ?? null;
+        $cacheKey = "gbp_location_{$connection->id}";
+
+        return Cache::remember($cacheKey, now()->addDays(7), function () use ($connection) {
+            $accounts = $this->getAccounts($connection);
+            return $accounts[0]['id'] ?? null;
+        });
+    }
+
+    public function clearLocationCache(SocialConnection $connection): void
+    {
+        Cache::forget("gbp_location_{$connection->id}");
     }
 }
