@@ -42,6 +42,13 @@ return [
         'redirect' => env('TWITTER_REDIRECT_URI'),
     ],
 
+    // Socialite uses 'twitter-oauth-2' as the driver name for OAuth 2.0 PKCE
+    'twitter-oauth-2' => [
+        'client_id' => env('TWITTER_CLIENT_ID'),
+        'client_secret' => env('TWITTER_CLIENT_SECRET'),
+        'redirect' => env('TWITTER_REDIRECT_URI'),
+    ],
+
     'linkedin' => [
         'client_id' => env('LINKEDIN_CLIENT_ID'),
         'client_secret' => env('LINKEDIN_CLIENT_SECRET'),

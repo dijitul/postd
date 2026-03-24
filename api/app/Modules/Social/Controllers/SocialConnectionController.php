@@ -79,6 +79,12 @@ class SocialConnectionController extends Controller
             $driver = $driver->scopes(['https://www.googleapis.com/auth/business.manage']);
         }
 
+        // Twitter OAuth 2.0 requires explicit scopes.
+        // offline.access is needed to receive a refresh token.
+        if ($platform === 'twitter') {
+            $driver = $driver->scopes(['tweet.read', 'tweet.write', 'users.read', 'offline.access']);
+        }
+
         $redirectUrl = $driver
             ->with($extraParams)
             ->redirect()
@@ -266,7 +272,7 @@ class SocialConnectionController extends Controller
     private function getSocialiteDriver(string $platform): string
     {
         return match ($platform) {
-            'twitter' => 'twitter',
+            'twitter' => 'twitter-oauth-2',   // OAuth 2.0 PKCE — matches TwitterPlatform's Bearer token usage
             'google_business_profile' => 'google',
             default => $platform,
         };
