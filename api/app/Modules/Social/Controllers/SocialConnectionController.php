@@ -60,8 +60,36 @@ class SocialConnectionController extends Controller
     {
         $this->validatePlatform($platform);
 
-        // Store a state token in cache to verify the callback
         $state = Str::random(40);
+
+        // Twitter OAuth 2.0 PKCE must be handled manually — Socialite's twitter-oauth-2
+        // driver stores the code verifier in the session, but this is a stateless API
+        // with no session middleware. We generate PKCE ourselves and stash the verifier
+        // in our existing Redis state cache so the callback can retrieve it.
+        if ($platform === 'twitter') {
+            $codeVerifier  = Str::random(96);
+            $codeChallenge = rtrim(strtr(base64_encode(hash('sha256', $codeVerifier, true)), '+/', '-_'), '=');
+
+            Cache::put("oauth_state_{$state}", [
+                'user_id'       => $request->user()->id,
+                'platform'      => 'twitter',
+                'code_verifier' => $codeVerifier,
+            ], now()->addMinutes(10));
+
+            $redirectUrl = 'https://twitter.com/i/oauth2/authorize?' . http_build_query([
+                'response_type'         => 'code',
+                'client_id'             => config('services.twitter-oauth-2.client_id'),
+                'redirect_uri'          => config('services.twitter-oauth-2.redirect'),
+                'scope'                 => 'tweet.read tweet.write users.read offline.access',
+                'state'                 => $state,
+                'code_challenge'        => $codeChallenge,
+                'code_challenge_method' => 'S256',
+            ]);
+
+            return response()->json(['redirect_url' => $redirectUrl]);
+        }
+
+        // Store state for other platforms
         Cache::put("oauth_state_{$state}", [
             'user_id' => $request->user()->id,
             'platform' => $platform,
@@ -70,19 +98,12 @@ class SocialConnectionController extends Controller
         $extraParams = ['state' => $state];
         $driver = Socialite::driver($this->getSocialiteDriver($platform))->stateless();
 
-        // Google requires offline access_type to issue a refresh token,
-        // prompt=consent to guarantee one is returned every time, and
-        // the business.manage scope to access the Business Profile API.
+        // Google requires offline access_type to issue a refresh token and
+        // prompt=consent to guarantee one is returned every time.
         if ($platform === 'google_business_profile') {
             $extraParams['access_type'] = 'offline';
             $extraParams['prompt']      = 'consent';
             $driver = $driver->scopes(['https://www.googleapis.com/auth/business.manage']);
-        }
-
-        // Twitter OAuth 2.0 requires explicit scopes.
-        // offline.access is needed to receive a refresh token.
-        if ($platform === 'twitter') {
-            $driver = $driver->scopes(['tweet.read', 'tweet.write', 'users.read', 'offline.access']);
         }
 
         $redirectUrl = $driver
@@ -128,6 +149,71 @@ class SocialConnectionController extends Controller
             return redirect($redirectBase . '?error=no_business');
         }
 
+        // Twitter: exchange code manually using the PKCE verifier we stored at redirect time.
+        // Socialite's twitter-oauth-2 driver requires a session for PKCE which isn't
+        // available in a stateless API context.
+        if ($platform === 'twitter') {
+            $code         = $request->query('code');
+            $codeVerifier = $cached['code_verifier'] ?? null;
+
+            if (! $code || ! $codeVerifier) {
+                Log::error('OAuth callback: Twitter missing code or PKCE verifier', ['user_id' => $user->id]);
+                return redirect($redirectBase . '?error=oauth_failed');
+            }
+
+            try {
+                $http = new \GuzzleHttp\Client();
+
+                // Exchange auth code for access + refresh token
+                $tokenResp = $http->post('https://api.twitter.com/2/oauth2/token', [
+                    'auth'        => [config('services.twitter-oauth-2.client_id'), config('services.twitter-oauth-2.client_secret')],
+                    'form_params' => [
+                        'code'          => $code,
+                        'grant_type'    => 'authorization_code',
+                        'redirect_uri'  => config('services.twitter-oauth-2.redirect'),
+                        'code_verifier' => $codeVerifier,
+                    ],
+                ]);
+                $tokenData = json_decode((string) $tokenResp->getBody(), true);
+
+                if (empty($tokenData['access_token'])) {
+                    throw new \RuntimeException('No access token: ' . json_encode($tokenData));
+                }
+
+                // Fetch the authenticated user's profile
+                $userResp = $http->get('https://api.twitter.com/2/users/me', [
+                    'headers' => ['Authorization' => 'Bearer ' . $tokenData['access_token']],
+                    'query'   => ['user.fields' => 'name,username'],
+                ]);
+                $userData = json_decode((string) $userResp->getBody(), true);
+
+                $this->connectionService->upsertConnection(
+                    businessId:   $business->id,
+                    platform:     'twitter',
+                    accessToken:  $tokenData['access_token'],
+                    refreshToken: $tokenData['refresh_token'] ?? null,
+                    expiresAt:    isset($tokenData['expires_in']) ? now()->addSeconds($tokenData['expires_in']) : null,
+                    scopes:       explode(' ', $tokenData['scope'] ?? ''),
+                    rawTokenData: [
+                        'id'       => $userData['data']['id'] ?? null,
+                        'username' => $userData['data']['username'] ?? null,
+                        'name'     => $userData['data']['name'] ?? null,
+                    ],
+                );
+
+                Log::info('OAuth callback: Twitter connected', ['business_id' => $business->id]);
+            } catch (\Throwable $e) {
+                Log::error('OAuth callback: Twitter failed', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                return redirect($redirectBase . '?error=oauth_failed');
+            }
+
+            return redirect($redirectBase . '?connected=twitter');
+        }
+
+        // All other platforms via Socialite
         try {
             $socialUser = Socialite::driver($this->getSocialiteDriver($platform))
                 ->stateless()
@@ -143,12 +229,12 @@ class SocialConnectionController extends Controller
 
         try {
             $this->connectionService->upsertConnection(
-                businessId: $business->id,
-                platform: $platform,
-                accessToken: $socialUser->token,
+                businessId:   $business->id,
+                platform:     $platform,
+                accessToken:  $socialUser->token,
                 refreshToken: $socialUser->refreshToken,
-                expiresAt: isset($socialUser->expiresIn) ? now()->addSeconds($socialUser->expiresIn) : null,
-                scopes: $socialUser->approvedScopes ?? [],
+                expiresAt:    isset($socialUser->expiresIn) ? now()->addSeconds($socialUser->expiresIn) : null,
+                scopes:       $socialUser->approvedScopes ?? [],
                 rawTokenData: ['id' => $socialUser->getId(), 'name' => $socialUser->getName()],
             );
         } catch (\Throwable $e) {
