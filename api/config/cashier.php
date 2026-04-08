@@ -19,7 +19,7 @@ return [
         'starter' => [
             'name' => 'Starter',
             'price' => 1900, // in pence
-            'platform_limit' => 2,
+            'platform_limit' => null, // all text platforms included
             'tiktok_included' => false,
             'gbp_included' => true,
             'stripe_price_id' => env('STRIPE_PLAN_STARTER'),
@@ -27,7 +27,7 @@ return [
         'growth' => [
             'name' => 'Growth',
             'price' => 3900,
-            'platform_limit' => 4,
+            'platform_limit' => null, // all text platforms included
             'tiktok_included' => false,
             'gbp_included' => true,
             'stripe_price_id' => env('STRIPE_PLAN_GROWTH'),
@@ -35,7 +35,7 @@ return [
         'pro' => [
             'name' => 'Pro',
             'price' => 6900,
-            'platform_limit' => null, // unlimited
+            'platform_limit' => null, // all platforms including TikTok
             'tiktok_included' => true,
             'gbp_included' => true,
             'stripe_price_id' => env('STRIPE_PLAN_PRO'),

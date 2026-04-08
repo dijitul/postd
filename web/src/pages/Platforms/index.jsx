@@ -5,16 +5,18 @@ import PlatformIcon from '../../components/ui/PlatformIcon.jsx'
 import { platformsApi } from '../../lib/api.js'
 
 // Platform definitions — display config only, no mock status
+// comingSoon = not yet available regardless of plan
+// plan = 'pro' means requires Pro plan or TikTok add-on
 const PLATFORM_DEFS = [
-  { id: 'facebook',              backendId: 'facebook',              label: 'Facebook',               plan: 'starter' },
-  { id: 'instagram',             backendId: 'instagram',             label: 'Instagram',              plan: 'starter' },
-  { id: 'linkedin',              backendId: 'linkedin',              label: 'LinkedIn',               plan: 'growth'  },
-  { id: 'x',                     backendId: 'twitter',               label: 'X (Twitter)',            plan: 'growth'  },
-  { id: 'tiktok',                backendId: 'tiktok',                label: 'TikTok',                 plan: 'pro'     },
-  { id: 'google',                backendId: 'google_business_profile', label: 'Google Business Profile', plan: 'free', alwaysFree: true },
+  { id: 'facebook',  backendId: 'facebook',               label: 'Facebook',                plan: 'base'       },
+  { id: 'instagram', backendId: 'instagram',              label: 'Instagram',               plan: 'base'       },
+  { id: 'linkedin',  backendId: 'linkedin',               label: 'LinkedIn',                plan: 'base'       },
+  { id: 'x',        backendId: 'twitter',                 label: 'X (Twitter)',             plan: 'base'       },
+  { id: 'tiktok',   backendId: 'tiktok',                  label: 'TikTok',                  plan: 'pro'        },
+  { id: 'google',   backendId: 'google_business_profile', label: 'Google Business Profile', plan: 'base'       },
 ]
 
-const PLAN_ORDER = { free: 0, starter: 1, growth: 2, pro: 3 }
+const PLAN_ORDER = { base: 0, starter: 0, growth: 0, pro: 3 }
 
 function StatusBadge({ status }) {
   const map = {
@@ -22,6 +24,7 @@ function StatusBadge({ status }) {
     expired:      { label: 'Token expired',    cls: 'bg-amber-100 text-amber-700',   Icon: RefreshCw    },
     disconnected: { label: 'Not connected',    cls: 'bg-slate-100 text-slate-500',   Icon: XCircle      },
     locked:       { label: 'Upgrade to unlock',cls: 'bg-purple-100 text-purple-700', Icon: Lock         },
+    coming_soon:  { label: 'Coming soon',      cls: 'bg-slate-100 text-slate-500',   Icon: Lock         },
   }
   const { label, cls, Icon } = map[status] ?? map.disconnected
   return (
@@ -35,11 +38,12 @@ function StatusBadge({ status }) {
 function PlatformCard({ def, connection, userPlanLevel, onConnect, onDisconnect, onReconnect }) {
   const [loading, setLoading] = useState(false)
 
-  const isLocked = def.plan !== 'free' && PLAN_ORDER[def.plan] > userPlanLevel
-  const isConnected = !!connection && connection.is_active && !connection.is_expired
-  const isExpired = !!connection && connection.is_expired
+  const isComingSoon = !!def.comingSoon
+  const isLocked = !isComingSoon && def.plan === 'pro' && PLAN_ORDER[def.plan] > userPlanLevel
+  const isConnected = !isComingSoon && !!connection && connection.is_active && !connection.is_expired
+  const isExpired = !isComingSoon && !!connection && connection.is_expired
 
-  const status = isLocked ? 'locked' : isConnected ? 'connected' : isExpired ? 'expired' : 'disconnected'
+  const status = isComingSoon ? 'coming_soon' : isLocked ? 'locked' : isConnected ? 'connected' : isExpired ? 'expired' : 'disconnected'
 
   const connectedAccount = connection?.accounts?.find((a) => a.is_selected) ?? connection?.accounts?.[0]
 
@@ -97,9 +101,9 @@ function PlatformCard({ def, connection, userPlanLevel, onConnect, onDisconnect,
   return (
     <div
       className={`bg-white rounded-2xl p-5 sm:p-6 border transition-all duration-200 ${
-        isLocked ? 'border-slate-200 opacity-75' : 'border-cream-300 hover:border-cream-400'
+        isLocked || isComingSoon ? 'border-slate-200 opacity-70' : 'border-cream-300 hover:border-cream-400'
       }`}
-      style={{ boxShadow: isLocked ? 'none' : '0 2px 8px rgb(30 45 74 / 0.06)' }}
+      style={{ boxShadow: isLocked || isComingSoon ? 'none' : '0 2px 8px rgb(30 45 74 / 0.06)' }}
     >
       {/* Header */}
       <div className="flex items-start gap-4 mb-4">
@@ -114,7 +118,6 @@ function PlatformCard({ def, connection, userPlanLevel, onConnect, onDisconnect,
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <h3 className="font-display font-bold text-base text-navy-800">{def.label}</h3>
-            {def.alwaysFree && <span className="badge-honey text-2xs">Always free</span>}
           </div>
           <StatusBadge status={status} />
         </div>
@@ -136,7 +139,11 @@ function PlatformCard({ def, connection, userPlanLevel, onConnect, onDisconnect,
       )}
 
       {/* Action button */}
-      {isLocked ? (
+      {isComingSoon ? (
+        <div className="w-full flex items-center justify-center gap-2 bg-slate-50 text-slate-400 font-semibold text-sm py-2.5 rounded-xl border border-slate-200 cursor-not-allowed">
+          Coming soon
+        </div>
+      ) : isLocked ? (
         <Link
           to="/billing"
           className="w-full flex items-center justify-center gap-2 bg-purple-50 text-purple-700 font-semibold text-sm py-2.5 rounded-xl border border-purple-200 hover:bg-purple-100 transition-all"
@@ -300,11 +307,11 @@ export default function PlatformsPage() {
       </div>
 
       {/* GBP note */}
-      <div className="bg-navy-800 rounded-2xl p-5 text-white">
-        <p className="font-display font-bold text-sm mb-1">Google Business Profile is always free</p>
-        <p className="text-white/60 text-xs leading-relaxed">
-          Unlike most competitors, we include Google Business Profile posting on every plan including your free trial.
-          It&apos;s one of the most powerful ways to get found locally.
+      <div className="bg-green-50 border border-green-200 rounded-2xl p-5">
+        <p className="font-display font-bold text-sm text-navy-800 mb-1">Google Business Profile is now available</p>
+        <p className="text-slate-500 text-xs leading-relaxed">
+          Google Business Profile posting is included on all plans at no extra cost.
+          Connect your listing above to start publishing posts directly to your Google Business Profile.
         </p>
       </div>
     </div>

@@ -1,396 +1,482 @@
-# postd.uk — Master Build Specification
+# postd.uk — CLAUDE.md
 
-## Product Overview
-
-**postd.uk** is a UK-focused, automated social media management SaaS for small businesses.
-The entire value proposition: a business owner provides **three things only** — their Google Reviews URL, their website URL, and some basic info about their business. postd.uk does everything else. AI reads their reviews and website, generates brilliant platform-native content, and posts it automatically across all their connected social channels.
-
-**Tagline:** "All your posts. One hive."
-**Domain:** postd.uk
-**Built by:** Dijitul digital agency, Mansfield
+Master reference for AI assistants and developers working on this project.
+Always read this file at the start of every session.
 
 ---
 
-## Brand Identity
+## What is postd.uk?
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `brand-amber` | `#E07B30` | Primary CTA, logo accent, active states |
-| `brand-navy` | `#1E2D4A` | Primary text, headers, nav |
-| `brand-honey` | `#F5C842` | Highlights, badges, premium indicators |
-| `brand-cream` | `#F9F5EE` | Page backgrounds, card surfaces |
-| `brand-white` | `#FFFFFF` | Input backgrounds, modals |
-| `brand-amber-dark` | `#B85E1A` | Hover states on amber |
-| `brand-navy-light` | `#2E4470` | Secondary navy for gradients |
+An automated social media scheduling SaaS for UK small businesses. Users connect their Google Business Profile (and other platforms), and the system generates, schedules, and publishes posts automatically using Claude AI. Built and maintained by Dijitul (dijitul.uk), Mansfield.
 
-**Typography:**
-- Display: `Syne` (Google Fonts) — bold, modern, geometric
-- Body: `Inter` (Google Fonts) — clean, highly readable
-- Mono: `JetBrains Mono` — code/API keys only
+**Live URLs:**
+- Frontend: https://postd.uk
+- API: https://api.postd.uk
 
-**Logo concept:** A stylised hexagon (honeycomb cell) containing a speech bubble with a lightning bolt — representing automated, buzzing social activity. The word "postd" in Syne Bold with a amber dot replacing the full stop after "postd" to represent ".uk".
-
-**Visual language:** Clean, confident, slightly playful. Not corporate. UK-native tone. Think Notion meets Hootsuite, but warmer and more human. Generous white space. Amber accents sparingly.
-
----
-
-## Customer Onboarding — The Three-Step Setup
-
-The customer ONLY ever has to provide:
-1. **Business name** and **industry/category** (dropdown: Restaurant, Retail, Trades, Professional Services, Health & Beauty, etc.)
-2. **Google Reviews page URL** (e.g. `https://g.page/r/xxx/review`)
-3. **Website URL** (e.g. `https://mybusiness.co.uk`)
-4. **Tone preference**: Professional / Friendly / Casual (single toggle)
-5. **Which platforms** to connect (OAuth flows, guided step by step)
-
-That is all. Everything else — content themes, post ideas, scheduling, image generation — is fully automated.
-
-**Post-setup automation:**
-- System scrapes website for: services, USPs, team info, location, opening hours
-- System reads Google Reviews for: sentiment, common praise, customer language
-- System monitors local UK news (via RSS/NewsAPI) for relevant trending topics
-- AI generates 6 platform-native variants of every content piece
-- Posts are scheduled at optimal times per platform per day
-- Customer can optionally review posts in a simple mobile-first inbox before they go live (or set to fully auto)
+**Git repo:** `D:\Git\postd.uk` (local), auto-deploys to server on push to main.
 
 ---
 
 ## Tech Stack
 
-### Backend (API)
-- **Framework:** Laravel 11 (PHP 8.3+)
-- **Architecture:** Modular monolith — bounded contexts as Laravel modules/packages
-- **Database:** PostgreSQL 16 (primary data store)
-- **Cache/Queue:** Redis 7 (cache, sessions, rate limiting, job queues)
-- **Queue system:** Laravel Horizon with named queues:
-  - `critical` — auth, billing, webhook receipt
-  - `posting` — social media post dispatch (time-sensitive)
-  - `generation` — AI content generation
-  - `scraping` — website/review scraping (low priority)
-- **Authentication:** Laravel Sanctum (SPA tokens) + Socialite (OAuth for social platforms)
-- **Billing:** Laravel Cashier (Stripe) + Stripe Tax (UK VAT)
-- **File storage:** DigitalOcean Spaces (S3-compatible) via Laravel's `s3` disk
-- **Search/Scout:** Laravel Scout with Meilisearch (for admin search)
+### Backend
+- **Laravel 11** (PHP 8.3) — API only, no Blade views except emails
+- **PostgreSQL 16** — primary database
+- **Redis 7** — cache, sessions, queues (password protected — see env vars)
+- **Laravel Horizon** — queue worker management
+- **Laravel Sanctum** — Bearer token auth for SPA
+- **Laravel Socialite** — OAuth for social platforms
+- **Laravel Cashier** — Stripe billing
+- **Anthropic Claude API** — content generation (claude-haiku-4-5-20251001)
+- **OpenAI API** — image generation (DALL-E)
+- **DigitalOcean Spaces** — S3-compatible image storage
+- **Guzzle** — HTTP client for platform APIs
 
-### Frontend (Web App + PWA)
-- **Framework:** React 18 + Vite 5
-- **Styling:** Tailwind CSS 4 (use CSS custom properties for brand tokens)
-- **State:** Zustand (lightweight, no boilerplate)
-- **Data fetching:** TanStack Query (React Query v5)
-- **Router:** React Router v6
-- **Forms:** React Hook Form + Zod validation
-- **PWA:** Vite PWA plugin (service worker, offline support, installable)
-- **Mobile-first:** Every screen designed for 375px width first, then desktop
-
-### AI & Content
-- **Text generation:** OpenAI GPT-4o (primary), GPT-4o-mini (bulk/cheap tasks)
-- **Image generation:** DALL-E 3 (for posts needing custom imagery)
-- **TikTok video:** Creatomate API (template-based video generation)
-- **Scraping:** Laravel HTTP client + DOMDocument/Symfony DomCrawler for website scraping
-- **Review fetching:** Google Places API (for review data from Google Reviews URL)
-
-### External APIs
-- Facebook Graph API (Pages posting)
-- Instagram Graph API (Business account posting, image + carousel + reels)
-- X (Twitter) API v2 (tweet posting)
-- LinkedIn API v2 (organisation posts)
-- TikTok Content Posting API (video upload + publish)
-- Google Business Profile API (post to GBP — FREE for all tiers, major differentiator)
-- NewsAPI.org or UK RSS feeds (local news for content inspiration)
-- Google Places API (review ingestion)
-- Stripe API (subscriptions, webhooks)
-- OpenAI API (content generation)
-- Creatomate API (TikTok video)
-- DigitalOcean Spaces API (media storage)
+### Frontend
+- **React 18** + **Vite 5**
+- **React Router 6** — SPA routing
+- **Zustand** — auth state
+- **TanStack Query** — server state / data fetching
+- **react-hook-form** + **Zod** — forms and validation
+- **Tailwind CSS 3** — styling
+- **Lucide React** — icons
 
 ---
 
-## Pricing Tiers
-
-All prices ex-VAT. Stripe Tax handles UK VAT (20%) automatically at checkout.
-
-| Tier | Monthly | Platforms Included | Key Feature |
-|------|---------|-------------------|-------------|
-| **Starter** | £19/mo | 2 platforms + GBP | Perfect for just getting started |
-| **Growth** | £39/mo | 4 platforms + GBP | Most popular — default trial tier |
-| **Pro** | £69/mo | All platforms + GBP | Unlimited everything |
-
-**TikTok add-on:** +£15/mo (Starter/Growth), included in Pro
-**14-day free trial** (Growth tier, no card required)
-**Google Business Profile** is FREE on every tier (major differentiator vs competitors)
-
----
-
-## Module Architecture
-
-```
-api/
-├── app/
-│   ├── Modules/
-│   │   ├── Auth/           — Registration, login, email verify, 2FA
-│   │   ├── Onboarding/     — Business setup, platform connection wizard
-│   │   ├── Billing/        — Stripe/Cashier, plans, invoices, usage
-│   │   ├── Content/        — Post generation, queue, approval inbox
-│   │   ├── Scraping/       — Website scraper, Google Reviews fetcher
-│   │   ├── Social/         — Social platform connections, OAuth, posting
-│   │   ├── Schedule/       — Post scheduling, optimal timing engine
-│   │   ├── Analytics/      — Post performance, engagement tracking
-│   │   ├── Admin/          — Dijitul team dashboard (super admin)
-│   │   └── Notifications/  — Email, in-app, webhook notifications
-│   ├── Models/
-│   ├── Http/Controllers/
-│   └── ...
-├── database/
-│   ├── migrations/
-│   └── seeders/
-├── routes/
-│   ├── api.php
-│   ├── admin.php
-│   └── webhooks.php
-```
-
----
-
-## Database Schema (Core Tables)
-
-```sql
--- Users & tenancy
-users                  — id, email, name, password, trial_ends_at, ...
-businesses             — id, user_id, name, industry, website_url, google_reviews_url, tone, ...
-business_settings      — id, business_id, auto_approve_posts, post_time_windows, ...
-
--- Social connections
-social_connections     — id, business_id, platform, access_token (encrypted), expires_at, ...
-platform_accounts      — id, connection_id, platform_account_id, account_name, account_type, ...
-
--- Content pipeline
-content_sources        — id, business_id, type (review/website/news), raw_data, scraped_at
-content_briefs         — id, business_id, source_id, theme, key_messages, tone_notes, ...
-posts                  — id, business_id, brief_id, platform, content, media_urls[], status, scheduled_at, ...
-post_attempts          — id, post_id, attempted_at, response_code, response_body, ...
-
--- Billing
-subscriptions          — (Cashier managed)
-plan_features          — plan_name, platform_limit, tiktok_included, ...
-
--- Admin
-system_health_logs     — id, business_id, connection_id, check_type, status, checked_at
-```
-
----
-
-## Content Generation Engine
-
-### The Cascade Model
-One source event → six platform-native posts. Each genuinely different, not just resized.
-
-**Source types:**
-1. Google Review (positive review comes in → trigger content generation)
-2. Website scrape finding (new service detected, opening hours, USP)
-3. Local news hook (relevant UK news item found via RSS)
-4. Weekly content (evergreen posts generated on schedule)
-
-**Platform rules (encoded in system prompts):**
-
-| Platform | Format | Tone | Length | Special |
-|----------|--------|------|--------|---------|
-| Facebook | Story + CTA | Warm, conversational | 150-300 words | Emojis OK, hashtags minimal |
-| Instagram | Visual-first caption | Aspirational, lifestyle | 100-150 words | 5-10 hashtags, strong hook line |
-| X (Twitter) | Punchy, opinionated | Direct, witty | Max 260 chars | 1-2 hashtags, question or statement |
-| LinkedIn | Professional insight | Expert, thoughtful | 200-400 words | No excessive hashtags, value-led |
-| TikTok | Script for video | Energetic, authentic | 30-60 second script | Hook in first 3 seconds |
-| Google BP | Factual update | Clear, helpful | 100-200 words | Include CTA, mention location |
-
-**Image generation prompt rules:**
-- Always UK-appropriate imagery
-- Never generic stock photo aesthetics
-- Brand-consistent colour palette in prompts
-- Business category-aware (trades vs restaurant vs professional)
-
----
-
-## Admin Dashboard (Dijitul internal)
-
-Route: `/admin` (separate auth, Dijitul team only)
-
-Key metrics:
-- MRR (monthly recurring revenue)
-- Active subscribers, trial users, churned this month
-- Platform connection health (% with valid tokens)
-- Posts generated this week, success rate
-- Top churning businesses (at-risk list)
-- API cost per business/month (OpenAI spend tracking)
-
----
-
-## Hosting & Deployment
-
-- **Server:** DigitalOcean Droplet, Ubuntu 24.04 LTS, LON1 region
-- **Web server:** Nginx + PHP-FPM 8.3
-- **Process manager:** Supervisor (for Horizon queue workers)
-- **SSL:** Let's Encrypt (Certbot)
-- **Deployment:** GitHub Actions → SSH deploy on push to `main`
-- **Storage:** DigitalOcean Spaces (CDN-enabled, S3-compatible)
-- **Redis:** Installed on same droplet initially
-
-**Deployment script:** Zero-downtime with `php artisan down`, `git pull`, `composer install --no-dev`, `php artisan migrate --force`, `php artisan up`, `sudo supervisorctl restart horizon`
-
----
-
-## Agent Team & Responsibilities
-
-Each agent works in their own area. Read this file before starting work.
-
-| Agent | Owns |
-|-------|------|
-| Brand Guardian + UI Designer | Design system, logo SVG, Tailwind config, component library |
-| UX Architect | Onboarding flow wireframes, screen map, component specs |
-| Backend Architect | Laravel 11 full scaffold, all modules, migrations, API routes |
-| Frontend Developer | React PWA, all screens, components, API integration |
-| AI Engineer | Content generation engine, platform prompts, cascade model |
-| DevOps Automator | GitHub Actions CI/CD, server provision script, Nginx/Supervisor configs |
-| Database Optimizer | PostgreSQL schema review, indexes, query optimisation |
-| Security Engineer | Auth hardening, API key encryption, rate limiting, OWASP checks |
-| Social Media Strategist + platform specialists | Platform content rules, optimal post times, hashtag strategy |
-| Content Creator | Onboarding copy, marketing website copy, email sequences |
-| Growth Hacker | Trial-to-paid conversion, referral mechanics, in-app upsell triggers |
-| Technical Writer | API documentation, internal docs, agent handoff docs |
-
----
-
-## File Structure
+## Repository Structure
 
 ```
 D:\Git\postd.uk\
-├── CLAUDE.md                    ← You are here
-├── README.md
-├── .gitignore
-├── .github/
-│   └── workflows/
-│       └── deploy.yml           ← CI/CD pipeline
-├── api/                         ← Laravel 11 backend
+├── api/                    Laravel 11 backend
 │   ├── app/
-│   ├── bootstrap/
+│   │   ├── Models/         Eloquent models
+│   │   ├── Modules/        Feature modules (see below)
+│   │   ├── Http/Middleware/
+│   │   └── Console/Commands/
 │   ├── config/
-│   ├── database/
-│   ├── public/
-│   ├── resources/
-│   ├── routes/
-│   ├── storage/
-│   ├── tests/
-│   ├── artisan
-│   ├── composer.json
-│   └── .env.example
-├── web/                         ← React + Vite PWA frontend
+│   ├── database/migrations/
+│   ├── routes/api.php
+│   └── storage/logs/       laravel.log lives here
+├── web/                    React SPA
 │   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── hooks/
-│   │   ├── stores/
-│   │   ├── lib/
-│   │   └── main.jsx
-│   ├── public/
-│   ├── index.html
-│   ├── package.json
-│   ├── tailwind.config.js
-│   └── vite.config.js
-├── docs/                        ← Internal documentation
-│   ├── architecture.md
-│   ├── platform-content-rules.md
-│   ├── design-system.md
-│   └── api-reference.md
-└── scripts/
-    ├── provision.sh             ← Server setup script
-    └── deploy.sh                ← Manual deploy script
+│   │   ├── pages/          Route-level components
+│   │   ├── components/ui/  Shared UI components
+│   │   ├── stores/         authStore.js (Zustand)
+│   │   └── lib/api.js      Axios client — all API calls go through here
+│   └── public/
+├── scripts/                Nginx, Supervisor, deploy configs
+└── CLAUDE.md               This file
 ```
 
 ---
 
-## Key Business Rules
+## Backend Modules
 
-1. **Google Business Profile is always free** — include on every tier, lead with this in marketing
-2. **Trial defaults to Growth** — maximum feature exposure during trial
-3. **No card required for trial** — lower friction, higher signup conversion
-4. **All posts reviewed before posting by default** — but can be toggled to fully auto
-5. **Platform tokens refresh automatically** — background job checks token expiry 7 days ahead
-6. **Rate limits respected religiously** — each platform's API limits are enforced in code, never exceeded
-7. **UK English everywhere** — all AI prompts instruct UK spelling and idiom
-8. **Data sovereignty** — all data stored in EU/UK regions only
-9. **GDPR compliant** — data deletion on account close, consent flows on signup
-10. **White-label ready** — architecture should support white-labelling for Dijitul reselling in future
+All business logic lives under `api/app/Modules/`:
+
+| Module | What it does |
+|---|---|
+| **Auth** | Login, register, Google OAuth sign-in/sign-up |
+| **Onboarding** | Business setup wizard, GBP location picker |
+| **Social** | Platform OAuth connections, token management |
+| **Content** | Post generation (Claude AI), approval workflow, dispatch |
+| **Schedule** | Post timing logic, `DispatchScheduledPostsJob` |
+| **Scraping** | Website scraper, Google Reviews fetcher |
+| **Billing** | Stripe subscriptions via Cashier |
+| **Analytics** | Post performance data |
+| **Admin** | Dijitul team dashboard (impersonate, health checks) |
+| **Notifications** | Email notifications (trial ending, post failed, etc.) |
+
+### Key Classes
+
+```
+ContentGenerationService        calls Anthropic Claude API to write posts
+PostDispatchService             publishes a post to the platform API
+GoogleBusinessProfilePlatform   GBP API integration
+TwitterPlatform                 X/Twitter API v2 integration
+SocialConnectionService         OAuth token storage, refresh, account sync
+SchedulingService               picks optimal posting time (respects quiet hours)
+ScrapeBusinessJob               scrapes website + reviews to build content brief
+GeneratePostsJob                daily job: creates posts for all active platforms
+DispatchScheduledPostsJob       runs every minute via cron, dispatches due posts
+GoogleAuthController            handles Google sign-in OAuth callback
+```
 
 ---
 
-## Environment Variables (.env.example)
+## Frontend Pages
 
-```bash
-APP_NAME="postd.uk"
+```
+/                   Marketing landing page
+/login              Login (Google primary, email/password secondary)
+/register           Register (Google primary, email/password hidden by default)
+/auth/callback      Handles Google OAuth redirect (stores token, redirects)
+/onboarding         5-step business setup wizard
+/dashboard          Main dashboard
+/posts              Content library
+/inbox              Pending approval queue
+/platforms          Connected social accounts
+/settings           Business settings
+/billing            Subscription management
+/admin              Dijitul team only
+```
+
+---
+
+## Server Details
+
+**Provider:** DigitalOcean droplet
+**IP:** 144.126.207.135
+**OS:** Ubuntu 24.04
+**SSH user:** root
+**App path:** `/var/www/postd/api` (note: no `.uk` in the server path)
+**Log file:** `/var/www/postd/api/storage/logs/laravel.log`
+**Worker log:** `/var/log/postd-worker.log`
+
+**Auto-deploy:** GitHub push to `main` triggers deploy via `scripts/deploy.sh`
+- Maintenance mode on
+- `git pull`
+- `composer install --no-dev`
+- `php artisan migrate --force`
+- `php artisan config:cache && route:cache && view:cache`
+- Supervisor restart
+- Maintenance mode off
+
+---
+
+## Environment Variables (server .env)
+
+Located at `/var/www/postd/api/.env`
+
+```env
 APP_ENV=production
 APP_KEY=
-APP_URL=https://postd.uk
+APP_URL=https://api.postd.uk
+FRONTEND_URL=https://postd.uk
 
 DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_DATABASE=postduk
-DB_USERNAME=postduk
+DB_DATABASE=postd
+DB_USERNAME=
 DB_PASSWORD=
 
 REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=D7J7TU7%D0Tc0m        # Redis requires auth — must be set or everything breaks
 REDIS_PORT=6379
+QUEUE_CONNECTION=redis
+CACHE_DRIVER=redis
 
-# Storage
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-AWS_DEFAULT_REGION=ams3
-AWS_BUCKET=postduk-media
-AWS_ENDPOINT=https://ams3.digitaloceanspaces.com
-FILESYSTEM_DISK=s3
+# Anthropic (content generation)
+ANTHROPIC_API_KEY=
+
+# OpenAI (image generation)
+OPENAI_API_KEY=
+
+# Google OAuth (sign-in + GBP)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=https://api.postd.uk/api/auth/social/google_business_profile/callback
+GOOGLE_AUTH_REDIRECT_URI=https://api.postd.uk/api/auth/google/callback
+
+# Twitter/X OAuth 2.0
+TWITTER_CLIENT_ID=
+TWITTER_CLIENT_SECRET=
+TWITTER_REDIRECT_URI=https://api.postd.uk/api/auth/social/twitter/callback
+
+# DigitalOcean Spaces (image storage)
+DO_SPACES_KEY=
+DO_SPACES_SECRET=
+DO_SPACES_REGION=
+DO_SPACES_BUCKET=
+DO_SPACES_ENDPOINT=
 
 # Stripe
 STRIPE_KEY=
 STRIPE_SECRET=
 STRIPE_WEBHOOK_SECRET=
-CASHIER_CURRENCY=gbp
-CASHIER_CURRENCY_LOCALE=en_GB
 
-# OpenAI
-OPENAI_API_KEY=
-OPENAI_ORG_ID=
-
-# Social Platforms
-FACEBOOK_APP_ID=
-FACEBOOK_APP_SECRET=
-INSTAGRAM_APP_ID=
-INSTAGRAM_APP_SECRET=
-TWITTER_CLIENT_ID=
-TWITTER_CLIENT_SECRET=
-LINKEDIN_CLIENT_ID=
-LINKEDIN_CLIENT_SECRET=
-TIKTOK_CLIENT_KEY=
-TIKTOK_CLIENT_SECRET=
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
+# Google Places (website scraping — leave blank if not set up, see Known Issues)
 GOOGLE_PLACES_API_KEY=
-
-# Creatomate (TikTok video)
-CREATOMATE_API_KEY=
-
-# NewsAPI (local news hooks)
-NEWS_API_KEY=
-
-# Mail
-MAIL_MAILER=smtp
-MAIL_HOST=
-MAIL_PORT=587
-MAIL_USERNAME=
-MAIL_PASSWORD=
-MAIL_FROM_ADDRESS=hello@postd.uk
-MAIL_FROM_NAME="postd.uk"
-
-# Horizon
-HORIZON_SECRET=
-
-# Admin
-ADMIN_EMAIL=admin@dijitul.co.uk
 ```
+
+After any `.env` change always run:
+```bash
+cd /var/www/postd/api
+php artisan config:clear
+supervisorctl restart all
+```
+
+---
+
+## Supervisor Setup
+
+Config at `/etc/supervisor/conf.d/postd-worker.conf`:
+
+```ini
+[program:postd-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/postd/api/artisan queue:work redis --queue=posting,generation,default --sleep=3 --tries=3 --max-time=3600
+autostart=true
+autorestart=true
+user=root
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/var/log/postd-worker.log
+stopwaitsecs=3600
+```
+
+**Important:** Keep `numprocs=1`. GBP API has a very low rate limit and multiple workers will cause 429 errors immediately.
+
+Horizon also runs as a separate process. Both should show RUNNING:
+```bash
+supervisorctl status
+# postd-horizon                    RUNNING
+# postd-worker:postd-worker_00     RUNNING
+```
+
+---
+
+## Cron
+
+`crontab -e` on the server:
+```
+* * * * * cd /var/www/postd/api && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Scheduled jobs:
+- `DispatchScheduledPostsJob` — every minute — dispatches approved posts at their scheduled time
+- `GeneratePostsJob` — daily — creates new posts for all active businesses
+- `RefreshSocialTokensCommand` — daily — refreshes expiring OAuth tokens
+- `NotifyTrialEndingCommand` — daily at 9am — sends trial expiry warnings (has a bug — see Known Issues)
+
+---
+
+## Queue Behaviour — Important Quirk
+
+**Jobs dispatched from `php artisan tinker` are NOT picked up by the Horizon worker.** They go to a different Redis database than the one the worker monitors. This only affects tinker — the web app dispatches correctly.
+
+**To run jobs in tinker, call them directly:**
+```php
+// Generate posts
+$business = \App\Models\User::where('email', 'you@example.com')->first()->business;
+$job = new \App\Modules\Content\Jobs\GeneratePostsJob($business);
+$job->handle(app(\App\Modules\Content\Services\ContentGenerationService::class));
+
+// Publish a post
+$post = \App\Models\Post::find('uuid-here');
+$service = app(\App\Modules\Content\Services\PostDispatchService::class);
+$service->dispatch($post);
+```
+
+**To force-regenerate posts today:**
+```php
+$business = \App\Models\User::where('email', 'you@example.com')->first()->business;
+$business->last_generated_at = null;
+$business->save();
+// Then run GeneratePostsJob directly as above
+```
+
+---
+
+## Post Lifecycle
+
+```
+pending   created by GeneratePostsJob — awaits user approval in Inbox
+approved  user approves in Inbox UI (or auto-approved by AutoApprovePostsCommand)
+          DispatchScheduledPostsJob picks up at scheduled_at time
+published post sent successfully to platform
+failed    platform API returned an error — failure_reason column is set
+```
+
+Posts have `requires_approval = true` by default. `DispatchScheduledPostsJob` only dispatches `approved` posts whose `scheduled_at` is in the past.
+
+---
+
+## Social Platform Integrations
+
+### Google Business Profile (GBP)
+
+**Current status:** Awaiting Google's allowlisting approval. Apply at:
+https://support.google.com/business/contact/api_default — select "Application for Basic API Access"
+
+Until approved, GBP posts fail with 429/403. The `mybusinessaccountmanagement.googleapis.com/v1/` endpoint has effectively zero quota for unlisted apps.
+
+**OAuth scopes required:** `https://www.googleapis.com/auth/business.manage`
+
+**Key implementation note:** `GoogleBusinessProfilePlatform::getAccountsWithToken(string $accessToken)` accepts a plain token string (not an encrypted model) for use during the auth callback before a SocialConnection exists.
+
+**Rate limiting:** GBP API enforces per-minute quotas. The cache key `gbp_locations_{userId}` stores fetched locations for 30 minutes to avoid repeat calls.
+
+### Twitter/X
+
+**Current status:** Working.
+
+**Why Twitter uses manual PKCE (not Socialite):**
+Socialite's `twitter-oauth-2` driver calls `$request->session()->put('code_verifier', ...)` inside `->redirect()`. This throws `Session store not set on request` because this is a stateless API with no session middleware.
+
+Fix in `SocialConnectionController::redirect()`: for Twitter, we generate PKCE manually (code_verifier + code_challenge), store the verifier in our Redis state cache (`oauth_state_{$state}`), and build the Twitter auth URL directly. The callback retrieves the verifier from that cache and exchanges the code using Guzzle. All other platforms still use Socialite.
+
+**Token expiry:** Twitter tokens expire after ~2 hours. Refresh token is stored and should auto-refresh.
+
+**Cost:** X API requires paid credits. No free tier.
+
+**Callback URL registered in console.x.com:** `https://api.postd.uk/api/auth/social/twitter/callback`
+
+### Google Sign-in (primary auth method)
+
+Handled by `GoogleAuthController`. The callback flow:
+1. Create or find user by Google email
+2. Cache raw tokens: `google_tokens_{userId}` (30 min TTL)
+3. Attempt to fetch GBP locations and cache them: `gbp_locations_{userId}` (30 min TTL)
+4. If `$user->business()->where('onboarding_complete', true)->exists()` → redirect to `/dashboard`
+5. Otherwise → redirect to `/onboarding`
+
+**OAuth app is in Testing mode.** To add test users:
+Google Cloud Console → APIs & Services → OAuth consent screen → Test users
+
+---
+
+## Onboarding Flow (5 steps)
+
+1. **Business info** — name, industry, tone. Shows GBP location picker if `gbp_locations_{userId}` cache exists, otherwise shows text search fallback.
+2. **Website URL**
+3. **Google Reviews URL** — auto-populated from cached GBP location `review_url` if available
+4. **Connect platforms** — GBP shown as already connected for Google sign-in users
+5. **Done** — calls `POST /api/onboarding/complete`, sets `onboarding_complete = true`, redirects to dashboard
+
+**GBP location picker not showing?** The cache (`gbp_locations_{userId}`) is set during Google OAuth callback. If the GBP API 429s during the callback, the cache is empty and the text fallback shows instead. The `GET /api/onboarding/gbp-locations` endpoint also tries to populate from the cached token as a second attempt.
+
+---
+
+## Content Generation
+
+Uses Anthropic Claude API via direct HTTP (not the OpenAI PHP SDK).
+
+**Model in use:** `claude-haiku-4-5-20251001`
+
+**Available models on our API key** (confirmed March 2026):
+- `claude-haiku-4-5-20251001` — use this (cheapest, fastest)
+- `claude-sonnet-4-6`
+- `claude-opus-4-6`
+
+**Do NOT use** (not on our key):
+- `claude-3-5-sonnet-20241022`
+- `claude-3-5-haiku-latest`
+- Any model with `-20241022` or earlier date suffix
+
+**Image generation:** Uses OpenAI DALL-E via `GeneratePostImageJob`. Requires `OPENAI_API_KEY`.
+
+---
+
+## Database Notes
+
+**PostgreSQL-specific gotchas:**
+
+- `raw_token_data` on `social_connections` is `text` type (not `json`). Laravel's `encrypted:array` cast produces a cipher string. Migration `2026_03_22_210000_fix_social_connections_raw_token_data_column.php` changed it from `json` to `text`.
+- `failed_jobs` has no `created_at` — use `orderByRaw('id DESC')` not `->latest()`.
+- Posts column is `scheduled_at` (not `scheduled_for`).
+
+**Useful tinker snippets:**
+
+```php
+// Full user state check
+$user = \App\Models\User::where('email', 'you@example.com')->first();
+$business = $user->business;
+$connections = $business->socialConnections()->get();
+foreach ($connections as $c) {
+    echo "{$c->platform} | active: {$c->is_active} | expires: {$c->expires_at}\n";
+    foreach ($c->platformAccounts as $a) {
+        echo "  account: {$a->account_name} | selected: {$a->is_selected}\n";
+    }
+}
+
+// List posts
+$posts = $business->posts()->orderBy('created_at','desc')->limit(10)
+    ->get(['id','platform','status','scheduled_at','created_at']);
+foreach ($posts as $p) {
+    echo "{$p->platform} | {$p->status} | {$p->scheduled_at}\n";
+}
+
+// Reset a user's onboarding completely
+$user->businesses()->each(function ($b) {
+    $b->socialConnections()->each(fn($c) => $c->forceDelete());
+    $b->posts()->delete();
+    $b->delete();
+});
+\Illuminate\Support\Facades\Cache::forget("google_tokens_{$user->id}");
+\Illuminate\Support\Facades\Cache::forget("gbp_locations_{$user->id}");
+
+// Check failed jobs
+DB::table('failed_jobs')->orderByRaw('id DESC')->first();
+
+// Clear all jobs from a queue (use when 429 storm occurs)
+// Run on server: php artisan queue:clear redis --queue=generation
+```
+
+---
+
+## Known Issues & Pending Work
+
+| Issue | Priority | Notes |
+|---|---|---|
+| GBP API quota 0 | Blocked on Google | Applied for Basic API Access. GBP posts fail until approved. |
+| GBP location picker blank | Blocked on Google | Requires GBP API to list locations |
+| `ScrapeBusinessJob` crashes | Fix needed | `GOOGLE_PLACES_API_KEY` is null, `GoogleReviewsService::$apiKey` is typed `string` — needs to be `?string` |
+| `NotifyTrialEndingCommand` bug | Fix needed | Calls `User::onTrial()` statically — needs to be instance call |
+| Jobs from tinker not queued | Known quirk | Run via `->handle()` in tinker instead of `::dispatch()` |
+| Settings page testing | Needs verification | Previously not saving correctly |
+| Retry button in Inbox | Not built | Failed posts need a retry action in the UI |
+| Twitter token refresh | Untested | First live test will be when the current token expires (~2 hours post-connect) |
+
+---
+
+## Development Workflow
+
+**Always edit local files at `D:\Git\postd.uk`, never on the server directly.** The server auto-deploys on push to main. Direct server edits are overwritten on the next deploy.
+
+```powershell
+# Standard workflow
+cd D:\Git\postd.uk
+git status
+git add path/to/file.php path/to/another.jsx
+git commit -m "Brief description of what changed and why"
+git push
+```
+
+After pushing:
+- Server pulls, migrates, recaches, restarts workers automatically
+- Check deploy succeeded: `tail -f /var/www/postd/api/storage/logs/laravel.log`
+
+---
+
+## Google Cloud Console
+
+- **OAuth app** in Testing mode — add test users before they can sign in
+- **My Business Account Management API** — quota 0, awaiting allowlisting
+- **Registered callback URLs:**
+  - `https://api.postd.uk/api/auth/google/callback` (sign-in)
+  - `https://api.postd.uk/api/auth/social/google_business_profile/callback` (GBP connect)
+
+---
+
+## X Developer Console
+
+- **URL:** https://console.x.com
+- **App name:** postd
+- **Auth:** OAuth 2.0 PKCE
+- **Callback:** `https://api.postd.uk/api/auth/social/twitter/callback`
+- **Scopes:** `tweet.read tweet.write users.read offline.access`
+- Requires paid credits to use the API
+
+---
+
+## Preferences & Conventions
+
+- UK English throughout (colour, flavour, organise, etc.)
+- No em-dashes anywhere — use commas or restructure the sentence
+- Footer links to `https://dijitul.uk` only — we do not own `dijitul.io`
+- All API responses are JSON
+- Bearer token auth via Sanctum — stored in `localStorage` as `postd_token`
+- Axios base URL in `web/src/lib/api.js` already includes `/api` — never add it again in endpoint paths
+- Post content is written in a friendly, approachable tone by default
+- Always test locally and push — never hotfix production files

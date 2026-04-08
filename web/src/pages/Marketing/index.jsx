@@ -146,6 +146,20 @@ function PricingCard({ tier, price, platforms, features, popular = false, cta = 
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
+//
+// SEO META TAGS — add these via React Helmet (or a Helmet wrapper component) once available:
+//
+// Page title:
+//   "AI Social Media Automation for UK Small Businesses | Postd.uk"
+//
+// Meta description:
+//   "Postd.uk automatically writes and posts social media content for UK small businesses.
+//    Connect Facebook, Instagram, X and LinkedIn. From £19/month. 14-day free trial."
+//
+// Open Graph og:title  — same as page title above
+// Open Graph og:description — same as meta description above
+// Open Graph og:type   — "website"
+//
 export default function MarketingPage() {
   const [scrolled, setScrolled] = useState(false)
 
@@ -156,12 +170,12 @@ export default function MarketingPage() {
   }, [])
 
   const platforms = [
-    { id: 'facebook', label: 'Facebook', free: false },
-    { id: 'instagram', label: 'Instagram', free: false },
-    { id: 'x', label: 'X (Twitter)', free: false },
-    { id: 'linkedin', label: 'LinkedIn', free: false },
-    { id: 'tiktok', label: 'TikTok', free: false },
-    { id: 'google', label: 'Google Business', free: true }
+    { id: 'facebook', label: 'Facebook', badge: null },
+    { id: 'instagram', label: 'Instagram', badge: null },
+    { id: 'x', label: 'X (Twitter)', badge: null },
+    { id: 'linkedin', label: 'LinkedIn', badge: null },
+    { id: 'tiktok', label: 'TikTok', badge: 'Add-on' },
+    { id: 'google', label: 'Google Business', badge: null }
   ]
 
   const steps = [
@@ -169,19 +183,19 @@ export default function MarketingPage() {
       number: '01',
       icon: MessageSquare,
       title: 'Tell us about your business',
-      body: 'Your business name, industry, website URL, and Google Reviews link. That is genuinely all we need.'
+      body: 'Your business name, industry, and website URL. That is genuinely all we need to get started.'
     },
     {
       number: '02',
       icon: Globe,
       title: 'Connect your platforms',
-      body: 'Link your Facebook, Instagram, LinkedIn, X, TikTok, and Google Business Profile in a few taps.'
+      body: 'Link your Facebook, Instagram, LinkedIn, and X (Twitter) in a few taps. We handle the rest.'
     },
     {
       number: '03',
       icon: Zap,
-      title: 'Watch the posts flow',
-      body: 'Our AI reads your website and reviews, writes brilliant posts for each platform, and publishes them on a perfect schedule.'
+      title: 'Your AI social media posts go live automatically',
+      body: 'Our AI reads your website and reviews, writes platform-native content for Facebook, Instagram, X and LinkedIn, and publishes it all on a perfect schedule — fully automated.'
     }
   ]
 
@@ -189,27 +203,27 @@ export default function MarketingPage() {
     {
       tier: 'Starter',
       price: 19,
-      platforms: '2 platforms + Google Business Profile',
+      platforms: 'Facebook, Instagram, X & LinkedIn',
       features: [
-        'Google Business Profile (always free)',
-        '2 social platforms included',
+        'Facebook, Instagram, X & LinkedIn included',
         'AI-generated posts daily',
         'Post approval inbox',
-        'Website + review scanning',
-        'Email support'
+        'Website + review content scanning',
+        'Email support',
+        '14-day free trial included'
       ]
     },
     {
       tier: 'Growth',
       price: 39,
-      platforms: '4 platforms + Google Business Profile',
+      platforms: 'Facebook, Instagram, X & LinkedIn',
       popular: true,
       features: [
-        'Google Business Profile (always free)',
-        '4 social platforms included',
+        'Facebook, Instagram, X & LinkedIn included',
         'AI-generated posts daily',
         'Post approval inbox',
         'Local news content hooks',
+        'Higher posting frequency',
         'Priority email support',
         '14-day free trial included'
       ]
@@ -217,14 +231,13 @@ export default function MarketingPage() {
     {
       tier: 'Pro',
       price: 69,
-      platforms: 'All platforms + Google Business Profile',
+      platforms: 'All platforms + TikTok video',
       features: [
-        'Google Business Profile (always free)',
-        'All 6 platforms + TikTok video',
+        'Facebook, Instagram, X & LinkedIn included',
+        'TikTok video generation included',
         'AI-generated posts daily',
         'Fully auto-posting option',
         'Local news content hooks',
-        'TikTok video generation',
         'Dedicated account manager'
       ]
     }
@@ -289,14 +302,14 @@ export default function MarketingPage() {
               </div>
 
               <h1 className="font-display font-black text-navy-800 mb-6 text-balance" style={{ fontSize: 'clamp(2.25rem, 5vw, 3.75rem)', lineHeight: '1.1' }}>
-                Your business,
+                AI social media automation
                 <br />
-                <span className="text-gradient-amber">always posting.</span>
+                <span className="text-gradient-amber">for UK small businesses.</span>
               </h1>
 
               <p className="text-lg sm:text-xl text-slate-600 mb-8 max-w-xl mx-auto lg:mx-0 text-pretty leading-relaxed">
                 Give us your website, your Google Reviews link, and a bit about your business.
-                We write and post brilliant social content across all your platforms — automatically, every day.
+                Our AI writes and automatically posts content to Facebook, Instagram, X and LinkedIn every single day — so you never have to think about social media again.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mb-10">
@@ -351,11 +364,11 @@ export default function MarketingPage() {
           <div className="text-center mb-16">
             <span className="inline-block text-amber-500 text-sm font-bold uppercase tracking-widest mb-4">Simple as that</span>
             <h2 className="font-display font-black text-navy-800 text-3xl sm:text-4xl lg:text-5xl mb-4 text-balance">
-              Three things. That&apos;s all.
+              How AI social media automation works
             </h2>
             <p className="text-lg text-slate-500 max-w-2xl mx-auto text-pretty">
-              Most social media tools are a second job. postd.uk is the opposite.
-              You set it up once, and it just works.
+              Most social media management tools are a second job. Postd.uk is different.
+              Set it up once and your automated social media posts go out every day without any effort from you.
             </p>
           </div>
 
@@ -393,23 +406,23 @@ export default function MarketingPage() {
           <div className="text-center mb-16">
             <span className="inline-block text-amber-500 text-sm font-bold uppercase tracking-widest mb-4">All your channels</span>
             <h2 className="font-display font-black text-navy-800 text-3xl sm:text-4xl lg:text-5xl mb-4 text-balance">
-              Supported platforms
+              Social media platforms we post to automatically
             </h2>
             <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-              One tool. Six platforms. Every post written natively for the platform it&apos;s posted to.
+              Every AI-generated post is written natively for the platform it is published to. No generic copy-paste, no recycled content.
             </p>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {platforms.map(({ id, label, free }) => (
+            {platforms.map(({ id, label, badge }) => (
               <div
                 key={id}
-                className="relative bg-white rounded-2xl p-5 flex flex-col items-center gap-3 border border-cream-300 hover:-translate-y-1 hover:shadow-lg transition-all duration-200 group"
+                className={`relative bg-white rounded-2xl p-5 flex flex-col items-center gap-3 border border-cream-300 transition-all duration-200 group ${badge === 'Coming Soon' ? 'opacity-60' : 'hover:-translate-y-1 hover:shadow-lg'}`}
                 style={{ boxShadow: '0 2px 8px rgb(30 45 74 / 0.05)' }}
               >
-                {free && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-honey-400 text-navy-800 text-2xs font-black uppercase tracking-wide px-3 py-1 rounded-full whitespace-nowrap">
-                    Free on every plan
+                {badge && (
+                  <span className={`absolute -top-3 left-1/2 -translate-x-1/2 text-2xs font-black uppercase tracking-wide px-3 py-1 rounded-full whitespace-nowrap ${badge === 'Coming Soon' ? 'bg-slate-200 text-slate-600' : 'bg-honey-400 text-navy-800'}`}>
+                    {badge}
                   </span>
                 )}
                 <PlatformIcon platform={id} size="lg" />
@@ -418,18 +431,20 @@ export default function MarketingPage() {
             ))}
           </div>
 
-          {/* GBP differentiator callout */}
-          <div className="mt-10 bg-honey-50 border border-honey-200 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-4">
+          {/* TikTok add-on callout */}
+          <div className="mt-10 bg-navy-800 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-4">
             <div className="flex-shrink-0">
-              <PlatformIcon platform="google" size="lg" />
+              <PlatformIcon platform="tiktok" size="lg" />
             </div>
-            <div>
-              <h3 className="font-display font-bold text-navy-800 mb-1">Google Business Profile is FREE on every plan</h3>
-              <p className="text-slate-600 text-sm leading-relaxed">
-                Unlike our competitors, we include Google Business Profile posting on every tier — even Starter.
-                It&apos;s one of the most powerful local SEO tools available, and we think you shouldn&apos;t have to pay extra for it.
+            <div className="flex-1">
+              <h3 className="font-display font-bold text-white mb-1">TikTok video add-on — £15/month</h3>
+              <p className="text-white/60 text-sm leading-relaxed">
+                Add AI-generated short-form video content for TikTok to any plan. Included free on Pro.
               </p>
             </div>
+            <Link to="/register" className="flex-shrink-0 inline-flex items-center gap-2 bg-amber-500 text-white font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-amber-600 transition-all">
+              Add TikTok video automation <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
         </div>
       </section>
@@ -440,10 +455,10 @@ export default function MarketingPage() {
           <div className="text-center mb-16">
             <span className="inline-block text-amber-500 text-sm font-bold uppercase tracking-widest mb-4">Simple pricing</span>
             <h2 className="font-display font-black text-navy-800 text-3xl sm:text-4xl lg:text-5xl mb-4 text-balance">
-              Start posting in minutes
+              Simple pricing for UK small businesses
             </h2>
             <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-              All prices ex. VAT. 14-day free trial on Growth — no card required.
+              All prices ex. VAT. Start your 14-day free trial on any plan, no card required.
               Cancel anytime, no questions asked.
             </p>
           </div>
@@ -456,7 +471,8 @@ export default function MarketingPage() {
 
           <p className="text-center text-sm text-slate-400 mt-8">
             All prices are exclusive of VAT. UK VAT (20%) applied at checkout via Stripe Tax.
-            TikTok add-on available for +£15/month on Starter and Growth.
+            TikTok video add-on available for +£15/month on Starter and Growth plans.
+            Google Business Profile posting is included on all plans.
           </p>
         </div>
       </section>
@@ -469,11 +485,11 @@ export default function MarketingPage() {
             <Zap className="w-8 h-8 text-white" />
           </div>
           <h2 className="font-display font-black text-white text-3xl sm:text-4xl lg:text-5xl mb-6 text-balance">
-            All your posts. One hive.
+            Automated social media posting, sorted.
           </h2>
           <p className="text-white/70 text-lg sm:text-xl mb-10 max-w-xl mx-auto text-pretty">
-            Join hundreds of UK small businesses who&apos;ve stopped worrying about social media
-            and started focusing on what they do best.
+            Join hundreds of UK small businesses who have stopped worrying about social media
+            and let AI handle their daily posting, so they can focus on what they do best.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
@@ -488,6 +504,65 @@ export default function MarketingPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Structured data (JSON-LD) ────────────────────────────────────────── */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "Postd.uk",
+            "url": "https://postd.uk",
+            "description": "AI-powered social media automation for UK small businesses. Automatically writes and posts content to Facebook, Instagram, X and LinkedIn. From £19/month.",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "offers": [
+              {
+                "@type": "Offer",
+                "name": "Starter",
+                "price": "19.00",
+                "priceCurrency": "GBP",
+                "priceSpecification": {
+                  "@type": "UnitPriceSpecification",
+                  "price": "19.00",
+                  "priceCurrency": "GBP",
+                  "unitText": "MONTH"
+                }
+              },
+              {
+                "@type": "Offer",
+                "name": "Growth",
+                "price": "39.00",
+                "priceCurrency": "GBP",
+                "priceSpecification": {
+                  "@type": "UnitPriceSpecification",
+                  "price": "39.00",
+                  "priceCurrency": "GBP",
+                  "unitText": "MONTH"
+                }
+              },
+              {
+                "@type": "Offer",
+                "name": "Pro",
+                "price": "69.00",
+                "priceCurrency": "GBP",
+                "priceSpecification": {
+                  "@type": "UnitPriceSpecification",
+                  "price": "69.00",
+                  "priceCurrency": "GBP",
+                  "unitText": "MONTH"
+                }
+              }
+            ],
+            "creator": {
+              "@type": "Organization",
+              "name": "Dijitul",
+              "url": "https://dijitul.uk"
+            }
+          })
+        }}
+      />
 
       {/* ── Footer ───────────────────────────────────────────────────────────── */}
       <footer className="bg-navy-950 py-10">

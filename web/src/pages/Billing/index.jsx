@@ -1,19 +1,18 @@
-import { useState } from 'react'
-import { Check, CreditCard, Star, ArrowRight, FileText, AlertTriangle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Check, CreditCard, Star, ArrowRight, FileText, AlertTriangle, Loader2 } from 'lucide-react'
+import { billingApi } from '../../lib/api.js'
 
 const PLANS = [
   {
     id: 'starter',
     name: 'Starter',
     price: 19,
-    platforms: 2,
     description: 'Perfect for getting started with social media automation.',
     features: [
-      'Google Business Profile (always free)',
-      '2 social platforms',
+      'Facebook, Instagram, X & LinkedIn',
       'AI-generated posts daily',
       'Post approval inbox',
-      'Website and review scanning',
+      'Website and review content scanning',
       'Email support'
     ]
   },
@@ -21,15 +20,14 @@ const PLANS = [
     id: 'growth',
     name: 'Growth',
     price: 39,
-    platforms: 4,
     popular: true,
     description: 'The most popular choice for growing UK businesses.',
     features: [
-      'Google Business Profile (always free)',
-      '4 social platforms',
+      'Facebook, Instagram, X & LinkedIn',
       'AI-generated posts daily',
       'Post approval inbox',
       'Local news content hooks',
+      'Higher posting frequency',
       'Priority email support'
     ]
   },
@@ -37,12 +35,11 @@ const PLANS = [
     id: 'pro',
     name: 'Pro',
     price: 69,
-    platforms: 6,
     description: 'For businesses serious about dominating their social presence.',
     features: [
-      'Google Business Profile (always free)',
-      'All 6 platforms included',
-      'TikTok video generation',
+      'Facebook, Instagram, X & LinkedIn',
+      'TikTok video generation included',
+      'AI-generated posts daily',
       'Fully auto-posting option',
       'Local news content hooks',
       'Dedicated account manager'
@@ -50,11 +47,6 @@ const PLANS = [
   }
 ]
 
-const MOCK_INVOICES = [
-  { id: 'INV-001', date: '1 Mar 2026', amount: '£46.80', status: 'Paid', plan: 'Growth' },
-  { id: 'INV-002', date: '1 Feb 2026', amount: '£46.80', status: 'Paid', plan: 'Growth' },
-  { id: 'INV-003', date: '1 Jan 2026', amount: '£46.80', status: 'Paid', plan: 'Growth' }
-]
 
 function PlanCard({ plan, currentPlan, onSelect }) {
   const isCurrent = currentPlan === plan.id
@@ -124,11 +116,50 @@ function PlanCard({ plan, currentPlan, onSelect }) {
 }
 
 export default function BillingPage() {
-  const [currentPlan] = useState('growth')
+  const [currentPlan, setCurrentPlan] = useState('growth')
   const [showUpgradeModal, setShowUpgradeModal] = useState(null)
+  const [isOnTrial, setIsOnTrial] = useState(false)
+  const [trialEndsAt, setTrialEndsAt] = useState(null)
+  const [invoices, setInvoices] = useState([])
+  const [loadingBilling, setLoadingBilling] = useState(true)
+  const [portalLoading, setPortalLoading] = useState(false)
 
-  const trialEnds = new Date('2026-04-05')
-  const daysLeft = Math.ceil((trialEnds - new Date()) / (1000 * 60 * 60 * 24))
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [subRes, invoiceRes] = await Promise.all([
+          billingApi.getSubscription(),
+          billingApi.getInvoices(),
+        ])
+        const sub = subRes.data
+        if (sub?.subscription?.plan) setCurrentPlan(sub.subscription.plan)
+        if (sub?.on_trial) setIsOnTrial(true)
+        if (sub?.trial_ends_at) setTrialEndsAt(new Date(sub.trial_ends_at))
+        setInvoices(invoiceRes.data?.invoices ?? [])
+      } catch {
+        // silently fall back to defaults
+      } finally {
+        setLoadingBilling(false)
+      }
+    }
+    load()
+  }, [])
+
+  const handlePortal = async () => {
+    setPortalLoading(true)
+    try {
+      const res = await billingApi.createPortal()
+      if (res.data?.url) window.location.href = res.data.url
+    } catch {
+      // ignore
+    } finally {
+      setPortalLoading(false)
+    }
+  }
+
+  const daysLeft = trialEndsAt
+    ? Math.ceil((trialEndsAt - new Date()) / (1000 * 60 * 60 * 24))
+    : 0
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-in-up space-y-8">
@@ -140,7 +171,7 @@ export default function BillingPage() {
       </div>
 
       {/* Trial banner */}
-      {daysLeft > 0 && (
+      {isOnTrial && daysLeft > 0 && (
         <div className="bg-gradient-to-r from-amber-500 to-honey-400 rounded-2xl p-5 text-navy-800">
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -153,8 +184,12 @@ export default function BillingPage() {
               <p className="text-sm opacity-80 mb-3">
                 You&apos;re on the Growth plan trial. Add a payment method to continue after your trial ends.
               </p>
-              <button className="inline-flex items-center gap-2 bg-navy-800 text-white font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-navy-700 transition-all">
-                <CreditCard className="w-4 h-4" />
+              <button
+                onClick={handlePortal}
+                disabled={portalLoading}
+                className="inline-flex items-center gap-2 bg-navy-800 text-white font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-navy-700 transition-all disabled:opacity-60"
+              >
+                {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
                 Add payment method
               </button>
             </div>
@@ -176,7 +211,8 @@ export default function BillingPage() {
           ))}
         </div>
         <p className="text-xs text-slate-400 mt-4 text-center">
-          All prices exclude VAT. UK VAT (20%) applied at checkout. TikTok add-on: +£15/month on Starter and Growth.
+          All prices exclude VAT. UK VAT (20%) applied at checkout. TikTok video add-on: +£15/month on Starter and Growth.
+          Google Business Profile posting is included on all plans.
         </p>
       </div>
 
@@ -206,28 +242,30 @@ export default function BillingPage() {
           <h2 className="font-display font-bold text-lg text-navy-800">Invoice history</h2>
         </div>
         <div className="bg-white rounded-2xl border border-cream-300 overflow-hidden" style={{ boxShadow: '0 2px 8px rgb(30 45 74 / 0.05)' }}>
-          {MOCK_INVOICES.length === 0 ? (
+          {loadingBilling ? (
+            <div className="text-center py-10 text-slate-400 text-sm flex items-center justify-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading invoices...
+            </div>
+          ) : invoices.length === 0 ? (
             <div className="text-center py-10 text-slate-400 text-sm">No invoices yet.</div>
           ) : (
             <table className="w-full">
               <thead>
                 <tr className="border-b border-cream-300">
                   <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Invoice</th>
-                  <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide hidden sm:table-cell">Plan</th>
                   <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Date</th>
                   <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Amount</th>
                   <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {MOCK_INVOICES.map((inv) => (
+                {invoices.map((inv) => (
                   <tr key={inv.id} className="border-b border-cream-300 last:border-0 hover:bg-cream-200/50 transition-colors">
                     <td className="px-5 py-3 text-sm font-mono text-navy-800">{inv.id}</td>
-                    <td className="px-5 py-3 text-sm text-slate-600 hidden sm:table-cell">{inv.plan}</td>
                     <td className="px-5 py-3 text-sm text-slate-600">{inv.date}</td>
-                    <td className="px-5 py-3 text-sm font-semibold text-navy-800">{inv.amount}</td>
+                    <td className="px-5 py-3 text-sm font-semibold text-navy-800">{inv.total || inv.amount}</td>
                     <td className="px-5 py-3">
-                      <span className="badge bg-green-100 text-green-700 text-xs">{inv.status}</span>
+                      <span className="badge bg-green-100 text-green-700 text-xs">{inv.status || 'Paid'}</span>
                     </td>
                   </tr>
                 ))}
@@ -246,8 +284,12 @@ export default function BillingPage() {
             <p className="text-sm text-slate-600 mb-3">
               Cancelling will stop all posts at the end of your current billing period. Your data is kept for 30 days.
             </p>
-            <button className="text-sm font-semibold text-red-600 hover:text-red-700 underline transition-colors">
-              Cancel my subscription
+            <button
+              onClick={handlePortal}
+              disabled={portalLoading}
+              className="text-sm font-semibold text-red-600 hover:text-red-700 underline transition-colors disabled:opacity-60"
+            >
+              {portalLoading ? 'Opening portal...' : 'Manage subscription via Stripe portal'}
             </button>
           </div>
         </div>

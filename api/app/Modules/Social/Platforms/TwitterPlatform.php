@@ -78,8 +78,8 @@ class TwitterPlatform implements SocialPlatformInterface
                 'refresh_token' => $connection->refresh_token,
             ],
             'auth' => [
-                config('services.twitter.client_id'),
-                config('services.twitter.client_secret'),
+                config('services.twitter-oauth-2.client_id'),
+                config('services.twitter-oauth-2.client_secret'),
             ],
         ]);
 

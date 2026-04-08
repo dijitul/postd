@@ -47,21 +47,17 @@ class PlanFeature extends Model
 
     public function allowsPlatform(string $platform, int $connectedCount): bool
     {
-        // GBP is always free on all plans
+        // GBP integration is available on all plans
         if ($platform === 'google_business_profile') {
             return true;
         }
 
-        // TikTok requires the tiktok_included flag
+        // TikTok requires the tiktok_included flag or a TikTok add-on
         if ($platform === 'tiktok') {
             return $this->tiktok_included;
         }
 
-        // All other platforms checked against the limit
-        if ($this->platform_limit === null) {
-            return true; // unlimited
-        }
-
-        return $connectedCount < $this->platform_limit;
+        // All other platforms (facebook, instagram, twitter, linkedin) are included on every plan
+        return true;
     }
 }

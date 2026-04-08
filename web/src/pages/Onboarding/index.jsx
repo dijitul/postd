@@ -442,24 +442,23 @@ function Step3({ onNext, onSkip, defaultValues }) {
 
 // ── Step 4 — Connect platforms ────────────────────────────────────────────────
 const PLATFORMS = [
-  { id: 'facebook', label: 'Facebook', plan: 'starter' },
-  { id: 'instagram', label: 'Instagram', plan: 'starter' },
-  { id: 'linkedin', label: 'LinkedIn', plan: 'growth' },
-  { id: 'x', label: 'X (Twitter)', plan: 'growth' },
-  { id: 'tiktok', label: 'TikTok', plan: 'pro' },
-  { id: 'google', label: 'Google Business', plan: 'free', alwaysFree: true }
+  { id: 'facebook',  label: 'Facebook',                plan: 'base'       },
+  { id: 'instagram', label: 'Instagram',               plan: 'base'       },
+  { id: 'linkedin',  label: 'LinkedIn',                plan: 'base'       },
+  { id: 'x',         label: 'X (Twitter)',             plan: 'base'       },
+  { id: 'tiktok',    label: 'TikTok',                  plan: 'pro'        },
+  { id: 'google',    label: 'Google Business Profile', plan: 'base'       },
 ]
 
 function Step4({ onNext, onSkip, userPlan = 'growth', gbpAlreadyConnected = false }) {
   const [connected, setConnected] = useState(new Set())
   const [connecting, setConnecting] = useState(null)
 
-  const planOrder = { free: 0, starter: 1, growth: 2, pro: 3 }
-  const userPlanLevel = planOrder[userPlan] ?? 2
+  const planOrder = { base: 0, starter: 0, growth: 0, pro: 3 }
+  const userPlanLevel = planOrder[userPlan] ?? 0
 
   const isLocked = (plan) => {
-    if (plan === 'free') return false
-    return planOrder[plan] > userPlanLevel
+    return plan === 'pro' && planOrder[plan] > userPlanLevel
   }
 
   const handleConnect = async (platformId) => {
@@ -488,8 +487,9 @@ function Step4({ onNext, onSkip, userPlan = 'growth', gbpAlreadyConnected = fals
 
       <div className="space-y-3">
         {PLATFORMS.map((platform) => {
-          const locked = isLocked(platform.plan)
-          const isConnected = isGbpConnected(platform.id) || connected.has(platform.id)
+          const isComingSoon = !!platform.comingSoon
+          const locked = !isComingSoon && isLocked(platform.plan)
+          const isConnected = !isComingSoon && (isGbpConnected(platform.id) || connected.has(platform.id))
           const isConnecting = connecting === platform.id
           const isGbpAutoConnected = platform.id === 'google' && gbpAlreadyConnected
 
@@ -497,7 +497,7 @@ function Step4({ onNext, onSkip, userPlan = 'growth', gbpAlreadyConnected = fals
             <div
               key={platform.id}
               className={`flex items-center gap-4 p-4 rounded-2xl border transition-all duration-200 ${
-                locked
+                isComingSoon || locked
                   ? 'bg-slate-50 border-slate-200 opacity-60'
                   : isConnected
                   ? 'bg-green-50 border-green-200'
@@ -508,9 +508,6 @@ function Step4({ onNext, onSkip, userPlan = 'growth', gbpAlreadyConnected = fals
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-navy-800">{platform.label}</span>
-                  {platform.alwaysFree && (
-                    <span className="badge-honey text-2xs">Free</span>
-                  )}
                   {locked && (
                     <span className="text-xs text-slate-400 font-medium">Upgrade to unlock</span>
                   )}
@@ -521,7 +518,9 @@ function Step4({ onNext, onSkip, userPlan = 'growth', gbpAlreadyConnected = fals
                   </p>
                 )}
               </div>
-              {locked ? (
+              {isComingSoon ? (
+                <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-3 py-1.5 rounded-lg">Coming soon</span>
+              ) : locked ? (
                 <button className="text-xs font-semibold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200">
                   Upgrade
                 </button>
