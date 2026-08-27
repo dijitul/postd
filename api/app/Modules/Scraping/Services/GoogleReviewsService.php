@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 class GoogleReviewsService
 {
     private readonly Client $httpClient;
-    private readonly string $apiKey;
+    private readonly ?string $apiKey;
 
     public function __construct()
     {
