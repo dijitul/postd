@@ -21,7 +21,7 @@ class GoogleBusinessProfilePlatform implements SocialPlatformInterface
         $locationName = $account?->platform_account_id;
 
         if (! $locationName) {
-            $locationName = $this->getFirstLocation($connection);
+            $locationName = $this->resolveSoleLocation($connection);
         }
 
         if (! $locationName) {
@@ -135,7 +135,10 @@ class GoogleBusinessProfilePlatform implements SocialPlatformInterface
                         $postcode     = $location['storefrontAddress']['postalCode'] ?? null;
 
                         $locations[] = [
-                            'id'         => $location['name'],
+                            // v4 (Local Posts) needs the account-scoped resource path,
+                            // e.g. accounts/{account}/locations/{location}. The v1
+                            // Business Information API only returns "locations/{id}".
+                            'id'         => $account['name'].'/'.$location['name'],
                             'name'       => $location['title'] ?? 'Business Location',
                             'type'       => 'location',
                             'url'        => $location['websiteUri'] ?? null,
@@ -187,7 +190,8 @@ class GoogleBusinessProfilePlatform implements SocialPlatformInterface
                         $postcode = $location['storefrontAddress']['postalCode'] ?? null;
 
                         $locations[] = [
-                            'id'          => $location['name'],
+                            // Account-scoped path — see note in getAccountsWithToken().
+                            'id'          => $account['name'].'/'.$location['name'],
                             'name'        => $location['title'] ?? 'Business Location',
                             'type'        => 'location',
                             'url'         => $location['websiteUri'] ?? null,
@@ -222,13 +226,34 @@ class GoogleBusinessProfilePlatform implements SocialPlatformInterface
         ];
     }
 
-    private function getFirstLocation(SocialConnection $connection): ?string
+    /**
+     * Resolve the location to post to when the user has not explicitly selected one.
+     *
+     * Only safe when the connection manages exactly one location. Agencies routinely
+     * manage dozens of client profiles on a single Google account, and picking the
+     * first one Google happens to return would publish a business's content to
+     * somebody else's Google Business Profile. Refuse rather than guess.
+     */
+    private function resolveSoleLocation(SocialConnection $connection): ?string
     {
         $cacheKey = "gbp_location_{$connection->id}";
 
         return Cache::remember($cacheKey, now()->addDays(7), function () use ($connection) {
-            $accounts = $this->getAccounts($connection);
-            return $accounts[0]['id'] ?? null;
+            $locations = $this->getAccounts($connection);
+
+            if (count($locations) === 1) {
+                return $locations[0]['id'];
+            }
+
+            if (count($locations) > 1) {
+                throw new \RuntimeException(
+                    'This Google account manages '.count($locations).' business locations '
+                    .'and none has been selected. Choose which location to post to in '
+                    .'Platforms before scheduling Google Business Profile posts.'
+                );
+            }
+
+            return null;
         });
     }
 
