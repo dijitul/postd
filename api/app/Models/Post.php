@@ -20,6 +20,7 @@ class Post extends Model
     public const STATUS_APPROVED = 'approved';     // approved, awaiting scheduling
     public const STATUS_REJECTED = 'rejected';     // rejected, will not post
     public const STATUS_SCHEDULED = 'scheduled';   // scheduled for a specific time
+    public const STATUS_DISPATCHING = 'dispatching'; // claimed by the dispatcher, publish job queued
     public const STATUS_POSTED = 'posted';         // successfully posted
     public const STATUS_FAILED = 'failed';         // all retries exhausted
 

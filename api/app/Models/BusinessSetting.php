@@ -75,10 +75,15 @@ class BusinessSetting extends Model
 
     /**
      * Get posts-per-week target for a given platform.
+     *
+     * The google_business_profile platform key is stored in a column abbreviated
+     * to `gbp`, so it needs mapping — without it the lookup misses and every
+     * business silently falls back to the default regardless of its setting.
      */
     public function getPostsPerWeekForPlatform(string $platform): int
     {
-        $key = "posts_per_week_{$platform}";
+        $key = 'posts_per_week_'.($platform === 'google_business_profile' ? 'gbp' : $platform);
+
         return $this->$key ?? 3;
     }
 }

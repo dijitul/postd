@@ -21,6 +21,12 @@ class WebsiteScraperService
     ];
 
     // Contact info patterns
+    // class/id/role values that mark site chrome rather than page content
+    private const CHROME_ATTR_PATTERN = '/\b(nav|navbar|navigation|menu|breadcrumb|header|footer|sidebar|widget|cookie|consent|banner|social|share|pagination|offcanvas|drawer|topbar|utility)\b/';
+
+    // Navigation labels, CTAs and legal furniture that look like list items
+    private const BOILERPLATE_PATTERN = '/^(home|about( us)?|contact( us)?|blog|news|our (blog|news|team|services|work)|services|portfolio|gallery|testimonials?|reviews?|faqs?|frequently asked questions|privacy( policy)?|terms( (and|&) conditions)?|cookie[s]?( policy)?|sitemap|log ?in|sign ?[iu]n|register|search|menu|close|next|previous|prev|back|more|read more|learn more|find out more|get (in touch|a quote|started)|book (now|online)|call (us|now)|email us|enquire( now)?|subscribe|follow us|share|skip to (main )?content|all rights reserved|copyright.*)$/';
+
     private const PHONE_PATTERN = '/(?:\+44|0)[\s\-]?\d{2,4}[\s\-]?\d{3,4}[\s\-]?\d{3,4}/';
     private const EMAIL_PATTERN = '/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/';
 
@@ -199,11 +205,14 @@ class WebsiteScraperService
     {
         $services = [];
 
-        // Look for service-like lists and headings
+        // Look for service-like lists and headings, ignoring nav/footer chrome —
+        // otherwise menu items and footer links crowd out the real services.
         try {
             $crawler->filter('ul li, ol li')->each(function (Crawler $node) use (&$services) {
                 $text = trim($node->text(''));
-                if ($text && strlen($text) > 5 && strlen($text) < 100) {
+                if (strlen($text) > 5 && strlen($text) < 100
+                    && ! $this->isInPageChrome($node)
+                    && ! $this->isBoilerplate($text)) {
                     $services[] = $text;
                 }
             });
@@ -215,15 +224,76 @@ class WebsiteScraperService
             $crawler->filter('h2, h3')->each(function (Crawler $node) use (&$services) {
                 $text = trim($node->text(''));
                 // Service headings tend to be short and noun-based
-                if ($text && strlen($text) > 3 && strlen($text) < 80) {
+                if (strlen($text) > 3 && strlen($text) < 80
+                    && ! $this->isInPageChrome($node)
+                    && ! $this->isBoilerplate($text)) {
                     $services[] = $text;
                 }
             });
         } catch (\Throwable) {
         }
 
-        // Deduplicate and limit
-        return array_unique(array_slice($services, 0, 20));
+        // Deduplicate first, then limit — slicing first throws away distinct
+        // entries to make room for duplicates.
+        return array_slice(array_values(array_unique($services)), 0, 20);
+    }
+
+    /**
+     * Is this node inside site chrome (nav, header, footer, sidebar, cookie banner)?
+     * Those regions are full of link lists that are not services.
+     */
+    private function isInPageChrome(Crawler $node): bool
+    {
+        $el = $node->getNode(0);
+
+        while ($el instanceof \DOMNode) {
+            if ($el instanceof \DOMElement) {
+                if (in_array(strtolower($el->tagName), ['nav', 'header', 'footer', 'aside'], true)) {
+                    return true;
+                }
+
+                $attrs = strtolower($el->getAttribute('class').' '.$el->getAttribute('id').' '.$el->getAttribute('role'));
+                if ($attrs !== '' && preg_match(self::CHROME_ATTR_PATTERN, $attrs)) {
+                    return true;
+                }
+            }
+            $el = $el->parentNode;
+        }
+
+        return false;
+    }
+
+    /**
+     * Reject navigation labels, CTAs, review badges, dates and other furniture
+     * that is structurally list-shaped but says nothing about the business.
+     */
+    private function isBoilerplate(string $text): bool
+    {
+        $normalised = strtolower(trim($text, " \t\n\r\0\x0B.,:;-–—"));
+
+        if ($normalised === '' || preg_match(self::BOILERPLATE_PATTERN, $normalised)) {
+            return true;
+        }
+
+        // Star-rating and review-count badges ("★★★★★ 5.0 from 32 Google reviews")
+        if (preg_match('/[★☆»«|]|\b\d+(\.\d+)?\s*(stars?|\/\s*5)\b|\b\d+\s+(google\s+)?reviews?\b/u', $normalised)) {
+            return true;
+        }
+
+        // Bare dates ("August 26, 2026") and mostly-numeric fragments
+        if (preg_match('/^\W*(?:\d{1,2}\W+)?(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\W+\d{1,2}?\W*,?\s*\d{4}\W*$/', $normalised)) {
+            return true;
+        }
+        if (preg_match_all('/\d/', $normalised) > (mb_strlen($normalised) / 2)) {
+            return true;
+        }
+
+        // Single short word — nav labels are far more common than one-word services
+        if (! str_contains($normalised, ' ') && mb_strlen($normalised) < 12) {
+            return true;
+        }
+
+        return false;
     }
 
     private function extractKeyPhrases(array $data): array
@@ -242,12 +312,12 @@ class WebsiteScraperService
         $sentences = preg_split('/[.!?|]/', $text);
         foreach (($sentences ?: []) as $sentence) {
             $sentence = trim($sentence);
-            if ($sentence && strlen($sentence) > 5 && strlen($sentence) < 80) {
+            if (strlen($sentence) > 5 && strlen($sentence) < 80 && ! $this->isBoilerplate($sentence)) {
                 $phrases[] = $sentence;
             }
         }
 
-        return array_unique(array_slice($phrases, 0, 15));
+        return array_slice(array_values(array_unique($phrases)), 0, 15);
     }
 
     private function extractOpeningHours(string $text): array

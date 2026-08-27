@@ -99,6 +99,13 @@ class ContentGenerationService
         $generatedPosts = [];
 
         foreach ($platforms as $platform) {
+            if ($this->hasReachedWeeklyTarget($business, $platform)) {
+                Log::info("ContentGenerationService: Skipping {$platform} — weekly posting target already met", [
+                    'business_id' => $business->id,
+                ]);
+                continue;
+            }
+
             try {
                 $post = $this->generateForPlatform($business, $brief, $platform, $businessContext);
                 if ($post) {
@@ -125,6 +132,43 @@ class ContentGenerationService
         }
 
         return $generatedPosts;
+    }
+
+    /**
+     * Has this platform already hit the business's configured posts-per-week target?
+     *
+     * Generation runs daily and previously produced one post per connected platform
+     * every run, so the posts_per_week_* settings had no effect at all. Counting what
+     * already exists this week makes the configured cadence the actual cadence, and
+     * lets a target of 0 switch a platform off without disconnecting it.
+     */
+    private function hasReachedWeeklyTarget(Business $business, string $platform): bool
+    {
+        $settings = $business->settings;
+
+        if (! $settings) {
+            return false;
+        }
+
+        $target = $settings->getPostsPerWeekForPlatform($platform);
+
+        if ($target <= 0) {
+            return true;
+        }
+
+        $existing = Post::where('business_id', $business->id)
+            ->where('platform', $platform)
+            ->whereIn('status', [
+                Post::STATUS_PENDING,
+                Post::STATUS_APPROVED,
+                Post::STATUS_SCHEDULED,
+                Post::STATUS_DISPATCHING,
+                Post::STATUS_POSTED,
+            ])
+            ->where('created_at', '>=', now()->startOfWeek())
+            ->count();
+
+        return $existing >= $target;
     }
 
     /**
