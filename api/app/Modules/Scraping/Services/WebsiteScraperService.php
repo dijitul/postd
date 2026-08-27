@@ -269,9 +269,27 @@ class WebsiteScraperService
      */
     private function isBoilerplate(string $text): bool
     {
-        $normalised = strtolower(trim($text, " \t\n\r\0\x0B.,:;-–—"));
+        // Trim ASCII only. trim() works on bytes, so a multi-byte character in the
+        // charlist (en/em dash) strips matching bytes out of the middle of other
+        // multi-byte characters — "★" is E2 98 85 and "—" is E2 80 94, so a dash in
+        // the list decapitates the star, leaving invalid UTF-8 that every /u pattern
+        // below then silently fails to match.
+        $normalised = strtolower(trim($text, " \t\n\r\0\x0B.,:;-"));
 
         if ($normalised === '' || preg_match(self::BOILERPLATE_PATTERN, $normalised)) {
+            return true;
+        }
+
+        // Card and listing furniture: teaser CTAs, and headlines ending in a date
+        if (preg_match('/\b(read|learn|find out|see) more\b|\bcontinue reading\b/', $normalised)) {
+            return true;
+        }
+        if (preg_match('/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2},?\s+\d{4}\s*$/', $normalised)) {
+            return true;
+        }
+
+        // Runs of concatenated nav headings tend to open with a section label
+        if (preg_match('/^(frequently asked questions|faqs?|our (blog|news|story)|latest news|news|blog)\b/', $normalised)) {
             return true;
         }
 
