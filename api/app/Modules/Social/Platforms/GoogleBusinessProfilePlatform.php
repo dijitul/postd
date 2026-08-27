@@ -12,7 +12,7 @@ class GoogleBusinessProfilePlatform implements SocialPlatformInterface
 {
     // Google split the My Business API into separate APIs in 2022
     private const ACCOUNT_MGMT_URL = 'https://mybusinessaccountmanagement.googleapis.com/v1/';
-    private const BUSINESS_INFO_URL = 'https://mybusinessinformation.googleapis.com/v1/';
+    private const BUSINESS_INFO_URL = 'https://mybusinessbusinessinformation.googleapis.com/v1/';
     private const LOCAL_POSTS_URL   = 'https://mybusiness.googleapis.com/v4/';
 
     public function publishPost(SocialConnection $connection, string $content, array $mediaUrls = []): array
