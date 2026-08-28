@@ -87,14 +87,36 @@ class SocialConnection extends Model
         return $query->where('platform', $platform);
     }
 
+    /**
+     * Tokens due a refresh: expiring within $days, and anything already expired.
+     *
+     * Already-expired tokens used to be excluded by a `expires_at > now()` bound,
+     * which made this useless for the platforms that need it most — a Google
+     * access token lives one hour, so by the time this command next ran the token
+     * had long since lapsed and was skipped forever. Only an actual publish
+     * attempt ever refreshed it.
+     */
     public function scopeExpiringWithinDays($query, int $days)
     {
         return $query->whereNotNull('expires_at')
-            ->where('expires_at', '<=', now()->addDays($days))
-            ->where('expires_at', '>', now());
+            ->where('expires_at', '<=', now()->addDays($days));
     }
 
     // Helpers
+
+    /**
+     * Does this connection actually need the user to reconnect?
+     *
+     * An expired access token is not a broken connection — OAuth access tokens are
+     * meant to be short lived, and Google's last one hour. What matters is whether
+     * we still hold a refresh token to mint a new one with. Treating "expired" as
+     * "disconnected" made the Platforms page report Google as disconnected for
+     * roughly 23 hours of every day while it was working perfectly well.
+     */
+    public function needsReconnect(): bool
+    {
+        return $this->isExpired() && ! $this->refresh_token;
+    }
 
     public function isExpired(): bool
     {

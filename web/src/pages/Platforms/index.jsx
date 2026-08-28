@@ -40,8 +40,11 @@ function PlatformCard({ def, connection, userPlanLevel, onConnect, onDisconnect,
 
   const isComingSoon = !!def.comingSoon
   const isLocked = !isComingSoon && def.plan === 'pro' && PLAN_ORDER[def.plan] > userPlanLevel
-  const isConnected = !isComingSoon && !!connection && connection.is_active && !connection.is_expired
-  const isExpired = !isComingSoon && !!connection && connection.is_expired
+  // A lapsed access token is not a disconnection — we refresh those automatically.
+  // Only a connection with no usable refresh token needs the user to act.
+  const needsReconnect = connection?.needs_reconnect ?? connection?.is_expired ?? false
+  const isConnected = !isComingSoon && !!connection && connection.is_active && !needsReconnect
+  const isExpired = !isComingSoon && !!connection && needsReconnect
 
   const status = isComingSoon ? 'coming_soon' : isLocked ? 'locked' : isConnected ? 'connected' : isExpired ? 'expired' : 'disconnected'
 
@@ -220,13 +223,13 @@ export default function PlatformsPage() {
 
   const handleReconnect = (backendId) => {
     setConnections((prev) =>
-      prev.map((c) => c.platform === backendId ? { ...c, is_expired: false, is_active: true } : c)
+      prev.map((c) => c.platform === backendId ? { ...c, is_expired: false, needs_reconnect: false, is_active: true } : c)
     )
   }
 
   const connectedCount = PLATFORM_DEFS.filter((def) => {
     const conn = getConnection(def.backendId)
-    return conn && conn.is_active && !conn.is_expired
+    return conn && conn.is_active && !(conn.needs_reconnect ?? conn.is_expired)
   }).length
 
   if (loading) {

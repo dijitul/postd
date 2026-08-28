@@ -37,6 +37,9 @@ class SocialConnectionController extends Controller
                 'platform' => $conn->platform,
                 'is_active' => $conn->is_active,
                 'is_expired' => $conn->isExpired(),
+                // Whether the user must actually reconnect. An expired access
+                // token we hold a refresh token for is not a broken connection.
+                'needs_reconnect' => $conn->needsReconnect(),
                 'expires_at' => $conn->expires_at?->toIso8601String(),
                 'last_used_at' => $conn->last_used_at?->toIso8601String(),
                 'last_error_message' => $conn->last_error_message,
