@@ -10,6 +10,12 @@ Artisan::command('inspire', function () {
 
 // ── Scheduled tasks ────────────────────────────────────────────────────────
 
+// Heartbeat for the admin health tab. If this stops updating, the crontab
+// entry has died and nothing else on this list is running either.
+Schedule::call(fn () => \Illuminate\Support\Facades\Cache::put('scheduler_heartbeat', now()->toIso8601String(), 3600))
+    ->everyMinute()
+    ->name('scheduler-heartbeat');
+
 // Dispatch scheduled posts — runs every minute to check for posts due to go out
 Schedule::job(new \App\Modules\Schedule\Jobs\DispatchScheduledPostsJob, 'posting')
     ->everyMinute()

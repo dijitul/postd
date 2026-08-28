@@ -247,7 +247,7 @@ Scheduled jobs:
 - `DispatchScheduledPostsJob` — every minute — dispatches approved posts at their scheduled time
 - `GeneratePostsJob` — daily — creates new posts for all active businesses
 - `RefreshSocialTokensCommand` — daily — refreshes expiring OAuth tokens
-- `NotifyTrialEndingCommand` — daily at 9am — sends trial expiry warnings (has a bug — see Known Issues)
+- `NotifyTrialEndingCommand` — daily at 9am — sends trial expiry warnings
 
 ---
 
@@ -445,7 +445,7 @@ DB::table('failed_jobs')->orderByRaw('id DESC')->first();
 | GBP API quota 0 | Blocked on Google | Applied for Basic API Access. GBP posts fail until approved. |
 | GBP location picker blank | Blocked on Google | Requires GBP API to list locations |
 | `ScrapeBusinessJob` crashes | Fix needed | `GOOGLE_PLACES_API_KEY` is null, `GoogleReviewsService::$apiKey` is typed `string` — needs to be `?string` |
-| `NotifyTrialEndingCommand` bug | Fix needed | Calls `User::onTrial()` statically — needs to be instance call |
+| `NotifyTrialEndingCommand` bug | Fixed | `scopeOnTrial` collided with Cashier's `Billable::onTrial()`, so the static call returned a bool. Scope renamed to `scopeTrialing` — use `User::trialing()`. |
 | Jobs from tinker not queued | Known quirk | Run via `->handle()` in tinker instead of `::dispatch()` |
 | Settings page testing | Needs verification | Previously not saving correctly |
 | Retry button in Inbox | Not built | Failed posts need a retry action in the UI |

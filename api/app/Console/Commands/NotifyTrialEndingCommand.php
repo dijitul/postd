@@ -16,7 +16,7 @@ class NotifyTrialEndingCommand extends Command
     {
         $targetDate = now()->addDays(3)->toDateString();
 
-        $users = User::onTrial()
+        $users = User::trialing()
             ->whereDate('trial_ends_at', $targetDate)
             ->whereDoesntHave('subscriptions', fn ($q) => $q->active())
             ->get();
@@ -37,7 +37,7 @@ class NotifyTrialEndingCommand extends Command
         }
 
         // Also notify at 1 day remaining
-        $users1Day = User::onTrial()
+        $users1Day = User::trialing()
             ->whereDate('trial_ends_at', now()->addDay()->toDateString())
             ->whereDoesntHave('subscriptions', fn ($q) => $q->active())
             ->get();

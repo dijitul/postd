@@ -137,12 +137,24 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ── Admin (Dijitul team only) ──────────────────────────────────────────
     Route::prefix('admin')->middleware('admin')->group(function () {
-        Route::get('/stats', [AdminController::class, 'stats'])->name('admin.stats');
-        Route::get('/businesses', [AdminController::class, 'businesses'])->name('admin.businesses');
-        Route::get('/businesses/{id}', [AdminController::class, 'business'])->name('admin.business');
+        Route::get('/overview', [AdminController::class, 'overview'])->name('admin.overview');
+        Route::get('/stats', [AdminController::class, 'stats'])->name('admin.stats'); // alias of overview
+        Route::get('/activity', [AdminController::class, 'activity'])->name('admin.activity');
         Route::get('/health', [AdminController::class, 'health'])->name('admin.health');
         Route::get('/at-risk', [AdminController::class, 'atRisk'])->name('admin.at-risk');
         Route::get('/ai-costs', [AdminController::class, 'aiCosts'])->name('admin.ai-costs');
+
+        // Customers
+        Route::get('/customers', [AdminController::class, 'customers'])->name('admin.customers');
+        Route::get('/customers/{id}', [AdminController::class, 'customer'])->name('admin.customer');
+        Route::post('/customers/{id}/comp', [AdminController::class, 'comp'])->name('admin.customer.comp');
+        Route::delete('/customers/{id}/comp', [AdminController::class, 'uncomp'])->name('admin.customer.uncomp');
+        Route::post('/customers/{id}/extend-trial', [AdminController::class, 'extendTrial'])->name('admin.customer.extend-trial');
+        Route::post('/customers/{id}/impersonate', [AdminController::class, 'impersonate'])->name('admin.customer.impersonate');
+
+        // Businesses (kept for existing callers)
+        Route::get('/businesses', [AdminController::class, 'businesses'])->name('admin.businesses');
+        Route::get('/businesses/{id}', [AdminController::class, 'business'])->name('admin.business');
         Route::post('/businesses/{id}/impersonate', [AdminController::class, 'impersonate'])->name('admin.impersonate');
     });
 

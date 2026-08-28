@@ -105,11 +105,21 @@ export const settingsApi = {
 
 // ─── Admin endpoints ──────────────────────────────────────────────────────────
 export const adminApi = {
-  getMetrics: () => api.get('/admin/stats'),
+  getOverview: (params) => api.get('/admin/overview', { params }),
   getAtRisk: () => api.get('/admin/at-risk'),
+  getActivity: (params) => api.get('/admin/activity', { params }),
+  getSystemHealth: () => api.get('/admin/health'),
+  getAiCosts: (params) => api.get('/admin/ai-costs', { params }),
+
+  getCustomers: (params) => api.get('/admin/customers', { params }),
+  getCustomer: (id) => api.get(`/admin/customers/${id}`),
+  compCustomer: (id, data) => api.post(`/admin/customers/${id}/comp`, data),
+  uncompCustomer: (id) => api.delete(`/admin/customers/${id}/comp`),
+  extendTrial: (id, days) => api.post(`/admin/customers/${id}/extend-trial`, { days }),
+  impersonate: (id) => api.post(`/admin/customers/${id}/impersonate`),
+
   getBusinesses: (params) => api.get('/admin/businesses', { params }),
-  getBusiness: (id) => api.get(`/admin/businesses/${id}`),
-  getSystemHealth: () => api.get('/admin/health')
+  getBusiness: (id) => api.get(`/admin/businesses/${id}`)
 }
 
 export default api
