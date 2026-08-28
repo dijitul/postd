@@ -444,11 +444,11 @@ DB::table('failed_jobs')->orderByRaw('id DESC')->first();
 |---|---|---|
 | GBP API quota 0 | Blocked on Google | Applied for Basic API Access. GBP posts fail until approved. |
 | GBP location picker blank | Blocked on Google | Requires GBP API to list locations |
-| `ScrapeBusinessJob` crashes | Fix needed | `GOOGLE_PLACES_API_KEY` is null, `GoogleReviewsService::$apiKey` is typed `string` — needs to be `?string` |
+| `ScrapeBusinessJob` crashes | Fixed | `GoogleReviewsService::$apiKey` is `?string` and the service returns early when the key is unset, so a null `GOOGLE_PLACES_API_KEY` no longer throws. |
 | `NotifyTrialEndingCommand` bug | Fixed | `scopeOnTrial` collided with Cashier's `Billable::onTrial()`, so the static call returned a bool. Scope renamed to `scopeTrialing` — use `User::trialing()`. |
 | Jobs from tinker not queued | Known quirk | Run via `->handle()` in tinker instead of `::dispatch()` |
 | Settings page testing | Needs verification | Previously not saving correctly |
-| Retry button in Inbox | Not built | Failed posts need a retry action in the UI |
+| Retry button for failed posts | Built | `POST /posts/{id}/retry` plus a retry action on the failed filter in `PostsPage.jsx`. Note there is no separate Inbox page — it is the Posts page filtered by status. |
 | Twitter token refresh | Untested | First live test will be when the current token expires (~2 hours post-connect) |
 | LinkedIn Community Management API | Blocked on LinkedIn | Access form submitted, awaiting review. Code complete but untested end to end — connecting fails until the product is granted. |
 | `LINKEDIN_API_VERSION` unverified | Verify before launch | Set to `202506` as a placeholder. Confirm against LinkedIn's current version list; an unsupported value fails every `/rest/*` call. |
