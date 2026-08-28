@@ -185,31 +185,30 @@ class ContentGenerationService
             return null;
         }
 
+        // Work out when this will actually go out before writing it, so the model
+        // knows what day it is publishing on. Without this it guesses, and cheerfully
+        // opens with "Happy Monday!" on a post scheduled for a Friday.
+        $scheduledAt = $this->schedulingService->getNextSlot($business, $platform);
+
+        $recentPosts = $this->recentPostsForPlatform($business, $platform);
+
         $systemPrompt = $this->buildSystemPrompt($business, $platform, $platformRules);
-        $userPrompt   = $this->buildUserPrompt($brief, $businessContext, $platform);
+        $userPrompt   = $this->buildUserPrompt($brief, $businessContext, $platform, $scheduledAt, $recentPosts);
 
         $startTime = microtime(true);
 
-        $response = Http::withHeaders([
-            'x-api-key'         => config('services.anthropic.key'),
-            'anthropic-version' => config('services.anthropic.version'),
-            'content-type'      => 'application/json',
-        ])->post(config('services.anthropic.base_url').'/messages', [
+        $response = $this->callAnthropic([
             'model'      => self::MODEL,
             'max_tokens' => $platform === 'tiktok' ? 600 : 400,
             'system'     => $systemPrompt,
             'messages'   => [
                 ['role' => 'user', 'content' => $userPrompt],
             ],
-        ]);
+        ], $platform);
 
         $durationMs = (microtime(true) - $startTime) * 1000;
 
-        if ($response->failed()) {
-            Log::error("ContentGenerationService: Anthropic API error for {$platform}", [
-                'status' => $response->status(),
-                'body'   => $response->body(),
-            ]);
+        if (! $response) {
             return null;
         }
 
@@ -237,9 +236,6 @@ class ContentGenerationService
 
         // Determine the connection for this platform
         $connection = $business->getConnectionForPlatform($platform);
-
-        // Get the optimal scheduled time
-        $scheduledAt = $this->schedulingService->getNextSlot($business, $platform);
 
         // Build the Post record
         $settings = $business->settings;
@@ -279,6 +275,95 @@ class ContentGenerationService
         }
 
         return $post;
+    }
+
+    /**
+     * Call the Anthropic messages API, retrying transient failures.
+     *
+     * A single 529 "Overloaded" used to drop that platform's post for the day
+     * with nothing surfaced to the user — the caller just logged and returned
+     * null. Overload and rate-limit responses are routine and worth waiting out;
+     * a 400 or 401 is our fault and retrying only wastes time.
+     */
+    private function callAnthropic(array $payload, string $platform): ?\Illuminate\Http\Client\Response
+    {
+        $delaysMs = [1000, 4000, 10000];
+        $lastResponse = null;
+
+        foreach (array_merge([0], $delaysMs) as $attempt => $delayMs) {
+            if ($delayMs > 0) {
+                usleep($delayMs * 1000);
+            }
+
+            try {
+                $lastResponse = Http::withHeaders([
+                    'x-api-key'         => config('services.anthropic.key'),
+                    'anthropic-version' => config('services.anthropic.version'),
+                    'content-type'      => 'application/json',
+                ])->timeout(60)->post(config('services.anthropic.base_url').'/messages', $payload);
+            } catch (\Throwable $e) {
+                Log::warning("ContentGenerationService: Anthropic request failed for {$platform}", [
+                    'attempt' => $attempt + 1,
+                    'error'   => $e->getMessage(),
+                ]);
+                continue;
+            }
+
+            if ($lastResponse->successful()) {
+                if ($attempt > 0) {
+                    Log::info("ContentGenerationService: Anthropic succeeded for {$platform} on attempt ".($attempt + 1));
+                }
+                return $lastResponse;
+            }
+
+            $status = $lastResponse->status();
+            $retryable = $status === 429 || $status >= 500;
+
+            Log::warning("ContentGenerationService: Anthropic API error for {$platform}", [
+                'status'    => $status,
+                'attempt'   => $attempt + 1,
+                'retryable' => $retryable,
+                'body'      => $lastResponse->body(),
+            ]);
+
+            if (! $retryable) {
+                return null;
+            }
+        }
+
+        Log::error("ContentGenerationService: Anthropic gave up for {$platform} after retries", [
+            'status' => $lastResponse?->status(),
+        ]);
+
+        return null;
+    }
+
+    /**
+     * The most recent posts we already wrote for this platform.
+     *
+     * Fed to the model so it can avoid repeating itself. Generation is otherwise
+     * stateless: the same brief over the same source data produces near-identical
+     * posts every run, which is exactly what happened here.
+     *
+     * @return string[]
+     */
+    private function recentPostsForPlatform(Business $business, string $platform, int $limit = 5): array
+    {
+        return Post::where('business_id', $business->id)
+            ->where('platform', $platform)
+            ->whereIn('status', [
+                Post::STATUS_PENDING,
+                Post::STATUS_APPROVED,
+                Post::STATUS_SCHEDULED,
+                Post::STATUS_DISPATCHING,
+                Post::STATUS_POSTED,
+            ])
+            ->latest('created_at')
+            ->limit($limit)
+            ->pluck('content')
+            ->filter()
+            ->values()
+            ->all();
     }
 
     /**
@@ -325,12 +410,19 @@ PROMPT;
     /**
      * Build the user prompt with business context and brief details.
      */
-    private function buildUserPrompt(ContentBrief $brief, array $context, string $platform): string
-    {
+    private function buildUserPrompt(
+        ContentBrief $brief,
+        array $context,
+        string $platform,
+        ?\DateTimeInterface $scheduledAt = null,
+        array $recentPosts = []
+    ): string {
         $contextStr = json_encode($context, JSON_PRETTY_PRINT);
 
         return <<<PROMPT
 Create a {$platform} post based on the following brief and business context.
+
+{$this->getPublishingDatePrompt($scheduledAt)}
 
 BRIEF:
 Theme: {$brief->theme}
@@ -343,8 +435,58 @@ BUSINESS CONTEXT:
 
 {$this->getReferenceDataPrompt($brief)}
 
+{$this->getRecentPostsPrompt($recentPosts)}
+
 Generate a post that feels native to {$platform} — not like it was copied from another platform.
 The post should naturally reflect the brief theme whilst sounding completely authentic.
+PROMPT;
+    }
+
+    /**
+     * Tell the model when this post actually goes out.
+     *
+     * Generation is otherwise date-blind, so any reference to a day was a guess —
+     * which is how a post scheduled for a Friday opened with "Happy Monday!".
+     */
+    private function getPublishingDatePrompt(?\DateTimeInterface $scheduledAt): string
+    {
+        if (! $scheduledAt) {
+            return 'PUBLISHING DATE: unknown. Do not reference any day of the week, date or season.';
+        }
+
+        $when = \Illuminate\Support\Carbon::instance(
+            $scheduledAt instanceof \DateTimeImmutable ? \DateTime::createFromImmutable($scheduledAt) : $scheduledAt
+        );
+
+        return 'PUBLISHING DATE: this post goes live on '.$when->format('l j F Y').' at '.$when->format('H:i')
+            .". Any reference to the day, date or season must match that exactly. Do not mention the day at all unless it genuinely adds something.";
+    }
+
+    /**
+     * Show the model what we have already published so it stops repeating itself.
+     *
+     * @param  string[]  $recentPosts
+     */
+    private function getRecentPostsPrompt(array $recentPosts): string
+    {
+        if (empty($recentPosts)) {
+            return '';
+        }
+
+        $list = implode("\n\n", array_map(
+            fn ($content, $i) => ($i + 1).'. '.trim($content),
+            $recentPosts,
+            array_keys($recentPosts)
+        ));
+
+        return <<<PROMPT
+ALREADY PUBLISHED FOR THIS PLATFORM — DO NOT REPEAT THESE:
+{$list}
+
+The new post must be clearly different from every one of the above. Do not reuse their
+opening line, structure, statistics, or turns of phrase. If the brief pushes you toward
+the same angle, deliberately pick a different one: a specific service, a customer
+problem, a question, a piece of practical advice.
 PROMPT;
     }
 
