@@ -47,7 +47,14 @@ class RefreshSocialTokensCommand extends Command
                 continue;
             }
 
-            if (! $connection->refresh_token) {
+            // Facebook and Instagram issue no refresh token — a long-lived token is
+            // extended by exchanging the current, still-valid one. Skipping them for
+            // want of a refresh token would let them lapse at 60 days and send the
+            // user a "reconnect" email for a connection we could have renewed.
+            $extendsWithoutRefreshToken = in_array($connection->platform, ['facebook', 'instagram'], true)
+                && ! $connection->isExpired();
+
+            if (! $connection->refresh_token && ! $extendsWithoutRefreshToken) {
                 $this->warn("  -> No refresh token available. User must reconnect.");
                 // Notify user
                 if ($connection->business->settings?->notify_token_expiring) {
