@@ -91,4 +91,11 @@ return [
         'base_url' => 'https://newsapi.org/v2',
     ],
 
+    // Transactional email. The API key is NOT an SMTP password — SMTP2GO's SMTP
+    // servers want a separate SMTP user credential, so we send over their API.
+    'smtp2go' => [
+        'key' => env('SMTP2GO_API_KEY'),
+        'endpoint' => env('SMTP2GO_ENDPOINT', 'https://api.smtp2go.com/v3/email/send'),
+    ],
+
 ];

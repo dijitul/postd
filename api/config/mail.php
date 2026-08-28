@@ -19,6 +19,13 @@ return [
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url(env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 
+        // Registered in AppServiceProvider::boot() via Mail::extend()
+        'smtp2go' => [
+            'transport' => 'smtp2go',
+            'key' => env('SMTP2GO_API_KEY'),
+            'endpoint' => env('SMTP2GO_ENDPOINT', 'https://api.smtp2go.com/v3/email/send'),
+        ],
+
         'log' => [
             'transport' => 'log',
             'channel' => env('MAIL_LOG_CHANNEL'),

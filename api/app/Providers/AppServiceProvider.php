@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -32,6 +33,15 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // SMTP2GO delivery via their HTTP API — see Smtp2goTransport for why we
+        // do not use SMTP here.
+        Mail::extend('smtp2go', function (array $config) {
+            return new \App\Modules\Notifications\Transport\Smtp2goTransport(
+                $config['key'] ?? config('services.smtp2go.key', ''),
+                $config['endpoint'] ?? config('services.smtp2go.endpoint'),
+            );
+        });
+
         // Strict models in development
         Model::shouldBeStrict(! app()->isProduction());
 
