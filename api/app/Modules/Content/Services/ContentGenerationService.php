@@ -221,6 +221,10 @@ class ContentGenerationService
 
         $parsed = $this->extractJson($rawContent);
 
+        if (isset($parsed['content']) && is_string($parsed['content'])) {
+            $parsed['content'] = $this->sanitiseContent($parsed['content']);
+        }
+
         if (! $parsed || ! isset($parsed['content'])) {
             Log::error("ContentGenerationService: Bad response format for {$platform}", [
                 'raw' => $rawContent,
@@ -275,6 +279,35 @@ class ContentGenerationService
         }
 
         return $post;
+    }
+
+    /**
+     * Enforce house style on generated copy.
+     *
+     * The system prompt already forbids em dashes, and the model ignores it often
+     * enough that a published post carried "hosting—the lot". A prompt rule the
+     * model can quietly disregard is not a guarantee, so we strip them in code.
+     * Only ever applied to AI output — a user's own edit is published verbatim.
+     */
+    private function sanitiseContent(string $content): string
+    {
+        // Non-breaking spaces come back from the model and render as stray
+        // characters once the post reaches a platform.
+        $content = str_replace(["\u{00A0}", "\u{200B}"], [' ', ''], $content);
+
+        // Em and en dashes become the comma the sentence wanted in the first place.
+        // Any spacing around the dash is absorbed, so "a — b" and "a—b" both give "a, b".
+        $content = preg_replace('/\s*[\x{2014}\x{2013}]\s*/u', ', ', $content);
+
+        // A dash directly after existing punctuation would otherwise double it up.
+        $content = preg_replace('/([,;:])\s*,\s*/u', '$1 ', $content);
+        $content = preg_replace('/\s+([,.!?])/u', '$1', $content);
+
+        // Collapse any run of spaces or tabs the replacements left behind, without
+        // touching newlines — paragraph breaks matter on Facebook and LinkedIn.
+        $content = preg_replace('/[ \t]{2,}/u', ' ', $content);
+
+        return trim($content);
     }
 
     /**
