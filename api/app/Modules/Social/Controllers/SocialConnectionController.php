@@ -112,8 +112,13 @@ class SocialConnectionController extends Controller
         // Facebook needs explicit Page permissions. Socialite's default scope is
         // email only, which yields a token that cannot list Pages (me/accounts
         // comes back empty) let alone post to one.
+        //
+        // setScopes() rather than scopes(): the latter MERGES with Socialite's
+        // default, leaving "email" in the request. This app cannot request email,
+        // and Meta rejects the entire dialog with "Invalid Scopes: email" rather
+        // than ignoring the one bad scope. We only need Page access regardless.
         if ($platform === 'facebook') {
-            $driver = $driver->scopes([
+            $driver = $driver->setScopes([
                 'pages_show_list',        // enumerate the Pages the user manages
                 'pages_read_engagement',  // required alongside manage_posts by Graph
                 'pages_manage_posts',     // create posts on a Page
