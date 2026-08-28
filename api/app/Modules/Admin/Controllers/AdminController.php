@@ -812,9 +812,17 @@ class AdminController extends Controller
                 return true;
             }),
             $this->probe('Cache', function () {
-                Cache::put('admin_health_probe', 1, 10);
+                // A non-numeric token on purpose. The Redis store leaves
+                // numerics unserialised, so an int written back reads as a
+                // string and a strict comparison would fail on a healthy cache.
+                $token = 'probe-'.bin2hex(random_bytes(8));
+                Cache::put('admin_health_probe', $token, 10);
 
-                return Cache::get('admin_health_probe') === 1;
+                if (Cache::get('admin_health_probe') !== $token) {
+                    throw new \RuntimeException('Value did not survive the round trip');
+                }
+
+                return true;
             }),
             $this->horizonProbe(),
             $this->schedulerProbe(),
