@@ -109,6 +109,18 @@ class SocialConnectionController extends Controller
             $driver = $driver->scopes(['https://www.googleapis.com/auth/business.manage']);
         }
 
+        // Facebook needs explicit Page permissions. Socialite's default scope is
+        // email only, which yields a token that cannot list Pages (me/accounts
+        // comes back empty) let alone post to one.
+        if ($platform === 'facebook') {
+            $driver = $driver->scopes([
+                'pages_show_list',        // enumerate the Pages the user manages
+                'pages_read_engagement',  // required alongside manage_posts by Graph
+                'pages_manage_posts',     // create posts on a Page
+                'business_management',    // Pages owned via a Business Manager
+            ]);
+        }
+
         $redirectUrl = $driver
             ->with($extraParams)
             ->redirect()

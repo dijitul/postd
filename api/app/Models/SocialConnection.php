@@ -96,10 +96,12 @@ class SocialConnection extends Model
      * had long since lapsed and was skipped forever. Only an actual publish
      * attempt ever refreshed it.
      */
-    public function scopeExpiringWithinDays($query, int $days)
+    public function scopeExpiringWithinDays($query, float $days)
     {
+        // Converted to minutes so sub-day windows work — the hourly refresh passes
+        // a fraction of a day to target short-lived access tokens.
         return $query->whereNotNull('expires_at')
-            ->where('expires_at', '<=', now()->addDays($days));
+            ->where('expires_at', '<=', now()->addMinutes((int) round($days * 1440)));
     }
 
     // Helpers

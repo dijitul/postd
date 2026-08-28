@@ -36,11 +36,17 @@ class FacebookPlatform implements SocialPlatformInterface
             'access_token' => $pageToken,
         ];
 
-        // Upload photos if provided
+        // Upload photos if provided. Graph wants each attachment as its own indexed
+        // JSON string (attached_media[0]={"media_fbid":"..."}); a nested PHP array
+        // form-encodes to attached_media[0][media_fbid], which Graph rejects.
         if (! empty($mediaUrls)) {
-            $photoId = $this->uploadPhoto($mediaUrls[0], $pageId, $pageToken);
-            if ($photoId) {
-                $params['attached_media'] = [['media_fbid' => $photoId]];
+            $index = 0;
+            foreach (array_slice($mediaUrls, 0, 10) as $url) {
+                $photoId = $this->uploadPhoto($url, $pageId, $pageToken);
+                if ($photoId) {
+                    $params["attached_media[{$index}]"] = json_encode(['media_fbid' => $photoId]);
+                    $index++;
+                }
             }
         }
 
@@ -131,6 +137,13 @@ class FacebookPlatform implements SocialPlatformInterface
         ], $data['data'] ?? []);
     }
 
+    /**
+     * Exchange the user token for the Page's own access token.
+     *
+     * Posting to a Page requires the Page token, not the user token. We used to
+     * fall back to the user token when the lookup failed, which turned a clear
+     * permissions problem into a confusing "(#200) Permissions error" on publish.
+     */
     private function getPageToken(string $userToken, string $pageId): string
     {
         $response = $this->client->get("{$pageId}", [
@@ -141,17 +154,45 @@ class FacebookPlatform implements SocialPlatformInterface
         ]);
 
         $data = json_decode((string) $response->getBody(), true);
-        return $data['access_token'] ?? $userToken;
+
+        if (empty($data['access_token'])) {
+            throw new \RuntimeException(
+                'Could not obtain a Facebook Page access token. The connection is '
+                .'probably missing the pages_manage_posts permission — reconnect Facebook.'
+            );
+        }
+
+        return $data['access_token'];
     }
 
+    /**
+     * Resolve the Page to post to when the user has not chosen one.
+     *
+     * Only safe when the account manages exactly one Page. Picking the first Page
+     * Facebook happens to return would post a business's content to an unrelated
+     * Page it also administers, so refuse rather than guess.
+     */
     private function getDefaultPageId(SocialConnection $connection): ?string
     {
         try {
-            $accounts = $this->getAccounts($connection);
-            return $accounts[0]['id'] ?? null;
-        } catch (\Throwable) {
+            $pages = $this->getAccounts($connection);
+        } catch (\Throwable $e) {
+            Log::warning('FacebookPlatform: could not list Pages', ['error' => $e->getMessage()]);
             return null;
         }
+
+        if (count($pages) === 1) {
+            return $pages[0]['id'];
+        }
+
+        if (count($pages) > 1) {
+            throw new \RuntimeException(
+                'This Facebook account manages '.count($pages).' Pages and none has '
+                .'been selected. Choose which Page to post to in Platforms.'
+            );
+        }
+
+        return null;
     }
 
     private function uploadPhoto(string $imageUrl, string $pageId, string $pageToken): ?string

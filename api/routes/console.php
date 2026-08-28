@@ -33,8 +33,18 @@ Schedule::call(function () {
     ->dailyAt('03:00')
     ->withoutOverlapping(120);
 
-// Check social tokens expiring in 7 days and refresh them
-Schedule::command('social:refresh-tokens')
+// Keep short-lived access tokens warm. Google's last an hour and Twitter's about
+// two, so a daily sweep left them expired for most of the day. The narrow window
+// means this only touches connections actually near expiry, rather than
+// re-refreshing everything every hour and burning GBP quota.
+Schedule::command('social:refresh-tokens --hours=2')
+    ->hourly()
+    ->withoutOverlapping()
+    ->name('refresh-social-tokens-hourly');
+
+// Daily sweep for the long-lived tokens, and to notify anyone whose connection
+// has no refresh token left and genuinely needs reconnecting.
+Schedule::command('social:refresh-tokens --days=7')
     ->daily()
     ->at('02:00')
     ->withoutOverlapping()

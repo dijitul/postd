@@ -11,6 +11,7 @@ use App\Modules\Social\Platforms\InstagramPlatform;
 use App\Modules\Social\Platforms\LinkedInPlatform;
 use App\Modules\Social\Platforms\TikTokPlatform;
 use App\Modules\Social\Platforms\TwitterPlatform;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class SocialConnectionService
@@ -59,6 +60,22 @@ class SocialConnectionService
         array $scopes = [],
         array $rawTokenData = []
     ): SocialConnection {
+        // Facebook hands back a short-lived user token (~1-2 hours) that cannot be
+        // refreshed once it lapses — there is no refresh token, only an exchange
+        // that requires a still-valid token. Trade it for the 60 day long-lived one
+        // immediately, or the connection quietly dies within the hour.
+        if ($platform === 'facebook') {
+            try {
+                $exchanged = $this->exchangeFacebookToken($accessToken);
+                $accessToken = $exchanged['access_token'];
+                $expiresAt = $exchanged['expires_at'];
+            } catch (\Throwable $e) {
+                Log::warning('SocialConnectionService: Facebook long-lived token exchange failed, keeping short-lived token', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         $connection = SocialConnection::withTrashed()
             ->where('business_id', $businessId)
             ->where('platform', $platform)
@@ -93,6 +110,36 @@ class SocialConnectionService
         $this->syncAccounts($connection);
 
         return $connection;
+    }
+
+    /**
+     * Swap a short-lived Facebook user token for a long-lived (60 day) one.
+     *
+     * @return array{access_token: string, expires_at: \Illuminate\Support\Carbon}
+     */
+    private function exchangeFacebookToken(string $shortLivedToken): array
+    {
+        $response = Http::timeout(20)->get('https://graph.facebook.com/v19.0/oauth/access_token', [
+            'grant_type'        => 'fb_exchange_token',
+            'client_id'         => config('services.facebook.client_id'),
+            'client_secret'     => config('services.facebook.client_secret'),
+            'fb_exchange_token' => $shortLivedToken,
+        ]);
+
+        $data = $response->json() ?? [];
+
+        if (! $response->successful() || empty($data['access_token'])) {
+            throw new \RuntimeException(
+                'Facebook token exchange failed: '.($data['error']['message'] ?? $response->body())
+            );
+        }
+
+        return [
+            'access_token' => $data['access_token'],
+            'expires_at'   => isset($data['expires_in'])
+                ? now()->addSeconds((int) $data['expires_in'])
+                : now()->addDays(60),
+        ];
     }
 
     /**
