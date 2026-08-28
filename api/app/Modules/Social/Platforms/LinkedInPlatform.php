@@ -7,65 +7,97 @@ use App\Modules\Social\Contracts\SocialPlatformInterface;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * LinkedIn Company Page publishing.
+ *
+ * Organisation-only by necessity rather than choice. LinkedIn requires the
+ * Community Management API to be the ONLY product on a developer app, which rules
+ * out both "Sign In with LinkedIn using OpenID Connect" and "Share on LinkedIn" on
+ * that same app. Without either we hold no profile scope, /v2/userinfo is closed to
+ * us, and posting as a member is impossible — every author here is an organisation
+ * URN and there is no personal-profile fallback to reach for.
+ *
+ * Everything below targets the versioned REST surface (/rest/*) rather than the
+ * legacy /v2/ugcPosts and Vector Asset endpoints, which the organisation APIs
+ * answer with 426 Upgrade Required.
+ */
 class LinkedInPlatform implements SocialPlatformInterface
 {
+    /**
+     * The Community Management API scopes we need.
+     *
+     * Requesting a scope the app was never provisioned makes LinkedIn reject the
+     * entire authorisation dialog rather than ignore the one bad entry, so keep
+     * this in step with the app's Auth tab.
+     */
+    public const SCOPES = [
+        'r_organization_admin',   // enumerate the Pages the user administers
+        'r_organization_social',  // read a Page's existing posts
+        'w_organization_social',  // publish to a Page
+    ];
+
     private readonly Client $client;
 
     public function __construct()
     {
         $this->client = new Client([
-            'base_uri' => 'https://api.linkedin.com/v2/',
+            'base_uri' => 'https://api.linkedin.com/',
             'timeout' => 30,
         ]);
     }
 
     public function publishPost(SocialConnection $connection, string $content, array $mediaUrls = []): array
     {
-        $account = $connection->selectedAccount()->first();
-        $author = $account ? "urn:li:organization:{$account->platform_account_id}" : $this->getPersonUrn($connection);
+        $account = $connection->selectedAccount()->first()
+            ?? $connection->platformAccounts()->first();
 
-        $shareContent = [
-            'shareCommentary' => ['text' => $content],
-            'shareMediaCategory' => 'NONE',
-        ];
-
-        if (! empty($mediaUrls)) {
-            $asset = $this->uploadImage($mediaUrls[0], $author, $connection->access_token);
-            if ($asset) {
-                $shareContent['shareMediaCategory'] = 'IMAGE';
-                $shareContent['media'] = [[
-                    'status' => 'READY',
-                    'media' => $asset,
-                ]];
-            }
+        if (! $account) {
+            throw new \RuntimeException(
+                'No LinkedIn Company Page found for this connection. You must be an administrator of a LinkedIn Page to post.'
+            );
         }
+
+        $author = "urn:li:organization:{$account->platform_account_id}";
 
         $payload = [
             'author' => $author,
+            'commentary' => $content,
+            'visibility' => 'PUBLIC',
+            'distribution' => [
+                'feedDistribution' => 'MAIN_FEED',
+                'targetEntities' => [],
+                'thirdPartyDistributionChannels' => [],
+            ],
             'lifecycleState' => 'PUBLISHED',
-            'specificContent' => [
-                'com.linkedin.ugc.ShareContent' => $shareContent,
-            ],
-            'visibility' => [
-                'com.linkedin.ugc.MemberNetworkVisibility' => 'PUBLIC',
-            ],
+            'isReshareDisabledByAuthor' => false,
         ];
 
-        $response = $this->client->post('ugcPosts', [
+        // A failed image upload should not cost us the post — fall through and
+        // publish the text on its own.
+        if (! empty($mediaUrls)) {
+            $imageUrn = $this->uploadImage($mediaUrls[0], $author, $connection->access_token);
+            if ($imageUrn) {
+                $payload['content'] = ['media' => ['id' => $imageUrn]];
+            }
+        }
+
+        $response = $this->client->post('rest/posts', [
             'headers' => $this->buildHeaders($connection),
             'json' => $payload,
         ]);
 
-        $data = json_decode((string) $response->getBody(), true);
-        $postId = $data['id'] ?? null;
+        // The Posts API answers 201 with an empty body — the new post's URN comes
+        // back in the x-restli-id header, not the payload.
+        $postUrn = $response->getHeaderLine('x-restli-id')
+            ?: (json_decode((string) $response->getBody(), true)['id'] ?? null);
 
-        if (! $postId) {
-            throw new \RuntimeException('LinkedIn API returned no post ID: '.json_encode($data));
+        if (! $postUrn) {
+            throw new \RuntimeException('LinkedIn API returned no post ID: '.$response->getBody());
         }
 
         return [
-            'platform_post_id' => $postId,
-            'post_url' => null, // LinkedIn doesn't return a direct post URL in the API response
+            'platform_post_id' => $postUrn,
+            'post_url' => "https://www.linkedin.com/feed/update/{$postUrn}/",
             'status_code' => $response->getStatusCode(),
         ];
     }
@@ -73,17 +105,34 @@ class LinkedInPlatform implements SocialPlatformInterface
     public function validateToken(SocialConnection $connection): bool
     {
         try {
-            $response = $this->client->get('userinfo', [
+            $response = $this->client->get('rest/organizationAcls', [
                 'headers' => $this->buildHeaders($connection),
+                'query' => [
+                    'q' => 'roleAssignee',
+                    'role' => 'ADMINISTRATOR',
+                    'state' => 'APPROVED',
+                ],
             ]);
+
             return $response->getStatusCode() === 200;
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            Log::warning('LinkedInPlatform: Token validation failed', ['error' => $e->getMessage()]);
             return false;
         }
     }
 
     public function refreshToken(SocialConnection $connection): array
     {
+        // Programmatic refresh is a LinkedIn partner privilege. A standard app is
+        // handed a 60 day access token and no refresh token at all, and there is no
+        // exchange-the-still-valid-token trick like Facebook's, so the user has to
+        // reconnect. RefreshSocialTokensCommand warns them before the lapse.
+        if (! $connection->refresh_token) {
+            throw new \RuntimeException(
+                'LinkedIn issues no refresh token to this app. The user must reconnect their LinkedIn account.'
+            );
+        }
+
         $response = $this->client->post('https://www.linkedin.com/oauth/v2/accessToken', [
             'form_params' => [
                 'grant_type' => 'refresh_token',
@@ -106,49 +155,49 @@ class LinkedInPlatform implements SocialPlatformInterface
         ];
     }
 
+    /**
+     * The Company Pages this user administers.
+     *
+     * Returns an empty array when the user administers none, which is a normal
+     * outcome rather than an error — the caller decides how to surface it.
+     */
     public function getAccounts(SocialConnection $connection): array
     {
         try {
-            // Get person's own profile
-            $meResponse = $this->client->get('userinfo', [
+            $response = $this->client->get('rest/organizationAcls', [
                 'headers' => $this->buildHeaders($connection),
+                'query' => [
+                    'q' => 'roleAssignee',
+                    'role' => 'ADMINISTRATOR',
+                    'state' => 'APPROVED',
+                    'projection' => '(elements*(*,organization~(id,localizedName,vanityName,logoV2(original~:playableStreams))))',
+                ],
             ]);
-            $me = json_decode((string) $meResponse->getBody(), true);
 
-            $accounts = [[
-                'id' => $me['sub'] ?? '',
-                'name' => ($me['given_name'] ?? '').' '.($me['family_name'] ?? ''),
-                'type' => 'profile',
-                'url' => null,
-                'metadata' => ['email' => $me['email'] ?? null],
-            ]];
+            $data = json_decode((string) $response->getBody(), true);
+            $accounts = [];
 
-            // Also get organisations where user is an admin
-            try {
-                $orgResponse = $this->client->get('organizationAcls', [
-                    'headers' => $this->buildHeaders($connection),
-                    'query' => [
-                        'q' => 'roleAssignee',
-                        'role' => 'ADMINISTRATOR',
-                        'projection' => '(elements*(*,organization~(id,localizedName,logoV2)))',
-                    ],
-                ]);
+            foreach ($data['elements'] ?? [] as $element) {
+                // The undecorated field carries the URN we actually post with. The
+                // decorated organization~ object only holds display detail, and
+                // LinkedIn drops it entirely if the projection is not honoured.
+                $urn = $element['organization'] ?? '';
+                $id = str_replace('urn:li:organization:', '', $urn);
 
-                $orgs = json_decode((string) $orgResponse->getBody(), true);
-                foreach ($orgs['elements'] ?? [] as $element) {
-                    $org = $element['organization~'] ?? [];
-                    if ($org) {
-                        $accounts[] = [
-                            'id' => str_replace('urn:li:organization:', '', $org['id'] ?? ''),
-                            'name' => $org['localizedName'] ?? 'Organisation',
-                            'type' => 'organisation',
-                            'url' => null,
-                            'metadata' => [],
-                        ];
-                    }
+                if ($id === '') {
+                    continue;
                 }
-            } catch (\Throwable) {
-                // No org access — that's fine
+
+                $org = $element['organization~'] ?? [];
+                $vanityName = $org['vanityName'] ?? null;
+
+                $accounts[] = [
+                    'id' => $id,
+                    'name' => $org['localizedName'] ?? "Company Page {$id}",
+                    'type' => 'organisation',
+                    'url' => $vanityName ? "https://www.linkedin.com/company/{$vanityName}/" : null,
+                    'metadata' => ['avatar_url' => $this->extractLogoUrl($org)],
+                ];
             }
 
             return $accounts;
@@ -164,53 +213,56 @@ class LinkedInPlatform implements SocialPlatformInterface
             'Authorization' => "Bearer {$connection->access_token}",
             'Content-Type' => 'application/json',
             'X-Restli-Protocol-Version' => '2.0.0',
+            'LinkedIn-Version' => config('services.linkedin.version'),
         ];
     }
 
-    private function getPersonUrn(SocialConnection $connection): string
+    /**
+     * Dig the Page logo out of LinkedIn's decorated logoV2 structure.
+     */
+    private function extractLogoUrl(array $org): ?string
     {
-        $response = $this->client->get('userinfo', [
-            'headers' => $this->buildHeaders($connection),
-        ]);
-        $data = json_decode((string) $response->getBody(), true);
-        return "urn:li:person:{$data['sub']}";
+        return $org['logoV2']['original~']['elements'][0]['identifiers'][0]['identifier'] ?? null;
     }
 
+    /**
+     * Upload an image and return its urn:li:image URN, or null on any failure.
+     */
     private function uploadImage(string $imageUrl, string $author, string $token): ?string
     {
         try {
-            // Step 1: Register the upload
-            $registerResponse = $this->client->post('assets?action=registerUpload', [
-                'headers' => [
-                    'Authorization' => "Bearer {$token}",
-                    'Content-Type' => 'application/json',
-                ],
+            $headers = [
+                'Authorization' => "Bearer {$token}",
+                'Content-Type' => 'application/json',
+                'X-Restli-Protocol-Version' => '2.0.0',
+                'LinkedIn-Version' => config('services.linkedin.version'),
+            ];
+
+            // Step 1: initialise the upload and claim an image URN
+            $initResponse = $this->client->post('rest/images?action=initializeUpload', [
+                'headers' => $headers,
                 'json' => [
-                    'registerUploadRequest' => [
-                        'recipes' => ['urn:li:digitalmediaRecipe:feedshare-image'],
-                        'owner' => $author,
-                        'serviceRelationships' => [[
-                            'relationshipType' => 'OWNER',
-                            'identifier' => 'urn:li:userGeneratedContent',
-                        ]],
-                    ],
+                    'initializeUploadRequest' => ['owner' => $author],
                 ],
             ]);
 
-            $registerData = json_decode((string) $registerResponse->getBody(), true);
-            $uploadUrl = $registerData['value']['uploadMechanism']['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest']['uploadUrl'] ?? null;
-            $asset = $registerData['value']['asset'] ?? null;
+            $initData = json_decode((string) $initResponse->getBody(), true);
+            $uploadUrl = $initData['value']['uploadUrl'] ?? null;
+            $imageUrn = $initData['value']['image'] ?? null;
 
-            if (! $uploadUrl || ! $asset) {
+            if (! $uploadUrl || ! $imageUrn) {
+                Log::warning('LinkedInPlatform: Image upload not initialised', ['response' => $initData]);
                 return null;
             }
 
-            // Step 2: Upload the image binary
-            $imageData = file_get_contents($imageUrl);
+            $imageData = @file_get_contents($imageUrl);
             if ($imageData === false) {
+                Log::warning('LinkedInPlatform: Could not fetch image', ['url' => $imageUrl]);
                 return null;
             }
 
+            // Step 2: PUT the binary. The upload URL is absolute and pre-signed, so
+            // Guzzle bypasses base_uri for it, which is what we want.
             $this->client->put($uploadUrl, [
                 'headers' => [
                     'Authorization' => "Bearer {$token}",
@@ -219,7 +271,7 @@ class LinkedInPlatform implements SocialPlatformInterface
                 'body' => $imageData,
             ]);
 
-            return $asset;
+            return $imageUrn;
         } catch (\Throwable $e) {
             Log::warning('LinkedInPlatform: Image upload failed', ['error' => $e->getMessage()]);
             return null;

@@ -274,10 +274,13 @@ export default function PlatformsPage() {
         <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-2xl p-4">
           <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-bold text-red-800">Connection failed</p>
+            <p className="text-sm font-bold text-red-800">
+              {oauthError === 'linkedin_no_pages' ? 'No LinkedIn Company Page found' : 'Connection failed'}
+            </p>
             <p className="text-xs text-red-600 mt-0.5">
               {oauthError === 'invalid_state' ? 'The authorisation request expired. Please try again.' :
                oauthError === 'oauth_failed' ? 'The platform rejected the authorisation. Please try again.' :
+               oauthError === 'linkedin_no_pages' ? 'We post to LinkedIn Company Pages, and this account does not administer one. Ask to be made an admin of your business Page on LinkedIn, then connect again.' :
                'Something went wrong. Please try connecting again.'}
             </p>
           </div>

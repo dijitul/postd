@@ -49,10 +49,20 @@ return [
         'redirect' => env('TWITTER_REDIRECT_URI'),
     ],
 
+    // LinkedIn is NOT handled by Socialite. The Community Management API must be
+    // the only product on a developer app, so there is no OpenID Connect and no
+    // profile scope — and every Socialite LinkedIn driver fetches a profile
+    // endpoint (/v2/me or /v2/userinfo) to build its user object, so both throw
+    // on callback. SocialConnectionController does the OAuth exchange by hand.
     'linkedin' => [
         'client_id' => env('LINKEDIN_CLIENT_ID'),
         'client_secret' => env('LINKEDIN_CLIENT_SECRET'),
         'redirect' => env('LINKEDIN_REDIRECT_URI'),
+        // Versioned REST endpoints (/rest/*) reject any request without a
+        // LinkedIn-Version header, and each version is retired roughly a year
+        // after release. Confirm against LinkedIn's current docs before going
+        // live, and bump it through env rather than editing this default.
+        'version' => env('LINKEDIN_API_VERSION', '202506'),
     ],
 
     'tiktok' => [

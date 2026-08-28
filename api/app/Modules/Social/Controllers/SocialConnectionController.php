@@ -4,6 +4,7 @@ namespace App\Modules\Social\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\SocialConnection;
+use App\Modules\Social\Platforms\LinkedInPlatform;
 use App\Modules\Social\Services\SocialConnectionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -97,6 +98,24 @@ class SocialConnectionController extends Controller
             'user_id' => $request->user()->id,
             'platform' => $platform,
         ], now()->addMinutes(10));
+
+        // LinkedIn is built by hand rather than through Socialite. The Community
+        // Management API must be the only product on the developer app, so we hold
+        // no OpenID Connect or profile scope — and every Socialite LinkedIn driver
+        // fetches a profile endpoint to build its user object, so both blow up on
+        // callback. We only ever post as an organisation, so there is no profile to
+        // fetch in the first place.
+        if ($platform === 'linkedin') {
+            $redirectUrl = 'https://www.linkedin.com/oauth/v2/authorization?' . http_build_query([
+                'response_type' => 'code',
+                'client_id'     => config('services.linkedin.client_id'),
+                'redirect_uri'  => config('services.linkedin.redirect'),
+                'state'         => $state,
+                'scope'         => implode(' ', LinkedInPlatform::SCOPES),
+            ]);
+
+            return response()->json(['redirect_url' => $redirectUrl]);
+        }
 
         $extraParams = ['state' => $state];
         $driver = Socialite::driver($this->getSocialiteDriver($platform))->stateless();
@@ -231,6 +250,71 @@ class SocialConnectionController extends Controller
             }
 
             return redirect($redirectBase . '?connected=twitter');
+        }
+
+        // LinkedIn: exchange the code ourselves. See redirect() — no Socialite
+        // driver survives a Community-Management-only app, and there is no profile
+        // to fetch afterwards, so we go straight from token to Company Pages.
+        if ($platform === 'linkedin') {
+            $code = $request->query('code');
+
+            if (! $code) {
+                Log::error('OAuth callback: LinkedIn returned no code', [
+                    'user_id' => $user->id,
+                    'error'   => $request->query('error_description') ?? $request->query('error'),
+                ]);
+                return redirect($redirectBase . '?error=oauth_failed');
+            }
+
+            try {
+                $http = new \GuzzleHttp\Client();
+
+                $tokenResp = $http->post('https://www.linkedin.com/oauth/v2/accessToken', [
+                    'form_params' => [
+                        'grant_type'    => 'authorization_code',
+                        'code'          => $code,
+                        'redirect_uri'  => config('services.linkedin.redirect'),
+                        'client_id'     => config('services.linkedin.client_id'),
+                        'client_secret' => config('services.linkedin.client_secret'),
+                    ],
+                ]);
+                $tokenData = json_decode((string) $tokenResp->getBody(), true);
+
+                if (empty($tokenData['access_token'])) {
+                    throw new \RuntimeException('No access token: ' . json_encode($tokenData));
+                }
+
+                // refresh_token is only ever present for approved LinkedIn partners.
+                // Everyone else gets a 60 day access token and must reconnect.
+                $connection = $this->connectionService->upsertConnection(
+                    businessId:   $business->id,
+                    platform:     'linkedin',
+                    accessToken:  $tokenData['access_token'],
+                    refreshToken: $tokenData['refresh_token'] ?? null,
+                    expiresAt:    isset($tokenData['expires_in']) ? now()->addSeconds($tokenData['expires_in']) : null,
+                    scopes:       explode(' ', $tokenData['scope'] ?? ''),
+                    rawTokenData: [],
+                );
+
+                // A LinkedIn connection is useless without a Page to post to. Say so
+                // now rather than letting the first scheduled post fail days later.
+                if ($connection->platformAccounts()->doesntExist()) {
+                    Log::warning('OAuth callback: LinkedIn connected but user administers no Company Page', [
+                        'business_id' => $business->id,
+                    ]);
+                    return redirect($redirectBase . '?error=linkedin_no_pages');
+                }
+
+                Log::info('OAuth callback: LinkedIn connected', ['business_id' => $business->id]);
+            } catch (\Throwable $e) {
+                Log::error('OAuth callback: LinkedIn failed', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                return redirect($redirectBase . '?error=oauth_failed');
+            }
+
+            return redirect($redirectBase . '?connected=linkedin');
         }
 
         // All other platforms via Socialite

@@ -41,3 +41,7 @@ desktop.ini
 *.key
 .env.local
 .env.production
+
+# Local credential scratch files — never commit
+creds.txt
+*.creds.txt

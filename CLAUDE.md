@@ -322,6 +322,29 @@ Fix in `SocialConnectionController::redirect()`: for Twitter, we generate PKCE m
 
 **Callback URL registered in console.x.com:** `https://api.postd.uk/api/auth/social/twitter/callback`
 
+### LinkedIn
+
+**Current status:** Awaiting LinkedIn's Community Management API approval. Code is complete and deployed; connecting will fail until the product is granted.
+
+**Company Pages only, and not by choice.** LinkedIn requires the Community Management API to be the ONLY product on a developer app. That rules out "Sign In with LinkedIn using OpenID Connect" and "Share on LinkedIn" on the same app, so we hold no profile scope, `/v2/userinfo` is closed to us, and posting to a personal profile is impossible. Every author is an organisation URN.
+
+There are therefore **two LinkedIn apps**. The original one (with Share on LinkedIn / OIDC) is kept only as the route to `w_member_social` should we ever add personal-profile posting — that scope cannot be added to the Community Management app. The new, dedicated app is the one whose credentials are in `.env`.
+
+**Why LinkedIn does not use Socialite:**
+Both Socialite LinkedIn drivers (`linkedin` and `linkedin-openid`) fetch a profile endpoint — `/v2/me` or `/v2/userinfo` — to build their user object. Neither scope exists on a Community-Management-only app, so both throw on callback. `SocialConnectionController` builds the authorisation URL and exchanges the code by hand instead, the same pattern Twitter uses and for a similar reason.
+
+**OAuth scopes required:** `r_organization_admin`, `r_organization_social`, `w_organization_social` — kept in `LinkedInPlatform::SCOPES`. Requesting a scope the app was not provisioned makes LinkedIn reject the whole dialog rather than ignore the one bad entry, so keep that constant in step with the app's Auth tab.
+
+**API surface:** versioned REST only (`/rest/posts`, `/rest/organizationAcls`, `/rest/images?action=initializeUpload`). Every call needs a `LinkedIn-Version: YYYYMM` header from `LINKEDIN_API_VERSION`; the legacy `/v2/ugcPosts` and Vector Asset endpoints answer the organisation APIs with 426 Upgrade Required. Versions retire about a year after release, so this needs bumping periodically — it is env-driven to avoid a deploy.
+
+**Post IDs:** `/rest/posts` returns 201 with an empty body. The new post's URN arrives in the `x-restli-id` response header, not the payload.
+
+**Token expiry:** 60 days, and **there is no automatic renewal**. Refresh tokens are a LinkedIn partner privilege, and unlike Facebook there is no exchange-a-still-valid-token trick. Users must reconnect every 60 days; `RefreshSocialTokensCommand` warns them beforehand via the existing no-refresh-token path.
+
+**A user who administers no Company Page** gets a connection with zero accounts. The callback catches this and redirects to `/platforms?error=linkedin_no_pages` rather than letting the first scheduled post fail days later.
+
+**Callback URL registered in the LinkedIn app:** `https://api.postd.uk/api/auth/social/linkedin/callback`
+
 ### Google Sign-in (primary auth method)
 
 Handled by `GoogleAuthController`. The callback flow:
@@ -427,6 +450,9 @@ DB::table('failed_jobs')->orderByRaw('id DESC')->first();
 | Settings page testing | Needs verification | Previously not saving correctly |
 | Retry button in Inbox | Not built | Failed posts need a retry action in the UI |
 | Twitter token refresh | Untested | First live test will be when the current token expires (~2 hours post-connect) |
+| LinkedIn Community Management API | Blocked on LinkedIn | Access form submitted, awaiting review. Code complete but untested end to end — connecting fails until the product is granted. |
+| `LINKEDIN_API_VERSION` unverified | Verify before launch | Set to `202506` as a placeholder. Confirm against LinkedIn's current version list; an unsupported value fails every `/rest/*` call. |
+| LinkedIn 60-day reconnect | By design, needs UX | No refresh token is possible. Users must manually reconnect every 60 days — worth a more prominent prompt than the standard expiry email. |
 
 ---
 
