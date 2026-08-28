@@ -1,17 +1,17 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, Share2, CreditCard, Settings,
-  LogOut, Menu, X, Bell, ChevronRight, Inbox
+  LogOut, Menu, X, Bell, ChevronRight
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import Logo from '../ui/Logo.jsx'
 import useAuthStore from '../../stores/authStore.js'
+import { postsApi, POSTS_CHANGED_EVENT } from '../../lib/api.js'
 
 const NAV_ITEMS = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/posts/inbox', icon: Inbox, label: 'Inbox', badge: true },
-  { to: '/posts', icon: FileText, label: 'All Posts' },
+  { to: '/posts', icon: FileText, label: 'Posts', badge: true },
   { to: '/platforms', icon: Share2, label: 'Platforms' },
   { to: '/billing', icon: CreditCard, label: 'Billing' },
   { to: '/settings', icon: Settings, label: 'Settings' }
@@ -49,8 +49,33 @@ export function AppLayout({ children }) {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Mock pending count — replace with real query
-  const pendingCount = 3
+  // Posts awaiting review. Recounted on mount, on navigation, and whenever a
+  // page reports that it has approved/rejected/retried something.
+  const [pendingCount, setPendingCount] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const refresh = async () => {
+      try {
+        const res = await postsApi.getPending({ per_page: 100 })
+        const raw = res.data?.data ?? res.data?.posts ?? []
+        // The inbox scope also returns approved posts; only pending ones are
+        // actually waiting on the user.
+        const waiting = raw.filter((p) => p.status === 'pending').length
+        if (! cancelled) setPendingCount(waiting)
+      } catch {
+        if (! cancelled) setPendingCount(0)
+      }
+    }
+
+    refresh()
+    window.addEventListener(POSTS_CHANGED_EVENT, refresh)
+    return () => {
+      cancelled = true
+      window.removeEventListener(POSTS_CHANGED_EVENT, refresh)
+    }
+  }, [location.pathname])
 
   const handleLogout = async () => {
     await logout()
@@ -176,9 +201,9 @@ export function AppLayout({ children }) {
 
           <div className="flex items-center gap-2">
             <Link
-              to="/posts/inbox"
+              to="/posts"
               className="relative p-2 rounded-xl text-slate-500 hover:bg-cream-300 transition-all"
-              aria-label="Post inbox"
+              aria-label="Posts awaiting review"
             >
               <Bell className="w-5 h-5" />
               {pendingCount > 0 && (

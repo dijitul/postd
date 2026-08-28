@@ -217,7 +217,7 @@ export default function Dashboard() {
       {/* ── Inbox alert ── */}
       {pendingCount > 0 && (
         <Link
-          to="/posts/inbox"
+          to="/posts"
           className="flex items-center gap-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 hover:bg-amber-100 transition-colors group"
         >
           <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center flex-shrink-0">

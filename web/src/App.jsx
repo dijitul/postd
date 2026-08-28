@@ -12,7 +12,6 @@ const AuthCallbackPage = lazy(() => import('./pages/Auth/AuthCallbackPage.jsx'))
 const OnboardingPage  = lazy(() => import('./pages/Onboarding/index.jsx'))
 const Dashboard       = lazy(() => import('./pages/Dashboard/index.jsx'))
 const PostsPage       = lazy(() => import('./pages/Posts/PostsPage.jsx'))
-const InboxPage       = lazy(() => import('./pages/Posts/InboxPage.jsx'))
 const PlatformsPage   = lazy(() => import('./pages/Platforms/index.jsx'))
 const BillingPage     = lazy(() => import('./pages/Billing/index.jsx'))
 const SettingsPage    = lazy(() => import('./pages/Settings/index.jsx'))
@@ -95,7 +94,9 @@ export default function App() {
         {/* App — auth required, sidebar layout */}
         <Route path="/dashboard" element={<ProtectedLayout><Dashboard /></ProtectedLayout>} />
         <Route path="/posts" element={<ProtectedLayout><PostsPage /></ProtectedLayout>} />
-        <Route path="/posts/inbox" element={<ProtectedLayout><InboxPage /></ProtectedLayout>} />
+        {/* The inbox is now a tab on /posts — keep the old path working for
+            bookmarks and any links already sent out in emails. */}
+        <Route path="/posts/inbox" element={<Navigate to="/posts" replace />} />
         <Route path="/platforms" element={<ProtectedLayout><PlatformsPage /></ProtectedLayout>} />
         <Route path="/billing" element={<ProtectedLayout><BillingPage /></ProtectedLayout>} />
         <Route path="/settings" element={<ProtectedLayout><SettingsPage /></ProtectedLayout>} />

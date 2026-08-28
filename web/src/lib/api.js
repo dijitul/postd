@@ -62,6 +62,10 @@ export const onboardingApi = {
 }
 
 // ─── Posts endpoints ──────────────────────────────────────────────────────────
+// Broadcast when a post's status changes, so the sidebar badge can recount
+// without every page needing to reach into the layout.
+export const POSTS_CHANGED_EVENT = 'postd:posts-changed'
+
 export const postsApi = {
   getPending: (params) => api.get('/posts/inbox', { params }),
   getAll: (params) => api.get('/posts', { params }),
