@@ -52,7 +52,7 @@ function SectionCard({ title, icon: Icon, children }) {
   )
 }
 
-function Toggle({ value, onChange, label, desc }) {
+function Toggle({ value, onChange, label, desc, disabled = false }) {
   return (
     <div className="flex items-start justify-between gap-4">
       <div>
@@ -62,7 +62,8 @@ function Toggle({ value, onChange, label, desc }) {
       <button
         type="button"
         onClick={() => onChange(!value)}
-        className={`relative w-12 h-6 rounded-full flex-shrink-0 transition-all duration-200 ${value ? 'bg-amber-500' : 'bg-slate-300'}`}
+        disabled={disabled}
+        className={`relative w-12 h-6 rounded-full flex-shrink-0 transition-all duration-200 ${value ? 'bg-amber-500' : 'bg-slate-300'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         aria-pressed={value}
         role="switch"
       >
@@ -179,6 +180,9 @@ export default function SettingsPage() {
   const [bizSaved, setBizSaved] = useState(false)
   const [bizError, setBizError] = useState(null)
   const [autoApprove, setAutoApprove] = useState(false)
+  const [prefsSaving, setPrefsSaving] = useState(false)
+  const [prefsSaved, setPrefsSaved] = useState(false)
+  const [prefsError, setPrefsError] = useState(null)
   const [notifications, setNotifications] = useState({ email: true, postApproval: true, weeklyDigest: true })
   const [connections, setConnections] = useState([])
 
@@ -199,7 +203,10 @@ export default function SettingsPage() {
         ])
 
         const biz = settingsRes.data?.business ?? settingsRes.data
-        const prefs = settingsRes.data?.preferences ?? {}
+        // The endpoint returns { business, settings }. This previously read
+        // `preferences`, which does not exist, so every preference silently
+        // fell back to its default no matter what was stored.
+        const prefs = settingsRes.data?.settings ?? {}
 
         reset({
           business_name:      biz?.name ?? '',
@@ -209,7 +216,7 @@ export default function SettingsPage() {
           tone:               biz?.tone ?? 'friendly',
         })
 
-        setAutoApprove(prefs?.auto_approve ?? false)
+        setAutoApprove(prefs?.auto_approve_posts ?? false)
         setConnections(connectionsRes.data?.connections ?? [])
       } catch (e) {
         console.error('Settings load failed', e)
@@ -227,6 +234,28 @@ export default function SettingsPage() {
     setConnections((prev) =>
       prev.map((c) => c.platform === backendId ? { ...c, is_expired: false, is_active: true } : c)
     )
+  }
+
+  // Preferences have no Save button, so the toggle persists on change. Applied
+  // optimistically and rolled back if the request fails — silently leaving the
+  // switch on while the server still has it off is exactly the sort of thing
+  // you only discover when posts start publishing unreviewed.
+  const handleAutoApproveChange = async (value) => {
+    const previous = autoApprove
+    setAutoApprove(value)
+    setPrefsError(null)
+    setPrefsSaving(true)
+
+    try {
+      await settingsApi.update({ auto_approve_posts: value })
+      setPrefsSaved(true)
+      setTimeout(() => setPrefsSaved(false), 3000)
+    } catch (e) {
+      setAutoApprove(previous)
+      setPrefsError(e.response?.data?.message ?? 'Could not save that setting. Please try again.')
+    } finally {
+      setPrefsSaving(false)
+    }
   }
 
   const onBizSubmit = async (data) => {
@@ -400,10 +429,20 @@ export default function SettingsPage() {
         <div className="space-y-5">
           <Toggle
             value={autoApprove}
-            onChange={setAutoApprove}
+            onChange={handleAutoApproveChange}
+            disabled={prefsSaving}
             label="Auto-approve posts"
             desc="Posts go live without your approval. Turn this on once you trust the AI output."
           />
+          {prefsSaved && (
+            <p className="text-xs font-semibold text-green-600">Saved.</p>
+          )}
+          {prefsError && (
+            <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-xl p-3.5">
+              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-red-700">{prefsError}</p>
+            </div>
+          )}
           {autoApprove && (
             <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3.5">
               <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
