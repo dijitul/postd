@@ -24,16 +24,20 @@ use Illuminate\Support\Facades\Log;
 class LinkedInPlatform implements SocialPlatformInterface
 {
     /**
-     * The Community Management API scopes we need.
+     * The Community Management API scopes we need, and only those.
      *
      * Requesting a scope the app was never provisioned makes LinkedIn reject the
      * entire authorisation dialog rather than ignore the one bad entry, so keep
-     * this in step with the app's Auth tab.
+     * this in step with the app's Auth tab and do not add anything speculatively.
+     *
+     * The admin scope is rw_organization_admin, not r_organization_admin — the
+     * latter belongs to a different product and LinkedIn rejects it outright.
+     * r_organization_social is deliberately absent: it only grants reading a
+     * Page's existing posts, and we never do.
      */
     public const SCOPES = [
-        'r_organization_admin',   // enumerate the Pages the user administers
-        'r_organization_social',  // read a Page's existing posts
-        'w_organization_social',  // publish to a Page
+        'rw_organization_admin',  // enumerate the Pages the user administers
+        'w_organization_social',  // publish to a Page, and upload its images
     ];
 
     private readonly Client $client;
