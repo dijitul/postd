@@ -21,6 +21,16 @@ class UserFactory extends Factory
             'is_admin' => false,
             'trial_ends_at' => now()->addDays(14),
             'referral_code' => Str::upper(Str::random(8)),
+
+            // A real users row has these, so a factory user must too. Without
+            // them the model comes back missing attributes that hasActivePlan()
+            // and activePlanName() read, and strict mode (on everywhere but
+            // production) throws rather than treating them as null.
+            'comped_plan' => null,
+            'comped_at' => null,
+            'comped_until' => null,
+            'comped_by' => null,
+            'comp_note' => null,
         ];
     }
 
