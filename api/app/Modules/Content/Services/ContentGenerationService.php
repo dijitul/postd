@@ -630,17 +630,28 @@ class ContentGenerationService
     }
 
     /**
-     * How many posts this platform has had, and what those posts quoted.
+     * How many posts this platform has had, and what has been quoted lately.
+     *
+     * The count is per platform, because each platform walks its own rotation.
+     * The quoted source ids are business-wide, because a reader following two of
+     * these accounts sees both. Scoped per platform, every platform independently
+     * picked the newest unquoted review and a week's posts opened with the same
+     * customer saying the same thing on Facebook, LinkedIn and GBP at once.
+     *
+     * The lookback is deliberately generous: it has to span every platform's
+     * share of a week, not just one platform's.
      *
      * @return array{count: int, source_ids: string[]}
      */
-    private function recentAngleHistory(Business $business, string $platform, int $lookback = 6): array
+    private function recentAngleHistory(Business $business, string $platform, int $lookback = 20): array
     {
-        $query = Post::where('business_id', $business->id)
+        $count = Post::where('business_id', $business->id)
             ->where('platform', $platform)
-            ->whereIn('status', self::LIVE_STATUSES);
+            ->whereIn('status', self::LIVE_STATUSES)
+            ->count();
 
-        $sourceIds = (clone $query)
+        $sourceIds = Post::where('business_id', $business->id)
+            ->whereIn('status', self::LIVE_STATUSES)
             ->latest('created_at')
             ->limit($lookback)
             ->pluck('ai_metadata')
@@ -650,7 +661,7 @@ class ContentGenerationService
             ->all();
 
         return [
-            'count'      => $query->count(),
+            'count'      => $count,
             'source_ids' => $sourceIds,
         ];
     }
