@@ -368,15 +368,6 @@ export default function PlatformsPage() {
           />
         ))}
       </div>
-
-      {/* GBP note */}
-      <div className="bg-green-50 border border-green-200 rounded-2xl p-5">
-        <p className="font-display font-bold text-sm text-navy-800 mb-1">Google Business Profile is now available</p>
-        <p className="text-slate-500 text-xs leading-relaxed">
-          Google Business Profile posting is included on all plans at no extra cost.
-          Connect your listing above to start publishing posts directly to your Google Business Profile.
-        </p>
-      </div>
     </div>
   )
 }

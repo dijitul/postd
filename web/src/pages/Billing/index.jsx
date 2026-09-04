@@ -120,6 +120,7 @@ export default function BillingPage() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(null)
   const [isOnTrial, setIsOnTrial] = useState(false)
   const [trialEndsAt, setTrialEndsAt] = useState(null)
+  const [comp, setComp] = useState(null)
   const [invoices, setInvoices] = useState([])
   const [loadingBilling, setLoadingBilling] = useState(true)
   const [portalLoading, setPortalLoading] = useState(false)
@@ -135,6 +136,7 @@ export default function BillingPage() {
         if (sub?.subscription?.plan) setCurrentPlan(sub.subscription.plan)
         if (sub?.on_trial) setIsOnTrial(true)
         if (sub?.trial_ends_at) setTrialEndsAt(new Date(sub.trial_ends_at))
+        if (sub?.comped) setComp({ plan: sub.comped_plan, until: sub.comped_until })
         setInvoices(invoiceRes.data?.invoices ?? [])
       } catch {
         // silently fall back to defaults
@@ -170,8 +172,33 @@ export default function BillingPage() {
         <h1 className="font-display font-black text-2xl text-navy-800">Billing</h1>
       </div>
 
+      {/* Comped account. Takes precedence over the trial banner: the trial date is
+          still set on these accounts, and showing a countdown to someone whose
+          access does not expire is alarming and wrong. */}
+      {comp && (
+        <div className="bg-gradient-to-r from-green-500 to-emerald-400 rounded-2xl p-5 text-white">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Star className="w-5 h-5 text-white" fill="currentColor" />
+            </div>
+            <div>
+              <h2 className="font-display font-bold text-lg mb-1">
+                Your account is on us
+              </h2>
+              <p className="text-sm opacity-90">
+                You have full {comp.plan ? `${comp.plan} plan ` : ''}access
+                {comp.until
+                  ? ` until ${new Date(comp.until).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.`
+                  : ' with no end date and nothing to pay.'}
+                {' '}You do not need a payment method.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Trial banner */}
-      {isOnTrial && daysLeft > 0 && (
+      {!comp && isOnTrial && daysLeft > 0 && (
         <div className="bg-gradient-to-r from-amber-500 to-honey-400 rounded-2xl p-5 text-navy-800">
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">

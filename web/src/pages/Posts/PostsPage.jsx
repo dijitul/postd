@@ -106,6 +106,10 @@ function PostCard({ post, onApprove, onReject, onEdit, onRetry, actioning }) {
   // so the same post always offers the same things wherever you find it.
   const canReview = post.status === 'pending'
   const canRetry = post.status === 'failed'
+  // Editing is not the same thing as reviewing. The API accepts edits to pending,
+  // approved and scheduled posts alike, but the button lived inside the review
+  // block, so an approved post could not be corrected without rejecting it first.
+  const canEdit = ['pending', 'approved', 'scheduled'].includes(post.status)
 
   const PREVIEW_LENGTH = 120
   const isLong = post.content.length > PREVIEW_LENGTH
@@ -191,32 +195,38 @@ function PostCard({ post, onApprove, onReject, onEdit, onRetry, actioning }) {
           </a>
         )}
 
-        {canReview && (
+        {(canReview || canEdit) && (
           <div className="flex items-center gap-2 mt-4 pt-4 border-t border-cream-300">
-            <button
-              onClick={() => onApprove(post.id)}
-              disabled={actioning}
-              className="flex-1 flex items-center justify-center gap-1.5 bg-green-50 text-green-700 font-bold text-sm py-2.5 rounded-xl hover:bg-green-100 active:scale-[0.97] transition-all border border-green-200 disabled:opacity-50"
-            >
-              <Check className="w-4 h-4" />
-              Approve
-            </button>
-            <button
-              onClick={() => onEdit(post)}
-              disabled={actioning}
-              className="flex-1 flex items-center justify-center gap-1.5 bg-slate-50 text-slate-600 font-bold text-sm py-2.5 rounded-xl hover:bg-slate-100 active:scale-[0.97] transition-all border border-slate-200 disabled:opacity-50"
-            >
-              <Edit2 className="w-4 h-4" />
-              Edit
-            </button>
-            <button
-              onClick={() => onReject(post.id)}
-              disabled={actioning}
-              className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 text-red-600 font-bold text-sm py-2.5 rounded-xl hover:bg-red-100 active:scale-[0.97] transition-all border border-red-200 disabled:opacity-50"
-            >
-              <X className="w-4 h-4" />
-              Reject
-            </button>
+            {canReview && (
+              <button
+                onClick={() => onApprove(post.id)}
+                disabled={actioning}
+                className="flex-1 flex items-center justify-center gap-1.5 bg-green-50 text-green-700 font-bold text-sm py-2.5 rounded-xl hover:bg-green-100 active:scale-[0.97] transition-all border border-green-200 disabled:opacity-50"
+              >
+                <Check className="w-4 h-4" />
+                Approve
+              </button>
+            )}
+            {canEdit && (
+              <button
+                onClick={() => onEdit(post)}
+                disabled={actioning}
+                className="flex-1 flex items-center justify-center gap-1.5 bg-slate-50 text-slate-600 font-bold text-sm py-2.5 rounded-xl hover:bg-slate-100 active:scale-[0.97] transition-all border border-slate-200 disabled:opacity-50"
+              >
+                <Edit2 className="w-4 h-4" />
+                Edit
+              </button>
+            )}
+            {canReview && (
+              <button
+                onClick={() => onReject(post.id)}
+                disabled={actioning}
+                className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 text-red-600 font-bold text-sm py-2.5 rounded-xl hover:bg-red-100 active:scale-[0.97] transition-all border border-red-200 disabled:opacity-50"
+              >
+                <X className="w-4 h-4" />
+                Reject
+              </button>
+            )}
           </div>
         )}
 
@@ -333,14 +343,20 @@ export default function PostsPage() {
     [posts]
   )
 
-  // Land on whatever actually needs attention rather than always opening the
-  // same tab: review first, then failures, otherwise the full history.
+  // Open on the week ahead. This used to land on whatever needed attention, which
+  // meant the page you saw changed day to day and the schedule, the thing you
+  // actually come here to sense check, was never the first thing shown.
+  //
+  // Falling back matters on a fresh account: until posts are approved they are all
+  // pending, so opening straight onto Scheduled would show an empty page to
+  // someone who has a full week sitting in review.
   useEffect(() => {
     if (loading || activeTab !== null) return
-    const pending = posts.filter((p) => p.status === 'pending').length
-    const failed = posts.filter((p) => p.status === 'failed').length
-    setActiveTab(pending > 0 ? 'review' : failed > 0 ? 'failed' : 'all')
-  }, [loading, activeTab, posts])
+    const firstWithPosts = ['scheduled', 'review', 'failed', 'all']
+      .map((key) => TABS.find((t) => t.key === key))
+      .find((t) => countFor(t) > 0)
+    setActiveTab(firstWithPosts?.key ?? 'scheduled')
+  }, [loading, activeTab, posts, countFor])
 
   const tab = TABS.find((t) => t.key === activeTab) ?? TABS[TABS.length - 1]
 
@@ -349,11 +365,26 @@ export default function PostsPage() {
     [posts]
   )
 
-  const visible = posts.filter((p) => {
-    const statusMatch = tab.statuses === null || tab.statuses.includes(p.status)
-    const platformMatch = platformFilter === 'all' || p.platform === platformFilter
-    return statusMatch && platformMatch
-  })
+  // Upcoming posts read best soonest first, so the next thing to go out is at the
+  // top and the far end of the week is at the bottom. History reads the other way
+  // round: the most recent thing published belongs at the top, not the oldest.
+  const showsFuture = ['review', 'scheduled'].includes(tab.key)
+
+  const visible = posts
+    .filter((p) => {
+      const statusMatch = tab.statuses === null || tab.statuses.includes(p.status)
+      const platformMatch = platformFilter === 'all' || p.platform === platformFilter
+      return statusMatch && platformMatch
+    })
+    .sort((a, b) => {
+      // Undated posts sink to the bottom either way rather than sorting as 1970.
+      const at = a.scheduled_at ? new Date(a.scheduled_at).getTime() : null
+      const bt = b.scheduled_at ? new Date(b.scheduled_at).getTime() : null
+      if (at === null && bt === null) return 0
+      if (at === null) return 1
+      if (bt === null) return -1
+      return showsFuture ? at - bt : bt - at
+    })
 
   const inTabBeforePlatformFilter = tab.statuses === null
     ? posts.length

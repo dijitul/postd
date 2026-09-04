@@ -189,6 +189,12 @@ class BillingController extends Controller
 
         return response()->json([
             'subscribed' => $user->subscribed(),
+            // A comped account keeps full access with no payment and no end date,
+            // but nothing here said so, so the frontend saw a future trial_ends_at
+            // and told the user their access was about to lapse.
+            'comped' => $user->isComped(),
+            'comped_plan' => $user->comped_plan,
+            'comped_until' => $user->comped_until?->toIso8601String(),
             'on_trial' => $user->isOnValidTrial(),
             'trial_ends_at' => $user->trial_ends_at?->toIso8601String(),
             'subscription' => $subscription ? [
