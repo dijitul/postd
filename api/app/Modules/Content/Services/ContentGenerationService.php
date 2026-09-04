@@ -746,6 +746,13 @@ QUOTING RULES:
 - NEVER invent a quote, a reviewer, a testimonial or a statistic. If no source material is
   supplied, write the post without a quote.
 - Credit a reviewer by first name only. Never use a surname or a full name.
+- Every quotation mark in the post must belong to text you were given. If you are writing
+  to an angle with no SOURCE MATERIAL, the post contains no quotes at all.
+- No figures unless they appear in the material above: no percentages, no "we have helped
+  X businesses", no growth numbers, no years in business you were not told. A number you
+  cannot point at in the context is invented, however plausible it sounds.
+- Spell every place name, business name and person's name exactly as it appears above. If a
+  town is not named in the context, do not name one, and never guess at a local hashtag.
 
 Respond with ONLY a valid JSON object — no markdown, no code fences, no commentary before or after. Use this exact structure:
 {

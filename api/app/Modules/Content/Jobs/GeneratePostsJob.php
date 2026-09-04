@@ -82,12 +82,15 @@ class GeneratePostsJob implements ShouldQueue
 
         if ($source) {
             if ($source->type === ContentSource::TYPE_REVIEW) {
-                $theme = '5-star customer review highlight';
-                $keyMessages = "Share and celebrate a genuine customer review. Build trust and social proof.";
-                $referenceData = [
-                    'review_text' => $source->raw_data,
-                    'sentiment' => $source->sentiment_score,
-                ];
+                $theme = 'Customer trust and social proof';
+                $keyMessages = "Show what it is actually like to work with {$this->business->name}.";
+
+                // Deliberately no review text here. It used to be copied in with
+                // no author attached, and the model, handed an unattributed quote,
+                // guessed who said it: a customer's words about Olly went out
+                // credited to Olly. Reviews now reach the model through the angle
+                // rotation instead, with the reviewer's name beside the quote.
+                $referenceData = [];
             } elseif ($source->type === ContentSource::TYPE_NEWS) {
                 $theme = 'Local news hook';
                 $keyMessages = "Connect the business to a relevant local or industry news story.";
