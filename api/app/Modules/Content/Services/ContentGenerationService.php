@@ -349,7 +349,7 @@ class ContentGenerationService
 
         $response = $this->callAnthropic([
             'model'      => self::MODEL,
-            'max_tokens' => $platform === 'tiktok' ? 600 : 400,
+            'max_tokens' => $this->maxTokensFor($platform, $platformRules),
             'system'     => $systemPrompt,
             'messages'   => [
                 ['role' => 'user', 'content' => $userPrompt],
@@ -435,6 +435,28 @@ class ContentGenerationService
         }
 
         return $post;
+    }
+
+    /**
+     * Token budget for one post, sized to what the platform is allowed to say.
+     *
+     * Every platform shared a 400 token ceiling, but LinkedIn is allowed 300
+     * words, which is already about 400 tokens before the JSON wrapper, the
+     * hashtags and the image prompt. The reply was cut off mid structure, failed
+     * to parse and the post was dropped, so a LinkedIn slot went quietly missing
+     * from roughly every other generated week.
+     *
+     * Two tokens a word is deliberately generous, and the 200 on top covers the
+     * JSON scaffolding around the copy.
+     */
+    private function maxTokensFor(string $platform, array $rules): int
+    {
+        if (isset($rules['max_words'])) {
+            return max(400, ($rules['max_words'] * 2) + 200);
+        }
+
+        // TikTok is a spoken script with no word cap, just a duration.
+        return $platform === 'tiktok' ? 600 : 400;
     }
 
     /**
