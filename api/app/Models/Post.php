@@ -196,6 +196,10 @@ class Post extends Model
             'posted_at' => now(),
             'platform_post_id' => $platformPostId,
             'platform_post_url' => $postUrl,
+            // A retry that succeeds must not keep the reason it failed last time,
+            // or the post reads as both posted and broken wherever the UI shows
+            // failure_reason.
+            'failure_reason' => null,
         ]);
     }
 

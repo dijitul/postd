@@ -146,6 +146,13 @@ class SocialConnection extends Model
 
     public function markSuccessfulUse(): void
     {
-        $this->update(['last_used_at' => now()]);
+        // A publish that works clears the last failure too. Leaving it behind
+        // left the Platforms page reporting a stale error against a connection
+        // that had just posted successfully.
+        $this->update([
+            'last_used_at' => now(),
+            'last_error_at' => null,
+            'last_error_message' => null,
+        ]);
     }
 }
