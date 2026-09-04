@@ -52,15 +52,22 @@ class SchedulingService
 
     /**
      * Minimum gap between posts on the same platform (in minutes).
+     *
+     * A platform gets at most one post every other day, so the gap is 48 hours
+     * everywhere. The old per-platform gaps were short enough to let two posts
+     * land on the same day, which is what made a feed read as automated.
      */
     private const MIN_GAP_MINUTES = [
-        'facebook' => 360,  // 6 hours
-        'instagram' => 480, // 8 hours
-        'twitter' => 120,   // 2 hours
-        'linkedin' => 480,  // 8 hours
-        'tiktok' => 480,    // 8 hours
-        'google_business_profile' => 1440, // 24 hours
+        'facebook' => 2880,
+        'instagram' => 2880,
+        'twitter' => 2880,
+        'linkedin' => 2880,
+        'tiktok' => 2880,
+        'google_business_profile' => 2880,
     ];
+
+    /** Gap applied to any platform missing from the table above. */
+    private const DEFAULT_GAP_MINUTES = 2880;
 
     /**
      * Get the next optimal posting slot for a given business and platform.
@@ -78,7 +85,7 @@ class SchedulingService
         $settings = $business->settings;
 
         $platformConfig = self::OPTIMAL_TIMES[$platform] ?? self::OPTIMAL_TIMES['facebook'];
-        $minGap = self::MIN_GAP_MINUTES[$platform] ?? 360;
+        $minGap = self::MIN_GAP_MINUTES[$platform] ?? self::DEFAULT_GAP_MINUTES;
 
         // Start from now, advance to the next valid slot
         $candidate = $now->copy()->addMinutes(30); // don't schedule too immediately
@@ -113,8 +120,13 @@ class SchedulingService
             $optimalSlot = $this->snapToOptimalSlot($candidate, $platformConfig);
 
             // Check if there's already a post scheduled within the minimum gap
-            if ($this->hasConflictingPost($business, $platform, $optimalSlot, $minGap)) {
-                $candidate = $optimalSlot->copy()->addMinutes($minGap);
+            $conflict = $this->conflictingPostTime($business, $platform, $optimalSlot, $minGap);
+
+            if ($conflict) {
+                // Move on from the post that clashed, not from the slot we tried.
+                // Advancing by a full gap from the candidate overshot, so a Monday
+                // evening post pushed Wednesday's all the way out to Friday.
+                $candidate = $conflict->copy()->addMinutes($minGap);
                 continue;
             }
 
@@ -238,24 +250,44 @@ class SchedulingService
     }
 
     /**
-     * Check if there's already a post scheduled within $gapMinutes of the proposed slot.
+     * When the nearest already-scheduled post sits closer than $gapMinutes to the
+     * proposed slot, return its time. Null means the slot is free.
+     *
+     * The bounds are exclusive: two posts exactly $gapMinutes apart are the spacing
+     * we are aiming for, not a clash. Inclusive bounds rejected them and pushed the
+     * cadence out by an extra day each time round.
+     *
+     * Pending posts count. They already carry a scheduled_at, and ignoring them let
+     * the next run book the same afternoon all over again.
      */
-    private function hasConflictingPost(Business $business, string $platform, Carbon $slot, int $gapMinutes): bool
+    private function conflictingPostTime(Business $business, string $platform, Carbon $slot, int $gapMinutes): ?Carbon
     {
         $from = $slot->copy()->subMinutes($gapMinutes);
         $to = $slot->copy()->addMinutes($gapMinutes);
 
-        return Post::where('business_id', $business->id)
+        $conflict = Post::where('business_id', $business->id)
             ->where('platform', $platform)
-            ->whereIn('status', [Post::STATUS_SCHEDULED, Post::STATUS_APPROVED])
-            ->whereBetween('scheduled_at', [$from, $to])
-            ->exists();
+            ->whereIn('status', [
+                Post::STATUS_PENDING,
+                Post::STATUS_APPROVED,
+                Post::STATUS_SCHEDULED,
+                Post::STATUS_DISPATCHING,
+                // A post that already went out occupies its slot most of all.
+                // Leaving it out let today's post land hours after yesterday's.
+                Post::STATUS_POSTED,
+            ])
+            ->where('scheduled_at', '>', $from)
+            ->where('scheduled_at', '<', $to)
+            ->orderBy('scheduled_at', 'desc')
+            ->value('scheduled_at');
+
+        return $conflict ? Carbon::parse($conflict)->setTimezone('Europe/London') : null;
     }
 
     private function getNextSlotAfter(Business $business, string $platform, ?Carbon $after): Carbon
     {
         if ($after) {
-            $minGap = self::MIN_GAP_MINUTES[$platform] ?? 360;
+            $minGap = self::MIN_GAP_MINUTES[$platform] ?? self::DEFAULT_GAP_MINUTES;
             // Create a temporary fake "conflict" at the last slot to force moving forward
             $business->posts()->create([
                 'platform' => $platform,

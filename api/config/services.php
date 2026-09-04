@@ -88,6 +88,17 @@ return [
     // External API keys
     'google_places' => [
         'key' => env('GOOGLE_PLACES_API_KEY'),
+        // Places API (New). The legacy maps.googleapis.com/maps/api/place
+        // endpoints are a different product and a different host.
+        'base_url' => 'https://places.googleapis.com',
+    ],
+
+    // LinkVine URL shortener. lnkz.uk is the shortest domain on the account,
+    // which is the whole point when the link has to fit in a tweet.
+    'linkvine' => [
+        'key' => env('LINKVINE_API_KEY'),
+        'base_url' => env('LINKVINE_BASE_URL', 'https://linkvine.uk/api'),
+        'domain' => env('LINKVINE_DOMAIN', 'lnkz.uk'),
     ],
 
     'creatomate' => [

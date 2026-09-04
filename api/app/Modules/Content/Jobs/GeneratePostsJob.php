@@ -20,7 +20,11 @@ class GeneratePostsJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    public int $timeout = 120;
+    // One run now tops a whole week of posts back up across every connected
+    // platform, so this is many Anthropic calls rather than one per platform.
+    // Keep it below the queue connection's retry_after or the job gets picked up
+    // a second time mid-run.
+    public int $timeout = 900;
     public int $tries = 2;
     public int $maxExceptions = 1;
 

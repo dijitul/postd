@@ -95,6 +95,9 @@ class ScrapeBusinessJob implements ShouldQueue
                         'phone_numbers' => $data['phone_numbers'],
                         'email_addresses' => $data['email_addresses'],
                         'location_mentions' => $data['location_mentions'],
+                        // Per-page copy, so content generation can quote a line and
+                        // say which page of the site it came from.
+                        'page_text' => $data['page_text'],
                     ],
                     'scraped_at' => now(),
                     'processed' => false,

@@ -23,7 +23,11 @@ return [
             'driver' => 'redis',
             'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
             'queue' => env('REDIS_QUEUE', 'default'),
-            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
+            // Must exceed the longest job timeout on any queue, or the job is
+            // handed to a second worker while the first is still running it.
+            // GeneratePostsJob now writes a whole week of posts in one go and can
+            // sit at 900s, so 90 here would have generated everything twice.
+            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 1200),
             'block_for' => null,
             'after_commit' => false,
         ],

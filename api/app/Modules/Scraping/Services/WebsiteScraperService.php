@@ -27,6 +27,10 @@ class WebsiteScraperService
     // Navigation labels, CTAs and legal furniture that look like list items
     private const BOILERPLATE_PATTERN = '/^(home|about( us)?|contact( us)?|blog|news|our (blog|news|team|services|work)|services|portfolio|gallery|testimonials?|reviews?|faqs?|frequently asked questions|privacy( policy)?|terms( (and|&) conditions)?|cookie[s]?( policy)?|sitemap|log ?in|sign ?[iu]n|register|search|menu|close|next|previous|prev|back|more|read more|learn more|find out more|get (in touch|a quote|started)|book (now|online)|call (us|now)|email us|enquire( now)?|subscribe|follow us|share|skip to (main )?content|all rights reserved|copyright.*)$/';
 
+    // Per-page copy kept for quoting. Generous enough to hold a real page, small
+    // enough that three of them do not bloat the content source row.
+    private const MAX_PAGE_TEXT_CHARS = 2000;
+
     private const PHONE_PATTERN = '/(?:\+44|0)[\s\-]?\d{2,4}[\s\-]?\d{3,4}[\s\-]?\d{3,4}/';
     private const EMAIL_PATTERN = '/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/';
 
@@ -60,6 +64,7 @@ class WebsiteScraperService
      *   phone_numbers: string[],
      *   email_addresses: string[],
      *   location_mentions: string[],
+     *   page_text: array<int, array{url: string, title: string|null, text: string}>,
      *   scraped_at: string,
      *   url: string,
      * }
@@ -108,6 +113,16 @@ class WebsiteScraperService
         $data['email_addresses'] = $this->extractEmailAddresses($allText);
         $data['location_mentions'] = $this->extractLocationMentions($allText);
 
+        // Keep each page's copy separate as well as concatenated. Content generation
+        // quotes lines from the site back at readers, and a quote is worth more when
+        // it can be credited to the page it came from. body_text stays as it was
+        // because everything else downstream reads it.
+        $data['page_text'] = [[
+            'url'   => $url,
+            'title' => $data['page_title'],
+            'text'  => $this->trimBodyText($data['body_text'], self::MAX_PAGE_TEXT_CHARS),
+        ]];
+
         // Also try scraping the /about or /services page if they exist
         $additionalPages = $this->discoverAdditionalPages($crawler, $url);
         foreach (array_slice($additionalPages, 0, 2) as $pageUrl) {
@@ -115,6 +130,14 @@ class WebsiteScraperService
             if ($additionalData) {
                 $data['services'] = array_unique(array_merge($data['services'], $additionalData['services']));
                 $data['body_text'] .= ' ' . $additionalData['body_text'];
+
+                if (trim($additionalData['body_text']) !== '') {
+                    $data['page_text'][] = [
+                        'url'   => $pageUrl,
+                        'title' => $additionalData['page_title'],
+                        'text'  => $this->trimBodyText($additionalData['body_text'], self::MAX_PAGE_TEXT_CHARS),
+                    ];
+                }
             }
         }
 
@@ -429,6 +452,7 @@ class WebsiteScraperService
             $crawler = new Crawler($html);
 
             return [
+                'page_title' => $this->extractTitle($crawler),
                 'services' => $this->extractServices($crawler, $crawler->filter('body')->text('')),
                 'body_text' => $this->extractBodyText($crawler),
             ];
@@ -469,6 +493,7 @@ class WebsiteScraperService
             'phone_numbers' => [],
             'email_addresses' => [],
             'location_mentions' => [],
+            'page_text' => [],
         ];
     }
 }

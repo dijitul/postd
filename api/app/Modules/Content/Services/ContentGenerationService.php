@@ -77,8 +77,110 @@ class ContentGenerationService
         ],
     ];
 
+    /**
+     * Statuses that mean a post exists as far as cadence and repetition go.
+     *
+     * Rejected and failed posts are deliberately absent: neither reached an
+     * audience, so neither should hold the next one back.
+     */
+    private const LIVE_STATUSES = [
+        Post::STATUS_PENDING,
+        Post::STATUS_APPROVED,
+        Post::STATUS_SCHEDULED,
+        Post::STATUS_DISPATCHING,
+        Post::STATUS_POSTED,
+    ];
+
+    /**
+     * A platform gets at most one post every this many days.
+     *
+     * Generation previously wrote to every connected platform on every daily run
+     * until the weekly target was met, so a week of content landed in the first
+     * few days and read as relentless. The spacing itself is enforced by
+     * SchedulingService, which will not place a slot within 48 hours of another
+     * post on the same platform. This constant only caps how many posts a week
+     * can hold, so we never generate one the scheduler would push past the
+     * horizon and we would then discard.
+     */
+    private const MIN_DAYS_BETWEEN_POSTS = 2;
+
+    /** Matches BusinessSetting::getPostsPerWeekForPlatform's own fallback. */
+    private const DEFAULT_POSTS_PER_WEEK = 3;
+
+    /**
+     * How far ahead the schedule is kept full.
+     *
+     * Every run tops each platform back up to a full week of scheduled posts, so
+     * a user opening the app on any day sees the week ahead, can sense check the
+     * lot in one sitting and then leave it alone. Generating one post a day gave
+     * them a day or two of visibility and no way to review a week at a time.
+     */
+    private const SCHEDULE_HORIZON_DAYS = 7;
+
+    /**
+     * The rotation of angles a post can take, walked in order per platform.
+     *
+     * Left to itself the model wrote the same "here is what we do" update every
+     * time and opened on the season, because the season was the only thing that
+     * changed between runs. Naming one concrete angle per post, and advancing the
+     * cursor every time, forces genuinely different content out of the same brief.
+     * Review and website quotes appear three times each, so roughly half of all
+     * posts carry a real customer or website voice rather than a paraphrase of one.
+     */
+    private const ANGLE_ROTATION = [
+        'review_quote',
+        'service_spotlight',
+        'website_quote',
+        'customer_problem',
+        'review_quote',
+        'practical_tip',
+        'website_quote',
+        'local_angle',
+        'review_quote',
+        'behind_the_scenes',
+        'website_quote',
+        'faq',
+    ];
+
+    /** Angles that are pointless without source material to quote. */
+    private const QUOTE_ANGLES = ['review_quote', 'website_quote'];
+
+    /** Platforms where a bare URL in the body earns the characters it costs. */
+    private const LINK_FRIENDLY_PLATFORMS = ['facebook', 'linkedin', 'google_business_profile'];
+
+    /** What each angle asks the model to actually write. */
+    private const ANGLE_BRIEFS = [
+        'review_quote' =>
+            'Build the post around ONE customer review, quoted word for word inside quotation marks. '
+            .'Introduce the quote in the business\'s own voice, credit the reviewer by first name only, '
+            .'and thank them warmly and specifically. If the review is long, pick the single most telling '
+            .'sentence or two and quote exactly that rather than the lot.',
+        'website_quote' =>
+            'Build the post around ONE line lifted verbatim from the business\'s own website, quoted word '
+            .'for word inside quotation marks. Then say what it means in practice for a customer: an example, '
+            .'a consequence, something concrete that the line on its own does not tell them.',
+        'service_spotlight' =>
+            'Take ONE specific service and go deep on it. What it involves, who it is for, what is different '
+            .'for the customer afterwards. Not a list of everything the business does.',
+        'customer_problem' =>
+            'Open on a specific problem a real customer in this industry actually has. Make it recognisable '
+            .'and concrete, then show how the business deals with it.',
+        'practical_tip' =>
+            'Give away one genuinely useful piece of advice a reader could act on today, even if they never '
+            .'buy anything. No teaser, no withheld punchline.',
+        'local_angle' =>
+            'Write about the area the business serves: somewhere it works, something specific about local '
+            .'customers or local conditions. Only use place names that appear in the business context.',
+        'behind_the_scenes' =>
+            'Show how the work actually gets done: the process, the kit, the checks, the part customers never '
+            .'see. Specific and unglamorous beats polished.',
+        'faq' =>
+            'Answer one real question customers ask. State the question, then answer it plainly and completely.',
+    ];
+
     public function __construct(
-        private readonly SchedulingService $schedulingService
+        private readonly SchedulingService $schedulingService,
+        private readonly LinkShortenerService $linkShortener
     ) {}
 
     /**
@@ -98,25 +200,50 @@ class ContentGenerationService
         $businessContext = $this->buildBusinessContext($business, $brief);
         $generatedPosts = [];
 
+        $horizonEnd = now()->addDays(self::SCHEDULE_HORIZON_DAYS);
+
         foreach ($platforms as $platform) {
-            if ($this->hasReachedWeeklyTarget($business, $platform)) {
-                Log::info("ContentGenerationService: Skipping {$platform} — weekly posting target already met", [
+            $needed = $this->postsNeededForHorizon($business, $platform);
+
+            if ($needed < 1) {
+                Log::info("ContentGenerationService: Skipping {$platform} - the week ahead is already full", [
                     'business_id' => $business->id,
                 ]);
                 continue;
             }
 
-            try {
-                $post = $this->generateForPlatform($business, $brief, $platform, $businessContext);
-                if ($post) {
-                    $generatedPosts[] = $post;
+            for ($i = 0; $i < $needed; $i++) {
+                // Work the slot out first. It costs nothing, and if the next free
+                // one falls outside the week we want to know before paying for a
+                // post that would sit beyond the horizon the user is reviewing.
+                $slot = $this->schedulingService->getNextSlot($business, $platform);
+
+                if ($slot->greaterThan($horizonEnd)) {
+                    Log::info("ContentGenerationService: Stopping {$platform} - next free slot is beyond the horizon", [
+                        'business_id' => $business->id,
+                        'slot'        => $slot->toIso8601String(),
+                    ]);
+                    break;
                 }
-            } catch (\Throwable $e) {
-                Log::error("ContentGenerationService: Failed to generate for {$platform}", [
-                    'business_id' => $business->id,
-                    'brief_id' => $brief->id,
-                    'error' => $e->getMessage(),
-                ]);
+
+                try {
+                    $post = $this->generateForPlatform($business, $brief, $platform, $businessContext, $slot);
+                } catch (\Throwable $e) {
+                    Log::error("ContentGenerationService: Failed to generate for {$platform}", [
+                        'business_id' => $business->id,
+                        'brief_id' => $brief->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    break;
+                }
+
+                if (! $post) {
+                    // The API gave up after its retries. Trying the remaining
+                    // posts now would just burn the same failure several times.
+                    break;
+                }
+
+                $generatedPosts[] = $post;
             }
         }
 
@@ -135,40 +262,45 @@ class ContentGenerationService
     }
 
     /**
-     * Has this platform already hit the business's configured posts-per-week target?
+     * How many more posts this platform needs to fill the week ahead.
      *
-     * Generation runs daily and previously produced one post per connected platform
-     * every run, so the posts_per_week_* settings had no effect at all. Counting what
-     * already exists this week makes the configured cadence the actual cadence, and
-     * lets a target of 0 switch a platform off without disconnecting it.
+     * Measured against what is already scheduled in the window rather than what
+     * was created this week, because the user is looking at a calendar, not a
+     * changelog: a post written on Sunday for next Thursday fills Thursday. That
+     * also makes the top-up self-correcting, so a run that failed halfway just
+     * picks up the shortfall next time.
+     *
+     * A target of 0 switches a platform off without disconnecting it.
      */
-    private function hasReachedWeeklyTarget(Business $business, string $platform): bool
+    private function postsNeededForHorizon(Business $business, string $platform): int
     {
         $settings = $business->settings;
+        $target = $settings
+            ? $settings->getPostsPerWeekForPlatform($platform)
+            : self::DEFAULT_POSTS_PER_WEEK;
 
-        if (! $settings) {
-            return false;
-        }
-
-        $target = $settings->getPostsPerWeekForPlatform($platform);
+        // The 48 hour spacing caps what a week can physically hold, so a setting
+        // of 10 a week would otherwise have us generating posts the scheduler
+        // then pushes past the horizon and we discard.
+        $target = min($target, $this->maxPostsInHorizon());
 
         if ($target <= 0) {
-            return true;
+            return 0;
         }
 
-        $existing = Post::where('business_id', $business->id)
+        $scheduled = Post::where('business_id', $business->id)
             ->where('platform', $platform)
-            ->whereIn('status', [
-                Post::STATUS_PENDING,
-                Post::STATUS_APPROVED,
-                Post::STATUS_SCHEDULED,
-                Post::STATUS_DISPATCHING,
-                Post::STATUS_POSTED,
-            ])
-            ->where('created_at', '>=', now()->startOfWeek())
+            ->whereIn('status', self::LIVE_STATUSES)
+            ->whereBetween('scheduled_at', [now(), now()->addDays(self::SCHEDULE_HORIZON_DAYS)])
             ->count();
 
-        return $existing >= $target;
+        return max(0, $target - $scheduled);
+    }
+
+    /** Most posts that fit in the horizon at the minimum spacing. */
+    private function maxPostsInHorizon(): int
+    {
+        return intdiv(self::SCHEDULE_HORIZON_DAYS, self::MIN_DAYS_BETWEEN_POSTS) + 1;
     }
 
     /**
@@ -178,22 +310,40 @@ class ContentGenerationService
         Business $business,
         ContentBrief $brief,
         string $platform,
-        array $businessContext
+        array $businessContext,
+        \Illuminate\Support\Carbon $scheduledAt
     ): ?Post {
         $platformRules = self::PLATFORM_RULES[$platform] ?? null;
         if (! $platformRules) {
             return null;
         }
 
-        // Work out when this will actually go out before writing it, so the model
-        // knows what day it is publishing on. Without this it guesses, and cheerfully
-        // opens with "Happy Monday!" on a post scheduled for a Friday.
-        $scheduledAt = $this->schedulingService->getNextSlot($business, $platform);
+        // The slot is worked out by the caller and passed in, so the model knows
+        // what day it is publishing on before it writes a word. Without it the
+        // model guesses, and cheerfully opens with "Happy Monday!" on a Friday.
+        $recentPosts   = $this->recentPostsForPlatform($business, $platform);
+        $recentOpeners = $this->recentOpeningLines($business);
+        $angle         = $this->selectAngle($business, $platform, $businessContext);
 
-        $recentPosts = $this->recentPostsForPlatform($business, $platform);
+        // Shorten before generating, not after. The model has to write the URL
+        // into the post itself, so swapping it afterwards would mean editing
+        // generated copy and hoping the sentence still reads.
+        $shortLink = $this->trackedReviewsLink($businessContext, $angle, $platform);
+
+        if ($shortLink) {
+            $businessContext['reviews_url'] = $shortLink['short_url'];
+        }
 
         $systemPrompt = $this->buildSystemPrompt($business, $platform, $platformRules);
-        $userPrompt   = $this->buildUserPrompt($brief, $businessContext, $platform, $scheduledAt, $recentPosts);
+        $userPrompt   = $this->buildUserPrompt(
+            $brief,
+            $businessContext,
+            $platform,
+            $scheduledAt,
+            $recentPosts,
+            $recentOpeners,
+            $angle
+        );
 
         $startTime = microtime(true);
 
@@ -252,7 +402,12 @@ class ContentGenerationService
             'platform'          => $platform,
             'content'           => $parsed['content'],
             'hashtags'          => $parsed['hashtags'] ?? [],
-            'status'            => $requiresApproval ? Post::STATUS_PENDING : Post::STATUS_APPROVED,
+            // Fully automatic posts go straight to scheduled. They used to be
+            // written as approved and then scheduled in a second write, which
+            // left approved_at null and made an auto-approved post look, in the
+            // UI and in the database, like nobody had ever approved it.
+            'status'            => $requiresApproval ? Post::STATUS_PENDING : Post::STATUS_SCHEDULED,
+            'approved_at'       => $requiresApproval ? null : now(),
             'scheduled_at'      => $scheduledAt,
             'requires_approval' => $requiresApproval,
             'ai_metadata'       => [
@@ -263,13 +418,14 @@ class ContentGenerationService
                 'duration_ms'       => round($durationMs, 2),
                 'brief_id'          => $brief->id,
                 'source_type'       => $brief->source_type,
+                // Recorded so the next run can rotate past this angle and avoid
+                // quoting the same review or website line twice in a row.
+                'angle'             => $angle['angle'],
+                'quoted_source_id'  => $angle['source_id'],
+                // Kept so click counts can be read back off LinkVine per post.
+                'short_link'        => $shortLink,
             ],
         ]);
-
-        // If auto-approved, schedule it immediately
-        if (! $requiresApproval && $scheduledAt) {
-            $post->schedule($scheduledAt);
-        }
 
         // Queue image generation if the platform benefits from it and images are enabled
         if ($this->platformNeedsImage($platform) && ($business->settings?->generate_images ?? true)) {
@@ -384,19 +540,149 @@ class ContentGenerationService
     {
         return Post::where('business_id', $business->id)
             ->where('platform', $platform)
-            ->whereIn('status', [
-                Post::STATUS_PENDING,
-                Post::STATUS_APPROVED,
-                Post::STATUS_SCHEDULED,
-                Post::STATUS_DISPATCHING,
-                Post::STATUS_POSTED,
-            ])
+            ->whereIn('status', self::LIVE_STATUSES)
             ->latest('created_at')
             ->limit($limit)
             ->pluck('content')
             ->filter()
             ->values()
             ->all();
+    }
+
+    /**
+     * Opening lines already used, across every platform.
+     *
+     * The same-platform history alone did not stop "It's early September" turning
+     * up on Facebook, LinkedIn and GBP in the same week: each platform only ever
+     * saw its own back catalogue, and the season was the one thing every platform
+     * reached for. Openers are pooled across all of them for that reason.
+     *
+     * @return string[]
+     */
+    private function recentOpeningLines(Business $business, int $limit = 10): array
+    {
+        return Post::where('business_id', $business->id)
+            ->whereIn('status', self::LIVE_STATUSES)
+            ->latest('created_at')
+            ->limit($limit)
+            ->pluck('content')
+            ->map(function (?string $content) {
+                $firstLine = trim(strtok(trim((string) $content), "\n") ?: '');
+
+                // Long opening paragraphs are cut back to the first sentence, which
+                // is the part that actually keeps getting reused.
+                if (preg_match('/^.{20,200}?[.!?]/u', $firstLine, $m)) {
+                    return trim($m[0]);
+                }
+
+                return $firstLine;
+            })
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Choose the angle for the next post on a platform, plus the exact piece of
+     * source material it should quote.
+     *
+     * The cursor is the number of posts already written for the platform, so the
+     * rotation advances by one every run and never sits still. An angle that needs
+     * source material we do not have (no reviews scraped, no website copy) is
+     * skipped rather than attempted, because the model asked for a quote it has
+     * not been given will simply invent one.
+     *
+     * @param  array<string, mixed>  $context
+     * @return array{angle: string, brief: string, source: array<string, mixed>|null, source_id: string|null}
+     */
+    private function selectAngle(Business $business, string $platform, array $context): array
+    {
+        $history  = $this->recentAngleHistory($business, $platform);
+        $rotation = self::ANGLE_ROTATION;
+        $size     = count($rotation);
+
+        for ($i = 0; $i < $size; $i++) {
+            $angle  = $rotation[($history['count'] + $i) % $size];
+            $source = $this->sourceForAngle($angle, $context, $history['source_ids']);
+
+            if (in_array($angle, self::QUOTE_ANGLES, true) && ! $source) {
+                continue;
+            }
+
+            return [
+                'angle'     => $angle,
+                'brief'     => self::ANGLE_BRIEFS[$angle],
+                'source'    => $source,
+                'source_id' => $source['id'] ?? null,
+            ];
+        }
+
+        // Every angle in the rotation needed material we do not have, which can
+        // only happen if the whole rotation is quote angles. Fall back to one that
+        // never needs a source.
+        return [
+            'angle'     => 'service_spotlight',
+            'brief'     => self::ANGLE_BRIEFS['service_spotlight'],
+            'source'    => null,
+            'source_id' => null,
+        ];
+    }
+
+    /**
+     * How many posts this platform has had, and what those posts quoted.
+     *
+     * @return array{count: int, source_ids: string[]}
+     */
+    private function recentAngleHistory(Business $business, string $platform, int $lookback = 6): array
+    {
+        $query = Post::where('business_id', $business->id)
+            ->where('platform', $platform)
+            ->whereIn('status', self::LIVE_STATUSES);
+
+        $sourceIds = (clone $query)
+            ->latest('created_at')
+            ->limit($lookback)
+            ->pluck('ai_metadata')
+            ->map(fn ($meta) => is_array($meta) ? ($meta['quoted_source_id'] ?? null) : null)
+            ->filter()
+            ->values()
+            ->all();
+
+        return [
+            'count'      => $query->count(),
+            'source_ids' => $sourceIds,
+        ];
+    }
+
+    /**
+     * Pick the item this angle should quote, preferring one we have not used lately.
+     *
+     * @param  array<string, mixed>  $context
+     * @param  string[]  $usedSourceIds
+     * @return array<string, mixed>|null
+     */
+    private function sourceForAngle(string $angle, array $context, array $usedSourceIds): ?array
+    {
+        $pool = match ($angle) {
+            'review_quote'  => $context['reviews'] ?? [],
+            'website_quote' => $context['website_excerpts'] ?? [],
+            default         => [],
+        };
+
+        if (empty($pool)) {
+            return null;
+        }
+
+        // Without this the newest five star review gets quoted every single time
+        // the rotation comes back round to it.
+        foreach ($pool as $item) {
+            if (! in_array($item['id'] ?? null, $usedSourceIds, true)) {
+                return $item;
+            }
+        }
+
+        return $pool[0];
     }
 
     /**
@@ -431,6 +717,25 @@ CRITICAL RULES:
 - {$this->getHashtagRule($rules)}
 - {$this->getLengthRule($rules)}
 
+BANNED OPENINGS — these are the reason every post reads the same, so none of them, ever:
+- The season, month, weather or time of year. "It's early September", "As autumn draws in",
+  "With summer behind us", "This time of year" and every variation are forbidden anywhere
+  in the post, not just the first line.
+- Generic scene-setting about the industry or about business in general.
+- "Looking for...", "Ever wondered...", "Let's talk about...", "Here at {$business->name}...".
+- Opening with the business name at all.
+Start on something specific instead: a customer's words, a line from the website, a real
+problem, a number, a named service.
+
+QUOTING RULES:
+- You may ONLY quote text that appears in SOURCE MATERIAL, and you must reproduce it word
+  for word inside quotation marks. Do not tidy it, correct it, shorten it mid-sentence or
+  change its punctuation. Quoting fewer sentences than you were given is fine; altering the
+  ones you use is not.
+- NEVER invent a quote, a reviewer, a testimonial or a statistic. If no source material is
+  supplied, write the post without a quote.
+- Credit a reviewer by first name only. Never use a surname or a full name.
+
 Respond with ONLY a valid JSON object — no markdown, no code fences, no commentary before or after. Use this exact structure:
 {
   "content": "the full post text ready to publish",
@@ -448,16 +753,26 @@ PROMPT;
         array $context,
         string $platform,
         ?\DateTimeInterface $scheduledAt = null,
-        array $recentPosts = []
+        array $recentPosts = [],
+        array $recentOpeners = [],
+        array $angle = []
     ): string {
-        $contextStr = json_encode($context, JSON_PRETTY_PRINT);
+        // The quotable material is rendered as its own block rather than left in
+        // the JSON dump, so the model treats it as copy to lift rather than as
+        // more background to paraphrase.
+        $contextStr = json_encode(
+            array_diff_key($context, array_flip(['reviews', 'website_excerpts'])),
+            JSON_PRETTY_PRINT
+        );
 
         return <<<PROMPT
 Create a {$platform} post based on the following brief and business context.
 
 {$this->getPublishingDatePrompt($scheduledAt)}
 
-BRIEF:
+{$this->getAnglePrompt($angle, $context, $platform)}
+
+BRIEF (background. Where the brief and the angle above pull in different directions, follow the angle):
 Theme: {$brief->theme}
 Key messages to communicate: {$brief->key_messages}
 Tone notes: {$brief->tone_notes}
@@ -470,8 +785,115 @@ BUSINESS CONTEXT:
 
 {$this->getRecentPostsPrompt($recentPosts)}
 
+{$this->getRecentOpenersPrompt($recentOpeners)}
+
 Generate a post that feels native to {$platform} — not like it was copied from another platform.
-The post should naturally reflect the brief theme whilst sounding completely authentic.
+Write to the angle above. It is the point of the post, not a suggestion.
+PROMPT;
+    }
+
+    /**
+     * A short, per-post link to the reviews page, when this post will carry one.
+     *
+     * Only review posts on platforms where a URL is worth its characters get one,
+     * which keeps the number of links created to roughly one per platform per
+     * week. A null here is not a failure worth stopping for: the caller keeps the
+     * full URL, which is uglier but works.
+     *
+     * @param  array<string, mixed>  $context
+     * @param  array{angle?: string}  $angle
+     * @return array{id: int|null, short_url: string}|null
+     */
+    private function trackedReviewsLink(array $context, array $angle, string $platform): ?array
+    {
+        if (($angle['angle'] ?? null) !== 'review_quote') {
+            return null;
+        }
+
+        if (empty($context['reviews_url']) || ! in_array($platform, self::LINK_FRIENDLY_PLATFORMS, true)) {
+            return null;
+        }
+
+        return $this->linkShortener->shorten($context['reviews_url']);
+    }
+
+    /**
+     * Spell out the angle for this post and hand over the exact text to quote.
+     *
+     * @param  array{angle?: string, brief?: string, source?: array<string, mixed>|null}  $angle
+     * @param  array<string, mixed>  $context
+     */
+    private function getAnglePrompt(array $angle, array $context, string $platform): string
+    {
+        if (empty($angle['angle'])) {
+            return '';
+        }
+
+        $lines = [
+            'ANGLE FOR THIS POST: '.$angle['angle'],
+            $angle['brief'],
+        ];
+
+        $source = $angle['source'] ?? null;
+
+        if ($source && $angle['angle'] === 'review_quote') {
+            $author = $source['author'] ?? null;
+
+            $lines[] = '';
+            $lines[] = 'SOURCE MATERIAL — the review to quote:';
+            $lines[] = 'Reviewer first name: '.($author
+                ?: 'not recorded. Write "one of our customers" and do not invent a name.');
+
+            if (! empty($source['rating'])) {
+                $lines[] = 'Rating given: '.$source['rating'].' out of 5';
+            }
+
+            $lines[] = 'Review text, to be quoted word for word: "'.$source['quote'].'"';
+
+            // A URL costs characters Twitter does not have and is dead text on
+            // Instagram, so it only goes where a reader can actually follow it.
+            if (! empty($context['reviews_url']) && in_array($platform, self::LINK_FRIENDLY_PLATFORMS, true)) {
+                $lines[] = 'Finish by inviting readers to see more reviews at: '.$context['reviews_url'];
+                $lines[] = 'Use that URL exactly as written. Do not shorten or reword it.';
+            }
+        }
+
+        if ($source && $angle['angle'] === 'website_quote') {
+            $lines[] = '';
+            $lines[] = 'SOURCE MATERIAL — the website line to quote:';
+
+            if (! empty($source['page'])) {
+                $lines[] = 'Taken from: '.$source['page'];
+            }
+
+            $lines[] = 'Website text, to be quoted word for word: "'.$source['quote'].'"';
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Opening lines already in circulation, so the model picks a different one.
+     *
+     * @param  string[]  $recentOpeners
+     */
+    private function getRecentOpenersPrompt(array $recentOpeners): string
+    {
+        if (empty($recentOpeners)) {
+            return '';
+        }
+
+        $list = implode("\n", array_map(
+            fn ($line, $i) => ($i + 1).'. '.$line,
+            $recentOpeners,
+            array_keys($recentOpeners)
+        ));
+
+        return <<<PROMPT
+OPENING LINES ALREADY USED ACROSS THIS BUSINESS'S POSTS:
+{$list}
+
+Do not open with any of these, a rephrasing of one, or anything built on the same idea.
 PROMPT;
     }
 
@@ -546,6 +968,7 @@ PROMPT;
         if ($websiteSource && $websiteSource->structured_data) {
             $data = $websiteSource->structured_data;
             $context['website_data'] = [
+                'url'         => $websiteSource->source_url,
                 'page_title'  => $data['page_title'] ?? null,
                 'description' => $data['meta_description'] ?? null,
                 'services'    => array_slice($data['services'] ?? [], 0, 5),
@@ -553,21 +976,230 @@ PROMPT;
             ];
         }
 
-        // Pull recent review sentiment
-        $recentReviews = $business->contentSources()
-            ->where('type', ContentSource::TYPE_REVIEW)
-            ->latest('scraped_at')
-            ->limit(3)
-            ->get();
+        $context['website_excerpts'] = $this->websiteExcerpts($websiteSource);
+        $context['reviews'] = $this->quotableReviews($business);
 
-        if ($recentReviews->isNotEmpty()) {
-            $context['recent_reviews'] = $recentReviews->map(fn ($r) => [
-                'excerpt'   => substr($r->raw_data, 0, 200),
-                'sentiment' => $r->sentiment_score,
-            ])->toArray();
+        if ($business->google_reviews_url) {
+            $context['reviews_url'] = $business->google_reviews_url;
         }
 
         return $context;
+    }
+
+    /**
+     * Real reviews, whole and attributable, for the model to quote.
+     *
+     * The context used to carry a 200 character slice of review text and a
+     * sentiment float, with the reviewer's name thrown away entirely, so the best
+     * the model could manage was "our customers love us". Quoting someone by name
+     * and thanking them needs the name, the rating, and enough of the review to
+     * find a good line inside.
+     *
+     * @return array<int, array{id: string, author: string|null, rating: int|null, quote: string}>
+     */
+    private function quotableReviews(Business $business, int $limit = 8): array
+    {
+        // Until now nothing read this setting, so turning it off did nothing. It
+        // matters as soon as posts start quoting customers by name.
+        if ($business->settings && ! $business->settings->include_review_content) {
+            return [];
+        }
+
+        return $business->contentSources()
+            ->where('type', ContentSource::TYPE_REVIEW)
+            ->latest('scraped_at')
+            ->limit($limit * 3)
+            ->get()
+            // Review rows created before scraping deduplicated on review text are
+            // still in the table, several copies of the same customer each. Left
+            // in, they would crowd out every other reviewer in the rotation.
+            ->unique('raw_data')
+            ->take($limit)
+            ->map(function (ContentSource $source) {
+                $quote = $this->trimToSentence(trim((string) $source->raw_data), 450);
+
+                if ($quote === '') {
+                    return null;
+                }
+
+                $structured = $source->structured_data ?? [];
+
+                return [
+                    'id'     => $source->id,
+                    'author' => $this->firstName($structured['author'] ?? null),
+                    'rating' => $structured['rating'] ?? null,
+                    'quote'  => $quote,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Lines lifted verbatim from the business's own website, ready to be quoted.
+     *
+     * Scrapes made since page-level text was stored keep each page separate, so a
+     * quote can be credited to the page it came from. Older rows only have the
+     * concatenated body text, which still yields usable sentences, just without
+     * the attribution.
+     *
+     * @return array<int, array{id: string, page: string|null, url: string|null, quote: string}>
+     */
+    private function websiteExcerpts(?ContentSource $source, int $limit = 8): array
+    {
+        if (! $source) {
+            return [];
+        }
+
+        $structured = $source->structured_data ?? [];
+
+        $pages = $structured['page_text'] ?? [[
+            'url'   => $source->source_url,
+            'title' => $structured['page_title'] ?? null,
+            'text'  => (string) $source->raw_data,
+        ]];
+
+        $pages = array_map(fn (array $page) => $page + [
+            'sentences' => $this->quotableSentences((string) ($page['text'] ?? '')),
+        ], $pages);
+
+        // Round-robin rather than page-by-page, so a long homepage cannot fill the
+        // whole allowance and leave the services page unquoted.
+        $excerpts = [];
+        for ($depth = 0; count($excerpts) < $limit; $depth++) {
+            $foundAtThisDepth = false;
+
+            foreach ($pages as $page) {
+                $sentences = $page['sentences'] ?? [];
+
+                if (! isset($sentences[$depth])) {
+                    continue;
+                }
+
+                $foundAtThisDepth = true;
+                $excerpts[] = [
+                    // Content sources have no per-sentence id, so hash the text.
+                    // It only has to be stable enough to spot a repeat quote.
+                    'id'    => 'web:'.substr(sha1($sentences[$depth]), 0, 12),
+                    'page'  => $page['title'] ?? null,
+                    'url'   => $page['url'] ?? $source->source_url,
+                    'quote' => $sentences[$depth],
+                ];
+
+                if (count($excerpts) >= $limit) {
+                    break;
+                }
+            }
+
+            if (! $foundAtThisDepth) {
+                break;
+            }
+        }
+
+        return $excerpts;
+    }
+
+    /**
+     * Split scraped page text into sentences that stand up on their own as a quote.
+     *
+     * @return string[]
+     */
+    private function quotableSentences(string $text, int $limit = 8): array
+    {
+        $text = preg_replace('/\s+/u', ' ', trim($text));
+
+        if ($text === '') {
+            return [];
+        }
+
+        $sentences = preg_split('/(?<=[.!?])\s+/u', $text) ?: [];
+        $keep = [];
+
+        foreach ($sentences as $sentence) {
+            $sentence = trim($sentence);
+            $length = mb_strlen($sentence);
+
+            // Too short to say anything, too long to drop into a post.
+            if ($length < 45 || $length > 220) {
+                continue;
+            }
+
+            // Must read as a sentence, not a heading or a fragment of a list.
+            if (! preg_match('/[.!?]$/u', $sentence) || str_word_count($sentence) < 8) {
+                continue;
+            }
+
+            // Contact details, legal furniture and cookie notices are not marketing copy.
+            if (preg_match('/@|https?:|©|\bcookies?\b|\bprivacy policy\b|\ball rights reserved\b|\bterms (and|&) conditions\b/iu', $sentence)) {
+                continue;
+            }
+
+            $keep[$sentence] = $sentence;
+
+            if (count($keep) >= $limit) {
+                break;
+            }
+        }
+
+        return array_values($keep);
+    }
+
+    /**
+     * A reviewer's first name, or null when there is nothing safe to use.
+     *
+     * Google hands back a display name that may be a full name, a single name or
+     * the literal "Anonymous". Only the first name ever goes in a post, and an
+     * unusable one returns null so the prompt can tell the model to write around
+     * it rather than guess.
+     */
+    private function firstName(?string $displayName): ?string
+    {
+        $name = trim((string) $displayName);
+
+        if ($name === '' || strcasecmp($name, 'Anonymous') === 0) {
+            return null;
+        }
+
+        $first = trim(strtok($name, " \t") ?: '', " .,");
+
+        // Initials and handles read as a mistake when a post thanks them by name.
+        if (mb_strlen($first) < 2 || ! preg_match('/^\pL[\pL\pM\x27-]*$/u', $first)) {
+            return null;
+        }
+
+        return $first;
+    }
+
+    /**
+     * Cut text back to the last complete sentence that fits inside $maxChars.
+     *
+     * A quote sliced mid-word reads as a mistake, and gives the model licence to
+     * finish the sentence itself, which is how invented quotes start.
+     */
+    private function trimToSentence(string $text, int $maxChars): string
+    {
+        $text = trim(preg_replace('/\s+/u', ' ', $text) ?? '');
+
+        if ($text === '' || mb_strlen($text) <= $maxChars) {
+            return $text;
+        }
+
+        $window = mb_substr($text, 0, $maxChars);
+
+        // Greedy, so this lands on the last sentence that fits. A short complete
+        // sentence is still a usable quote, so there is no minimum length here:
+        // rejecting one only sends us to the fragment fallback below, which is
+        // the worse outcome in every case.
+        if (preg_match('/^.*[.!?]/us', $window, $m)) {
+            return trim($m[0]);
+        }
+
+        // Nothing in the window ends a sentence, so the last whole word is all
+        // that is left.
+        $lastSpace = mb_strrpos($window, ' ');
+
+        return trim($lastSpace === false ? $window : mb_substr($window, 0, $lastSpace));
     }
 
     /**
@@ -665,6 +1297,10 @@ PROMPT;
         }
 
         $data = json_encode($brief->reference_data, JSON_PRETTY_PRINT);
-        return "REFERENCE DATA (use this directly where appropriate):\n{$data}";
+        // Background only. This used to say "use this directly", which put a
+        // second copy of a review in front of the model alongside the one the
+        // angle picked, and it would sometimes quote the wrong one. SOURCE
+        // MATERIAL is now the only text anything may be quoted from.
+        return "REFERENCE DATA (background, not quotable):\n{$data}";
     }
 }
