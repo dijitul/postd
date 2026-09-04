@@ -202,14 +202,13 @@ class WebsiteScraperService
             $textParts = [];
 
             $cleanCrawler->filter('p, li, td, h3, h4, h5')->each(function (Crawler $node) use (&$textParts) {
-                // Skip if inside a nav, footer, or header
-                $ancestors = ['nav', 'footer', 'header'];
-                foreach ($ancestors as $ancestor) {
-                    try {
-                        $node->closest($ancestor);
-                        return; // skip
-                    } catch (\Throwable) {
-                    }
+                // Skip site chrome. This used to call closest() inside a try and
+                // treat "no exception" as a match, but closest() returns null when
+                // nothing matches and only throws on an empty node list. So the
+                // return fired for every node and this method has been handing back
+                // an empty string for every site it has ever scraped.
+                if ($this->isInPageChrome($node)) {
+                    return;
                 }
 
                 $text = trim($node->text(''));
