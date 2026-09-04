@@ -168,13 +168,18 @@ class LinkedInPlatform implements SocialPlatformInterface
     public function getAccounts(SocialConnection $connection): array
     {
         try {
+            // No projection parameter. The versioned endpoint rejects it outright
+            // with 400 ILLEGAL_ARGUMENT, so the ACL response carries only the
+            // organisation URN and we fetch each Page's details separately.
+            // Default paging returns 10; ask for 100 so an agency administering
+            // many Pages does not silently lose the tail of the list.
             $response = $this->client->get('rest/organizationAcls', [
                 'headers' => $this->buildHeaders($connection),
                 'query' => [
                     'q' => 'roleAssignee',
                     'role' => 'ADMINISTRATOR',
                     'state' => 'APPROVED',
-                    'projection' => '(elements*(*,organization~(id,localizedName,vanityName,logoV2(original~:playableStreams))))',
+                    'count' => 100,
                 ],
             ]);
 
@@ -182,25 +187,23 @@ class LinkedInPlatform implements SocialPlatformInterface
             $accounts = [];
 
             foreach ($data['elements'] ?? [] as $element) {
-                // The undecorated field carries the URN we actually post with. The
-                // decorated organization~ object only holds display detail, and
-                // LinkedIn drops it entirely if the projection is not honoured.
-                $urn = $element['organization'] ?? '';
-                $id = str_replace('urn:li:organization:', '', $urn);
+                $id = str_replace('urn:li:organization:', '', $element['organization'] ?? '');
 
                 if ($id === '') {
                     continue;
                 }
 
-                $org = $element['organization~'] ?? [];
+                $org = $this->fetchOrganisation($connection, $id);
                 $vanityName = $org['vanityName'] ?? null;
 
                 $accounts[] = [
                     'id' => $id,
+                    // Falling back to the ID keeps a Page usable for posting even
+                    // if the details call fails — only the label suffers.
                     'name' => $org['localizedName'] ?? "Company Page {$id}",
                     'type' => 'organisation',
                     'url' => $vanityName ? "https://www.linkedin.com/company/{$vanityName}/" : null,
-                    'metadata' => ['avatar_url' => $this->extractLogoUrl($org)],
+                    'metadata' => [],
                 ];
             }
 
@@ -222,11 +225,31 @@ class LinkedInPlatform implements SocialPlatformInterface
     }
 
     /**
-     * Dig the Page logo out of LinkedIn's decorated logoV2 structure.
+     * A single Page's display details.
+     *
+     * Needed as its own call because organizationAcls will not decorate the
+     * organisation for us — it rejects the projection parameter that would have
+     * asked it to. A failure here is not fatal: the caller keeps the Page and
+     * falls back to labelling it by ID.
+     *
+     * The payload also carries logoV2, but only as a digitalmediaAsset URN that
+     * would need resolving through yet another call, so we do not read it.
      */
-    private function extractLogoUrl(array $org): ?string
+    private function fetchOrganisation(SocialConnection $connection, string $id): array
     {
-        return $org['logoV2']['original~']['elements'][0]['identifiers'][0]['identifier'] ?? null;
+        try {
+            $response = $this->client->get("rest/organizations/{$id}", [
+                'headers' => $this->buildHeaders($connection),
+            ]);
+
+            return json_decode((string) $response->getBody(), true) ?? [];
+        } catch (\Throwable $e) {
+            Log::warning('LinkedInPlatform: Could not fetch organisation detail', [
+                'organisation_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+            return [];
+        }
     }
 
     /**

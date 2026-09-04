@@ -62,7 +62,7 @@ return [
         // LinkedIn-Version header, and each version is retired roughly a year
         // after release. Confirm against LinkedIn's current docs before going
         // live, and bump it through env rather than editing this default.
-        'version' => env('LINKEDIN_API_VERSION', '202506'),
+        'version' => env('LINKEDIN_API_VERSION', '202608'),
     ],
 
     'tiktok' => [
