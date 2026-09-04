@@ -35,8 +35,10 @@ function StatusBadge({ status }) {
   )
 }
 
-function PlatformCard({ def, connection, userPlanLevel, onConnect, onDisconnect, onReconnect }) {
+function PlatformCard({ def, connection, userPlanLevel, onConnect, onDisconnect, onReconnect, onSelectAccount }) {
   const [loading, setLoading] = useState(false)
+  const [savingAccount, setSavingAccount] = useState(false)
+  const [accountError, setAccountError] = useState(null)
 
   const isComingSoon = !!def.comingSoon
   const isLocked = !isComingSoon && def.plan === 'pro' && PLAN_ORDER[def.plan] > userPlanLevel
@@ -48,7 +50,25 @@ function PlatformCard({ def, connection, userPlanLevel, onConnect, onDisconnect,
 
   const status = isComingSoon ? 'coming_soon' : isLocked ? 'locked' : isConnected ? 'connected' : isExpired ? 'expired' : 'disconnected'
 
-  const connectedAccount = connection?.accounts?.find((a) => a.is_selected) ?? connection?.accounts?.[0]
+  const accounts = connection?.accounts ?? []
+  const connectedAccount = accounts.find((a) => a.is_selected) ?? accounts[0]
+
+  const handleAccountChange = async (e) => {
+    const accountId = e.target.value
+    if (!accountId || accountId === connectedAccount?.id) return
+
+    setSavingAccount(true)
+    setAccountError(null)
+    try {
+      await platformsApi.selectAccount(connection.id, accountId)
+      onSelectAccount(def.backendId, accountId)
+    } catch (err) {
+      console.error('Select account failed', err)
+      setAccountError('Could not save. Please try again.')
+    } finally {
+      setSavingAccount(false)
+    }
+  }
 
   const handleConnect = async () => {
     setLoading(true)
@@ -126,11 +146,38 @@ function PlatformCard({ def, connection, userPlanLevel, onConnect, onDisconnect,
         </div>
       </div>
 
-      {/* Connected account */}
+      {/* Connected account. With more than one page/profile available the user
+          picks the posting target here, rather than us guessing for them. */}
       {connectedAccount && !isLocked && (
         <div className="bg-cream-200 rounded-xl px-3 py-2 mb-4">
-          <p className="text-xs text-slate-500 mb-0.5">Connected account</p>
-          <p className="text-sm font-semibold text-navy-800">{connectedAccount.name}</p>
+          {accounts.length > 1 ? (
+            <>
+              <label
+                htmlFor={`account-${def.id}`}
+                className="text-xs text-slate-500 mb-1 block"
+              >
+                Posting to
+              </label>
+              <select
+                id={`account-${def.id}`}
+                value={connectedAccount.id}
+                onChange={handleAccountChange}
+                disabled={savingAccount}
+                className="w-full text-sm font-semibold text-navy-800 bg-white border border-cream-400 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:opacity-50"
+              >
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
+              </select>
+              {savingAccount && <p className="text-xs text-slate-400 mt-1">Saving...</p>}
+              {accountError && <p className="text-xs text-red-600 mt-1">{accountError}</p>}
+            </>
+          ) : (
+            <>
+              <p className="text-xs text-slate-500 mb-0.5">Connected account</p>
+              <p className="text-sm font-semibold text-navy-800">{connectedAccount.name}</p>
+            </>
+          )}
         </div>
       )}
 
@@ -227,6 +274,15 @@ export default function PlatformsPage() {
     )
   }
 
+  const handleSelectAccount = (backendId, accountId) => {
+    setConnections((prev) =>
+      prev.map((c) => c.platform === backendId
+        ? { ...c, accounts: c.accounts.map((a) => ({ ...a, is_selected: a.id === accountId })) }
+        : c
+      )
+    )
+  }
+
   const connectedCount = PLATFORM_DEFS.filter((def) => {
     const conn = getConnection(def.backendId)
     return conn && conn.is_active && !(conn.needs_reconnect ?? conn.is_expired)
@@ -308,6 +364,7 @@ export default function PlatformsPage() {
             userPlanLevel={userPlanLevel}
             onDisconnect={handleDisconnect}
             onReconnect={handleReconnect}
+            onSelectAccount={handleSelectAccount}
           />
         ))}
       </div>

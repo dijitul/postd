@@ -83,6 +83,11 @@ export const platformsApi = {
   connect: (platform) => api.post(`/social/connect/${platform}`),
   disconnect: (connectionId) => api.delete(`/social/connections/${connectionId}`),
   refreshToken: (connectionId) => api.post(`/social/connections/${connectionId}/refresh`),
+  // Re-fetches pages/profiles from the platform, then returns them
+  getAccounts: (connectionId) => api.get(`/social/connections/${connectionId}/accounts`),
+  // Which page/profile this connection posts to
+  selectAccount: (connectionId, accountId) =>
+    api.put(`/social/connections/${connectionId}/account`, { account_id: accountId }),
 }
 
 // ─── Billing endpoints ────────────────────────────────────────────────────────
