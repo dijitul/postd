@@ -956,6 +956,10 @@ PROMPT;
 ALREADY PUBLISHED FOR THIS PLATFORM — DO NOT REPEAT THESE:
 {$list}
 
+These are here to be avoided, not mined. They are NOT source material: do not lift a
+quote, a customer name, a phrase or a figure out of them, even though the quotes in them
+are real. A quote that has already run this week has already been read.
+
 The new post must be clearly different from every one of the above. Do not reuse their
 opening line, structure, statistics, or turns of phrase. If the brief pushes you toward
 the same angle, deliberately pick a different one: a specific service, a customer
