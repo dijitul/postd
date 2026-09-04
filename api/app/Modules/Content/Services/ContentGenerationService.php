@@ -311,7 +311,7 @@ class ContentGenerationService
         ContentBrief $brief,
         string $platform,
         array $businessContext,
-        \Illuminate\Support\Carbon $scheduledAt
+        \Carbon\Carbon $scheduledAt
     ): ?Post {
         $platformRules = self::PLATFORM_RULES[$platform] ?? null;
         if (! $platformRules) {
