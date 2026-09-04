@@ -24,7 +24,7 @@ function loadGoogleMaps() {
  * BusinessSearch
  *
  * Google Places autocomplete restricted to UK establishments.
- * onSelect is called with { name, website, address } when a place is chosen.
+ * onSelect is called with { name, website, address, city } when a place is chosen.
  * onNameChange is called with just the string as the user types (for fallback free-text).
  */
 export default function BusinessSearch({ onSelect, onNameChange, defaultValue = '', error }) {
@@ -121,7 +121,14 @@ export default function BusinessSearch({ onSelect, onNameChange, defaultValue = 
     const div = document.createElement('div')
     const placesService = new window.google.maps.places.PlacesService(div)
     placesService.getDetails(
-      { placeId: prediction.place_id, fields: ['name', 'website', 'formatted_address'] },
+      {
+        placeId: prediction.place_id,
+        // address_components carries postal_town, which is the field that actually
+        // holds the town on UK addresses. Parsing it out of formatted_address means
+        // guessing which comma-separated part is the town, and the guess is wrong
+        // often enough to matter when posts say where you are.
+        fields: ['name', 'website', 'formatted_address', 'address_components'],
+      },
       (place, status) => {
         setLoadingDetails(false)
         if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
@@ -129,6 +136,7 @@ export default function BusinessSearch({ onSelect, onNameChange, defaultValue = 
             name: place.name ?? name,
             website: place.website ?? '',
             address: place.formatted_address ?? '',
+            city: townFrom(place.address_components),
           })
         } else {
           onSelect?.({ name })
@@ -144,6 +152,18 @@ export default function BusinessSearch({ onSelect, onNameChange, defaultValue = 
     setSelected(false)
     onNameChange?.('')
     onSelect?.({ name: '', website: '', address: '' })
+  }
+
+  // Google labels UK towns postal_town. locality is the fallback for the places
+  // that do not have one, and for addresses outside the UK.
+  const townFrom = (components) => {
+    if (!Array.isArray(components)) return ''
+
+    const match = components.find((c) => c.types?.includes('postal_town'))
+      ?? components.find((c) => c.types?.includes('locality'))
+      ?? components.find((c) => c.types?.includes('administrative_area_level_2'))
+
+    return match?.long_name ?? ''
   }
 
   const locationText = (prediction) => {

@@ -33,6 +33,7 @@ const PLATFORM_DEFS = [
 const businessSchema = z.object({
   business_name:      z.string().min(2, 'Business name is required'),
   industry:           z.string().min(1, 'Please choose your industry'),
+  city:               z.string().max(100).optional().or(z.literal('')),
   website_url:        z.string().url('Please enter a valid URL (include https://)').optional().or(z.literal('')),
   google_reviews_url: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
   tone:               z.enum(['professional', 'friendly', 'casual'])
@@ -211,6 +212,7 @@ export default function SettingsPage() {
         reset({
           business_name:      biz?.name ?? '',
           industry:           biz?.industry ?? '',
+          city:               biz?.city ?? '',
           website_url:        biz?.website_url ?? '',
           google_reviews_url: biz?.google_reviews_url ?? '',
           tone:               biz?.tone ?? 'friendly',
@@ -265,6 +267,7 @@ export default function SettingsPage() {
       await settingsApi.updateBusiness({
         name:               data.business_name,
         industry:           data.industry,
+        city:               data.city,
         website_url:        data.website_url,
         google_reviews_url: data.google_reviews_url,
         tone:               data.tone,
@@ -343,6 +346,20 @@ export default function SettingsPage() {
                 <AlertCircle className="w-3 h-3" /> {errors.industry.message}
               </p>
             )}
+          </div>
+
+          <div>
+            <label className="label">Town or city</label>
+            <input
+              type="text"
+              placeholder="Mansfield"
+              className="input"
+              {...register('city')}
+            />
+            <p className="mt-1.5 text-xs text-slate-400">
+              Where you are based. Posts mention your area, and without this they either
+              skip it or guess.
+            </p>
           </div>
 
           <div>

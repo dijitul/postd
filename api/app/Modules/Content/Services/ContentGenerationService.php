@@ -707,15 +707,37 @@ class ContentGenerationService
             return null;
         }
 
-        // Without this the newest five star review gets quoted every single time
-        // the rotation comes back round to it.
+        // Anything untouched inside the lookback window wins outright. Without
+        // this the newest five star review gets quoted every single time the
+        // rotation comes back round to it.
         foreach ($pool as $item) {
             if (! in_array($item['id'] ?? null, $usedSourceIds, true)) {
                 return $item;
             }
         }
 
-        return $pool[0];
+        // Everything has been used recently, which is what happens once a business
+        // has fewer reviews than the window holds. Falling back to the first of the
+        // pool meant the newest review then ran every time; take the one gone
+        // longest without an airing instead. $usedSourceIds is newest first, so a
+        // higher index is an older outing.
+        $stalest = null;
+        $stalestAge = -1;
+
+        foreach ($pool as $item) {
+            $age = array_search($item['id'] ?? null, $usedSourceIds, true);
+
+            if ($age === false) {
+                continue;
+            }
+
+            if ($age > $stalestAge) {
+                $stalest = $item;
+                $stalestAge = $age;
+            }
+        }
+
+        return $stalest ?? $pool[0];
     }
 
     /**

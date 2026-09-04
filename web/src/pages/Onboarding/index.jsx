@@ -119,9 +119,13 @@ function Step1({ onNext, defaultValues, isSubmitting, submitError }) {
     setSelectedLocation(loc)
   }
 
-  const handlePlaceSelect = ({ name, website }) => {
+  const handlePlaceSelect = ({ name, website, city }) => {
     if (name) setValue('business_name', name, { shouldValidate: true })
     if (website) hints.current._websiteHint = website
+    // The town was already being worked out to label the dropdown and then thrown
+    // away, so every business signed up with an empty city and posts had nothing
+    // to name when they talked about the local area.
+    if (city) hints.current._cityHint = city
   }
 
   const showPicker = gbpLocations && gbpLocations.length > 0 && !selectedLocation
@@ -702,6 +706,7 @@ export default function OnboardingPage() {
           name:            merged.business_name,
           industry:        merged.industry,
           tone:            merged.tone || 'friendly',
+          city:            merged._cityHint || null,
           website_url:     merged._websiteHint || null,
           google_reviews_url: merged._reviewUrlHint || null,
           gbp_location_id: merged._gbpLocationId || null,
