@@ -6,8 +6,8 @@
  *
  * Writes (all committed, served from web/public):
  *   og-image.png               1200x630 social share card
- *   icons/icon-<size>.png      PWA and manifest icons
- *   icons/icon-512-maskable.png  full-bleed icon for Android adaptive masks
+ *   app-icons/icon-<size>.png      PWA and manifest icons
+ *   app-icons/icon-512-maskable.png  full-bleed icon for Android adaptive masks
  *   apple-touch-icon.png       180x180, square, no transparency
  *   favicon.ico                16 and 32px PNGs in an ICO container
  *
@@ -172,8 +172,10 @@ const ogSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"
 write('og-image.png', renderPng(ogSvg, 1200))
 
 // ── App icons ────────────────────────────────────────────────────────────────
+// Served from /app-icons, not /icons: Apache aliases /icons/ to its own stock
+// icon set server-wide, so anything under /icons/ never reaches our files.
 for (const size of [72, 96, 128, 144, 152, 192, 384, 512]) {
-  write(`icons/icon-${size}.png`, renderPng(iconSvg, size))
+  write(`app-icons/icon-${size}.png`, renderPng(iconSvg, size))
 }
 
 // Maskable: artwork kept inside the central safe zone on a full-bleed square.
@@ -181,7 +183,7 @@ const maskableSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height=
   <rect width="512" height="512" fill="${NAVY}"/>
   <g transform="translate(76 76) scale(5.625)">${iconInner}</g>
 </svg>`
-write('icons/icon-512-maskable.png', renderPng(maskableSvg, 512))
+write('app-icons/icon-512-maskable.png', renderPng(maskableSvg, 512))
 
 // Apple touch icon: iOS rounds the corners itself and shows transparency as
 // black, so fill the whole square.
