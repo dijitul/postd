@@ -7,6 +7,7 @@ use App\Models\Business;
 use App\Models\Post;
 use App\Models\SystemHealthLog;
 use App\Models\User;
+use App\Modules\Billing\Services\PlanCatalogue;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -56,48 +57,64 @@ class AdminController extends Controller
 
     private function revenueSnapshot(): array
     {
-        $plans = config('cashier.plans', []);
+        // Subscriptions are priced locally from config/plans.php rather than
+        // round-tripping to Stripe on every dashboard load. Annual prices count
+        // as a twelfth, and Agency extra locations add their own monthly price.
+        $catalogue = app(PlanCatalogue::class);
+        $plans = $catalogue->all();
 
-        // stripe_price_id => plan key, so subscriptions can be priced locally
-        // rather than round-tripping to Stripe on every dashboard load.
-        $priceToPlan = [];
-        foreach ($plans as $key => $plan) {
-            if (! empty($plan['stripe_price_id'])) {
-                $priceToPlan[$plan['stripe_price_id']] = $key;
-            }
-        }
-
-        $activeRows = DB::table('subscriptions')
+        $activeSubs = DB::table('subscriptions')
             ->whereIn('stripe_status', ['active', 'trialing'])
             ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>', now()))
-            ->selectRaw('stripe_price, COUNT(*) as count')
-            ->groupBy('stripe_price')
-            ->get();
+            ->get(['id', 'stripe_price']);
 
+        // A subscription with more than one price (Agency plus extra locations)
+        // has a null stripe_price, so its prices come from the items instead.
+        $items = DB::table('subscription_items')
+            ->whereIn('subscription_id', $activeSubs->pluck('id'))
+            ->get(['subscription_id', 'stripe_price', 'quantity'])
+            ->groupBy('subscription_id');
+
+        $extraPriceId = $catalogue->extraLocationPriceId();
         $byPlan = [];
         $mrrPence = 0;
         $unknownCount = 0;
 
-        foreach ($activeRows as $row) {
-            $planKey = $priceToPlan[$row->stripe_price] ?? null;
+        foreach ($activeSubs as $sub) {
+            $subItems = $items->get($sub->id, collect());
+            $prices = array_filter(array_merge([$sub->stripe_price], $subItems->pluck('stripe_price')->all()));
+
+            $planKey = null;
+            $planPrice = 0;
+            foreach ($prices as $priceId) {
+                if ($match = $catalogue->lookupPrice($priceId)) {
+                    $planKey = $match['plan'];
+                    $planPrice = $catalogue->monthlyValuePence($priceId);
+                    break;
+                }
+            }
 
             if ($planKey === null) {
-                $unknownCount += (int) $row->count;
+                $unknownCount++;
 
                 continue;
             }
 
-            $price = (int) ($plans[$planKey]['price'] ?? 0);
-            $planMrr = $price * (int) $row->count;
-            $mrrPence += $planMrr;
+            $extras = $extraPriceId
+                ? (int) $subItems->where('stripe_price', $extraPriceId)->sum('quantity')
+                : 0;
+            $subMrr = $planPrice + $extras * $catalogue->extraLocationPricePence();
+            $mrrPence += $subMrr;
 
-            $byPlan[$planKey] = [
+            $byPlan[$planKey] ??= [
                 'plan' => $planKey,
                 'name' => $plans[$planKey]['name'] ?? ucfirst($planKey),
-                'price_pence' => $price,
-                'customers' => (int) $row->count,
-                'mrr_pence' => $planMrr,
+                'price_pence' => (int) $catalogue->pricePence($planKey),
+                'customers' => 0,
+                'mrr_pence' => 0,
             ];
+            $byPlan[$planKey]['customers']++;
+            $byPlan[$planKey]['mrr_pence'] += $subMrr;
         }
 
         // Value we are choosing to give away, so comps are a visible decision
@@ -110,7 +127,7 @@ class AdminController extends Controller
         $compedPence = 0;
         $compedCount = 0;
         foreach ($compedRows as $row) {
-            $price = (int) ($plans[$row->comped_plan]['price'] ?? 0);
+            $price = (int) $catalogue->pricePence((string) $row->comped_plan);
             $compedPence += $price * (int) $row->count;
             $compedCount += (int) $row->count;
         }
@@ -127,8 +144,7 @@ class AdminController extends Controller
             ->groupBy('stripe_price')
             ->get();
         foreach ($churnedRows as $row) {
-            $planKey = $priceToPlan[$row->stripe_price] ?? null;
-            $churnedPence += (int) ($plans[$planKey]['price'] ?? 0) * (int) $row->count;
+            $churnedPence += $catalogue->monthlyValuePence($row->stripe_price) * (int) $row->count;
         }
 
         return [
@@ -415,7 +431,7 @@ class AdminController extends Controller
     private function customerRow(User $user, array $costs, array $platforms, array $lastPosts): array
     {
         $business = $user->businesses->first();
-        $plans = config('cashier.plans', []);
+        $plans = app(PlanCatalogue::class)->all();
         $plan = $user->activePlanName();
         $status = $user->billingStatus();
 
@@ -427,7 +443,7 @@ class AdminController extends Controller
             'status' => $status,
             'plan' => $plan,
             'plan_label' => $plans[$plan]['name'] ?? ucfirst($plan),
-            'mrr' => $status === 'subscribed' ? round((int) ($plans[$plan]['price'] ?? 0) / 100, 2) : 0,
+            'mrr' => $status === 'subscribed' ? round((int) ($plans[$plan]['monthly']['price'] ?? 0) / 100, 2) : 0,
             'trial_ends_at' => $user->trial_ends_at?->toIso8601String(),
             'comped_until' => $user->comped_until?->toIso8601String(),
             'comp_note' => $user->comp_note,
@@ -461,7 +477,7 @@ class AdminController extends Controller
         ])->findOrFail($id);
 
         $business = $user->businesses->first();
-        $plans = config('cashier.plans', []);
+        $plans = app(PlanCatalogue::class)->all();
         $plan = $user->activePlanName();
 
         $recentPosts = $business
@@ -511,7 +527,7 @@ class AdminController extends Controller
                 'plan' => $plan,
                 'plan_label' => $plans[$plan]['name'] ?? ucfirst($plan),
                 'mrr' => $user->billingStatus() === 'subscribed'
-                    ? round((int) ($plans[$plan]['price'] ?? 0) / 100, 2)
+                    ? round((int) ($plans[$plan]['monthly']['price'] ?? 0) / 100, 2)
                     : 0,
                 'trial_ends_at' => $user->trial_ends_at?->toIso8601String(),
                 'comped_plan' => $user->comped_plan,
@@ -582,7 +598,7 @@ class AdminController extends Controller
     public function comp(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
-            'plan' => ['required', 'string', 'in:'.implode(',', array_keys(config('cashier.plans', [])))],
+            'plan' => ['required', 'string', 'in:'.implode(',', array_keys(app(PlanCatalogue::class)->all()))],
             'until' => ['nullable', 'date', 'after:today'],
             'note' => ['nullable', 'string', 'max:500'],
         ]);

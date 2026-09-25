@@ -31,6 +31,7 @@ class UserFactory extends Factory
             'comped_until' => null,
             'comped_by' => null,
             'comp_note' => null,
+            'current_business_id' => null,
         ];
     }
 

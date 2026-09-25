@@ -82,7 +82,7 @@ All business logic lives under `api/app/Modules/`:
 | **Content** | Post generation (Claude AI), approval workflow, dispatch |
 | **Schedule** | Post timing logic, `DispatchScheduledPostsJob` |
 | **Scraping** | Website scraper, Google Reviews fetcher |
-| **Billing** | Stripe subscriptions via Cashier |
+| **Billing** | Stripe subscriptions via Cashier, plan catalogue and entitlements (see Plans and Entitlements) |
 | **Analytics** | Post performance data |
 | **Admin** | Dijitul team dashboard (impersonate, health checks) |
 | **Notifications** | Email notifications (trial ending, post failed, etc.) |
@@ -100,6 +100,9 @@ ScrapeBusinessJob               scrapes website + reviews to build content brief
 GeneratePostsJob                daily job: creates posts for all active platforms
 DispatchScheduledPostsJob       runs every minute via cron, dispatches due posts
 GoogleAuthController            handles Google sign-in OAuth callback
+PlanCatalogue                   read-only view of config/plans.php: plans, prices, Stripe price lookup
+EntitlementService              decides what an account may do (platforms, cadence, images, locations)
+Entitlements                    pure value object behind EntitlementService, unit tested with no DB
 ```
 
 ---
@@ -111,13 +114,13 @@ GoogleAuthController            handles Google sign-in OAuth callback
 /login              Login (Google primary, email/password secondary)
 /register           Register (Google primary, email/password hidden by default)
 /auth/callback      Handles Google OAuth redirect (stores token, redirects)
-/onboarding         5-step business setup wizard
+/onboarding         5-step business setup wizard (?new=1 adds another location)
 /dashboard          Main dashboard
 /posts              Content library
 /inbox              Pending approval queue
 /platforms          Connected social accounts
 /settings           Business settings
-/billing            Subscription management
+/billing            Plans, monthly/annual, usage against limits, Stripe Checkout and portal
 /admin              Dijitul team only
 /guides             Guides index (prerendered, grouped by pillar)
 /guides/<slug>      One guide, from web/content/guides/<file>.md
@@ -208,6 +211,17 @@ DO_SPACES_ENDPOINT=
 STRIPE_KEY=
 STRIPE_SECRET=
 STRIPE_WEBHOOK_SECRET=
+
+# Stripe price IDs (see Plans and Entitlements). Blank = hidden on the Billing page.
+STRIPE_PLAN_LOCAL=              # falls back to STRIPE_PLAN_STARTER (same £19 price)
+STRIPE_PLAN_STARTER=
+STRIPE_PLAN_GROWTH=
+STRIPE_PLAN_AGENCY=
+STRIPE_PLAN_LOCAL_ANNUAL=
+STRIPE_PLAN_GROWTH_ANNUAL=
+STRIPE_PLAN_AGENCY_ANNUAL=
+STRIPE_PRICE_EXTRA_LOCATION=    # Agency add-on, £19/month per location beyond 3
+STRIPE_PLAN_PRO=                # legacy £69, existing subscribers only
 
 # Google Places (website scraping — leave blank if not set up, see Known Issues)
 GOOGLE_PLACES_API_KEY=
@@ -408,6 +422,59 @@ Uses Anthropic Claude API via direct HTTP (not the OpenAI PHP SDK).
 
 ---
 
+## Plans and Entitlements
+
+Approved structure (full reasoning in `docs/marketing/pricing-and-platforms.md`):
+
+| | Local £19/mo | Growth £39/mo (trial tier) | Agency £79/mo |
+|---|---|---|---|
+| Locations | 1 | 1 | 3, then +£19/mo each |
+| Platforms | any 2 of GBP, Facebook, LinkedIn (no X) | all four | all four, per location |
+| Posts a week, per platform | 3 | 7 | 14 (GBP 7) |
+| AI images a month | 5 | 30 | 100, pooled across locations |
+| Analytics history | 30 days | 12 months | 12 months |
+
+Every plan: autopilot or approval, review-driven posts, regenerating. Annual = 2 months free (£190 / £390 / £790). Prices show with no VAT wording for now; the suffix is `VAT_SUFFIX` in `web/src/lib/plans.js`.
+
+**Trial:** 14 days on Growth, no card. X capped at 10 posts and AI images at 10 for the whole trial. When it ends, posting pauses (see below); nothing is deleted.
+
+**Legacy plans:** `starter` is an alias of `local` (same Stripe price, `STRIPE_PLAN_LOCAL` falls back to `STRIPE_PLAN_STARTER`). `pro` is not sold any more; existing Pro subscribers keep £69 with Agency entitlements. Migration `2026_09_25_150000` renamed stored `comped_plan` values and dropped the unused `plan_features` table.
+
+### One source of truth
+
+- `api/config/plans.php` holds every plan, price, Stripe price env var and limit. Change a limit there and every enforcement point follows. `config/cashier.php` no longer has plans.
+- `PlanCatalogue` reads it (plan lookup, `starter` alias, Stripe price to plan and interval, MRR value).
+- `EntitlementService::forUser()` builds an `Entitlements` object for the user's current plan and trial state. `Entitlements` is pure arithmetic and covered by `tests/Unit/EntitlementsTest.php` (no database).
+- `GET /billing/plans` serves plans, availability and the account's usage (`account`) to the Billing page. The landing page pricing is hardcoded in `web/src/lib/plans.js` because it is prerendered; keep it in step with `config/plans.php`.
+- A Stripe price env var left blank marks that option unavailable; the Billing page hides it rather than erroring.
+
+### Where each limit is enforced
+
+| Limit | Where |
+|---|---|
+| Platform count, X on Local | `SocialConnectionController::redirect()` (403 with a worded reason) and again in `callback()`; `GoogleAuthController` will not auto-add GBP past the limit. Reconnecting an existing platform is always allowed. |
+| Which platforms get posts | `ContentGenerationService::generateFromBrief()` uses `Entitlements::usablePlatforms()`: allowed platforms, oldest connection first, up to the limit. Extra connections are shown as "paused on your plan", never deleted. |
+| Posts a week | Clamped in `ContentGenerationService::postsPerWeekTarget()`; refused above the plan in `OnboardingController::updateSettings()`. The saved setting is kept, so upgrading again restores it. |
+| Scheduler spacing | `SchedulingService::minGapMinutesFor()`, shared by the scheduler and `ContentGenerationService`: 48h up to 4 a week (unchanged), 20h up to 7 (one a day), 7h up to 14 (two a day). Above every other day, a candidate past the day's last slot goes to tomorrow rather than the next preferred day. The old fixed 48h gap capped every platform at 4 a week. Tested without a DB in `SchedulingSpacingTest`. |
+| AI images | Checked when queued and again in `GeneratePostImageJob::handle()` (one run queues several). Past the allowance the post goes out text-only. There is no stock-photo fallback yet. |
+| X on trial | `ContentGenerationService` holds X generation to what is left of the 10. |
+| Locations | `OnboardingController::createBusiness()` with `new_location`. An extra Agency location returns 402 with the price until the user confirms, then `SubscriptionService::addExtraLocation()` adds the add-on price to the subscription. |
+| Analytics history | `AnalyticsController::period()` holds `from` to the plan's history. |
+
+Limits are only checked when something new is created. Nothing at publish time consults them, so a post already scheduled always goes out.
+
+**No plan (trial over, subscription lapsed):** `DispatchScheduledPostsJob` skips those accounts, so scheduled posts stay scheduled (paused). Generation stops. When a plan is chosen (`subscribe()` or the `customer.subscription.created` webhook), `SubscriptionService::resumePausedPosts()` gives overdue posts fresh slots so they do not all go out at once.
+
+### Multiple locations
+
+A user can own several businesses. `users.current_business_id` records which one they are working on, and `User::business()` orders that one first, so every `$user->business` call site follows the switch. `GET /businesses` and `POST /businesses/{id}/switch` back the header switcher (`LocationSwitcher.jsx`); "Add a location" runs `/onboarding?new=1`.
+
+### Checkout
+
+`POST /billing/checkout {plan, interval}`: a new subscriber gets a Stripe Checkout URL (trial days are kept via `trialUntil`); an existing subscriber is swapped straight away (`SubscriptionService::changePlan()`), carrying Agency extra locations across. A downgrade that would leave more locations than the new plan covers is refused with an explanation. Payment details and cancelling go through the Stripe portal.
+
+---
+
 ## Database Notes
 
 **PostgreSQL-specific gotchas:**
@@ -466,6 +533,11 @@ DB::table('failed_jobs')->orderByRaw('id DESC')->first();
 | Retry button for failed posts | Built | `POST /posts/{id}/retry` plus a retry action on the failed filter in `PostsPage.jsx`. Note there is no separate Inbox page — it is the Posts page filtered by status. |
 | Twitter token refresh | Untested | First live test will be when the current token expires (~2 hours post-connect) |
 | `LINKEDIN_API_VERSION` unverified | Verify before launch | Set to `202506` as a placeholder. Confirm against LinkedIn's current version list; an unsupported value fails every `/rest/*` call. |
+| Stripe prices for new plans | Needs setting up | Agency, the three annual prices and the extra-location add-on need creating in Stripe and their IDs adding to `.env`. Until then those options are hidden on the Billing page. |
+| Google sign-ups had no trial | Fixed for new users | `GoogleAuthController` never set `trial_ends_at`. New Google sign-ups now get the 14-day trial; existing Google users without a subscription or comp have no plan and are paused until comped or subscribed. |
+| Stripe webhooks failed to load | Fixed | `StripeWebhookController` redeclared Cashier's protected `getUserByStripeId()` as private, a fatal error on class load. |
+| Starter cadence grace period | Not built | The pricing doc says Starter customers above 3 posts a week keep that cadence for 6 months. Not implemented: Local is held to 3 now. |
+| Removing a location | Not built | There is no endpoint to remove a business or reduce the extra-location quantity. Handle by hand in Stripe and the database. |
 | LinkedIn 60-day reconnect | By design, needs UX | No refresh token is possible. Users must manually reconnect every 60 days — worth a more prominent prompt than the standard expiry email. |
 
 ---

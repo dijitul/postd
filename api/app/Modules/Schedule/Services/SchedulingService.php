@@ -41,21 +41,44 @@ class SchedulingService
     ];
 
     /**
-     * Minimum gap between posts on the same platform (in minutes).
+     * Every-other-day spacing, used for any cadence of up to 4 a week.
      *
-     * A platform gets at most one post every other day, so the gap is 48 hours
-     * everywhere. The old per-platform gaps were short enough to let two posts
-     * land on the same day, which is what made a feed read as automated.
+     * The old per-platform gaps were short enough to let two posts land on the
+     * same day whatever the business had asked for, which is what made a feed
+     * read as automated. At the default cadence a platform still gets at most
+     * one post every other day.
      */
-    private const MIN_GAP_MINUTES = [
-        'facebook' => 2880,
-        'twitter' => 2880,
-        'linkedin' => 2880,
-        'google_business_profile' => 2880,
-    ];
+    private const EVERY_OTHER_DAY_MINUTES = 2880;
 
-    /** Gap applied to any platform missing from the table above. */
-    private const DEFAULT_GAP_MINUTES = 2880;
+    /**
+     * Minimum gap between two posts on one platform, from its weekly cadence.
+     *
+     * The single source for spacing: getNextSlot() enforces it and
+     * ContentGenerationService uses it to work out how many posts a week can
+     * physically hold. A fixed 48 hours capped every platform at 4 a week,
+     * which made Growth's 7 and Agency's 14 impossible to deliver, so the gap
+     * now narrows only as far as the cadence the business chose needs:
+     *
+     *  - up to 4 a week: 48 hours, exactly as before
+     *  - 5 to 7 a week: 20 hours, so one a day. Each platform's time slots span
+     *    less than 20 hours of a day, so two can never land on the same day,
+     *    while the slot can still move between morning and afternoon.
+     *  - 8 to 14 a week: 7 hours, so two a day. From a morning slot the next
+     *    post lands in the late afternoon or evening slot, and 7 hours after
+     *    that is past the day's last slot, so it moves to the next morning and
+     *    a third never squeezes in.
+     *
+     * Quiet hours and time windows are applied on top by getNextSlot(). GBP is
+     * held to 7 a week by the plans, so it never uses the tightest gap.
+     */
+    public static function minGapMinutesFor(int $postsPerWeek): int
+    {
+        return match (true) {
+            $postsPerWeek <= 4 => self::EVERY_OTHER_DAY_MINUTES,
+            $postsPerWeek <= 7 => 20 * 60,
+            default => 7 * 60,
+        };
+    }
 
     /**
      * Get the next optimal posting slot for a given business and platform.
@@ -65,15 +88,20 @@ class SchedulingService
      * - Business custom time windows (from settings)
      * - Minimum gap between existing scheduled posts
      * - Quiet hours
+     *
+     * $postsPerWeek is the cadence the plan actually allows. Without it the
+     * business's saved setting is used, which is what callers outside
+     * generation want.
      */
-    public function getNextSlot(Business $business, string $platform): Carbon
+    public function getNextSlot(Business $business, string $platform, ?int $postsPerWeek = null): Carbon
     {
         $timezone = 'Europe/London';
         $now = Carbon::now($timezone);
         $settings = $business->settings;
 
         $platformConfig = self::OPTIMAL_TIMES[$platform] ?? self::OPTIMAL_TIMES['facebook'];
-        $minGap = self::MIN_GAP_MINUTES[$platform] ?? self::DEFAULT_GAP_MINUTES;
+        $postsPerWeek ??= $settings?->getPostsPerWeekForPlatform($platform) ?? 3;
+        $minGap = self::minGapMinutesFor($postsPerWeek);
 
         // Start from now, advance to the next valid slot
         $candidate = $now->copy()->addMinutes(30); // don't schedule too immediately
@@ -104,8 +132,12 @@ class SchedulingService
                 }
             }
 
-            // Find the nearest optimal time slot for this day
-            $optimalSlot = $this->snapToOptimalSlot($candidate, $platformConfig);
+            // Find the nearest optimal time slot for this day. A cadence of more
+            // than every other day cannot skip to the platform's preferred days
+            // when today's slots run out, or a 7 a week target would lose most
+            // weekends and Mondays, so it moves to tomorrow instead.
+            $everyDay = $minGap < self::EVERY_OTHER_DAY_MINUTES;
+            $optimalSlot = $this->snapToOptimalSlot($candidate, $platformConfig, $everyDay);
 
             // Check if there's already a post scheduled within the minimum gap
             $conflict = $this->conflictingPostTime($business, $platform, $optimalSlot, $minGap);
@@ -182,8 +214,11 @@ class SchedulingService
 
     /**
      * Snap a candidate time to the nearest optimal time slot on the same day.
+     *
+     * With $everyDay, a candidate past the day's last slot goes to tomorrow's
+     * first slot rather than the next preferred day.
      */
-    private function snapToOptimalSlot(Carbon $candidate, array $config): Carbon
+    private function snapToOptimalSlot(Carbon $candidate, array $config, bool $everyDay = false): Carbon
     {
         $slots = $config['time_slots'];
         $date = $candidate->format('Y-m-d');
@@ -208,8 +243,15 @@ class SchedulingService
             }
         }
 
-        // If no slot found today, move to next preferred day
+        // If no slot found today, move to next preferred day, or simply to
+        // tomorrow when the cadence needs every day
         if ($bestSlot === null) {
+            if ($everyDay) {
+                $tomorrow = $candidate->copy()->addDay();
+
+                return Carbon::parse($tomorrow->format('Y-m-d').' '.$slots[0], $timezone);
+            }
+
             return $this->getFirstSlotOnNextPreferredDay($candidate, $config);
         }
 
@@ -275,7 +317,6 @@ class SchedulingService
     private function getNextSlotAfter(Business $business, string $platform, ?Carbon $after): Carbon
     {
         if ($after) {
-            $minGap = self::MIN_GAP_MINUTES[$platform] ?? self::DEFAULT_GAP_MINUTES;
             // Create a temporary fake "conflict" at the last slot to force moving forward
             $business->posts()->create([
                 'platform' => $platform,

@@ -134,7 +134,7 @@ jobs:
     name: Deploy to production (144.126.207.135)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [build-web]
+    needs: [test-api, build-web]
 
     environment:
       name: production

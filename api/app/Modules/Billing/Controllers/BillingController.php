@@ -3,31 +3,94 @@
 namespace App\Modules\Billing\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Billing\Services\EntitlementService;
+use App\Modules\Billing\Services\PlanCatalogue;
 use App\Modules\Billing\Services\SubscriptionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class BillingController extends Controller
 {
     public function __construct(
-        private readonly SubscriptionService $subscriptionService
+        private readonly SubscriptionService $subscriptionService,
+        private readonly EntitlementService $entitlements,
+        private readonly PlanCatalogue $catalogue
     ) {}
 
     /**
-     * Get available plans.
+     * Plans, the account's current plan, and its usage against its limits.
+     * Everything the Billing page shows comes from here.
      */
     public function plans(Request $request): JsonResponse
     {
-        $plans = $this->subscriptionService->getPlans();
-        $currentPlan = $request->user()->activePlanName();
+        $user = $request->user();
+        $currentPlan = $user->activePlanName();
+        $trialCaps = $this->catalogue->trialCaps();
 
         return response()->json([
-            'plans' => $plans,
+            'plans' => $this->subscriptionService->getPlans($currentPlan),
+            'extra_location' => $this->subscriptionService->extraLocationOffer(),
+            'trial' => [
+                'days' => (int) config('plans.trial_days', 14),
+                'plan' => $this->catalogue->trialPlan(),
+                'twitter_posts' => $trialCaps['twitter_posts'] ?? null,
+                'ai_images' => $trialCaps['ai_images'] ?? null,
+            ],
             'current_plan' => $currentPlan,
-            'trial_ends_at' => $request->user()->trial_ends_at?->toIso8601String(),
-            'is_on_trial' => $request->user()->isOnValidTrial(),
+            'current_interval' => $user->subscribedInterval(),
+            'subscribed' => $user->subscribed('default'),
+            'trial_ends_at' => $user->trial_ends_at?->toIso8601String(),
+            'is_on_trial' => $user->isOnValidTrial(),
+            'account' => $this->entitlements->summary($user, $user->business),
         ]);
+    }
+
+    /**
+     * Choose a plan. New subscribers are sent to Stripe Checkout; existing ones
+     * are moved across straight away, prorated by Stripe.
+     */
+    public function checkout(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'plan' => ['required', 'string', Rule::in(array_keys($this->catalogue->offered()))],
+            'interval' => ['nullable', Rule::in([PlanCatalogue::INTERVAL_MONTHLY, PlanCatalogue::INTERVAL_ANNUAL])],
+        ]);
+
+        $user = $request->user();
+        $interval = $validated['interval'] ?? PlanCatalogue::INTERVAL_MONTHLY;
+        $frontend = rtrim((string) config('app.frontend_url'), '/');
+
+        try {
+            if ($user->subscribed('default')) {
+                $result = $this->subscriptionService->changePlan($user, $validated['plan'], $interval);
+
+                return response()->json([
+                    'message' => "You are now on the {$this->catalogue->name($validated['plan'])} plan.",
+                    'subscription' => $result,
+                ]);
+            }
+
+            $url = $this->subscriptionService->checkoutUrl(
+                $user,
+                $validated['plan'],
+                $interval,
+                $frontend.'/billing?checkout=success',
+                $frontend.'/billing?checkout=cancelled'
+            );
+
+            return response()->json(['url' => $url]);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage(), 'error' => 'plan_unavailable'], 422);
+        } catch (\Throwable $e) {
+            Log::error('BillingController: checkout failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'We could not start the checkout just now. Please try again in a moment.',
+                'error' => 'checkout_failed',
+            ], 422);
+        }
     }
 
     /**
@@ -36,7 +99,8 @@ class BillingController extends Controller
     public function subscribe(Request $request): JsonResponse
     {
         $request->validate([
-            'plan' => ['required', Rule::in(['starter', 'growth', 'pro'])],
+            'plan' => ['required', 'string', Rule::in(array_keys($this->catalogue->offered()))],
+            'interval' => ['nullable', Rule::in([PlanCatalogue::INTERVAL_MONTHLY, PlanCatalogue::INTERVAL_ANNUAL])],
             'payment_method_id' => ['required', 'string'],
         ]);
 
@@ -44,7 +108,8 @@ class BillingController extends Controller
             $result = $this->subscriptionService->subscribe(
                 $request->user(),
                 $request->plan,
-                $request->payment_method_id
+                $request->payment_method_id,
+                $request->input('interval', PlanCatalogue::INTERVAL_MONTHLY)
             );
 
             return response()->json([
@@ -151,8 +216,10 @@ class BillingController extends Controller
             ]);
         }
 
+        // /billing is the page's actual route. /settings/billing never existed,
+        // so leaving the portal dropped people on the landing page.
         $session = $user->billingPortalUrl(
-            config('app.frontend_url').'/settings/billing'
+            rtrim((string) config('app.frontend_url'), '/').'/billing'
         );
 
         return response()->json(['url' => $session]);
@@ -199,6 +266,7 @@ class BillingController extends Controller
             'trial_ends_at' => $user->trial_ends_at?->toIso8601String(),
             'subscription' => $subscription ? [
                 'plan' => $user->activePlanName(),
+                'interval' => $user->subscribedInterval(),
                 'status' => $subscription->stripe_status,
                 'current_period_end' => $subscription->ends_at?->toIso8601String(),
                 'cancel_at_period_end' => $subscription->onGracePeriod(),

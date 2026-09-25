@@ -3,6 +3,7 @@
 namespace App\Modules\Content\Jobs;
 
 use App\Models\Post;
+use App\Modules\Billing\Services\EntitlementService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -29,13 +30,24 @@ class GeneratePostImageJob implements ShouldQueue
         $this->onQueue('generation');
     }
 
-    public function handle(): void
+    public function handle(EntitlementService $entitlements): void
     {
         if (! $this->post->exists || $this->post->status === Post::STATUS_REJECTED) {
             return;
         }
 
         $business = $this->post->business;
+
+        // Checked here as well as when queued: one generation run queues an
+        // image per post before any of them has been made, so only this point
+        // sees the true count. Past the monthly allowance the post keeps its
+        // text and goes out without an image; nothing is held back.
+        if ($entitlements->aiImagesRemaining($business) < 1) {
+            Log::info("GeneratePostImageJob: Skipping post {$this->post->id} - AI image allowance used for this period", [
+                'business_id' => $business->id,
+            ]);
+            return;
+        }
         $prompt = $this->imagePrompt ?? $this->buildDefaultPrompt($business);
 
         // Enhance the prompt with UK-specific and brand-consistent instructions

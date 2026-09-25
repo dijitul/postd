@@ -2,7 +2,7 @@
  * Badge — postd.uk UI Component
  *
  * Variant groups:
- * - Plan tiers:  starter | growth | pro
+ * - Plan tiers:  local | growth | agency, plus legacy starter and pro
  * - Status:      active | pending | failed | paused | draft | scheduled
  * - Platforms:   facebook | x | linkedin | google (any other falls back to default)
  * - General:     default | amber | honey | navy | success | warning | error | info
@@ -35,8 +35,10 @@ const VARIANTS = {
   posted:    'bg-green-50 text-green-700 border border-green-200',
 
   // ── Plan tiers ──
+  local:   'bg-slate-100 text-slate-700 border border-slate-200',
   starter: 'bg-slate-100 text-slate-700 border border-slate-200',
   growth:  'bg-amber-50 text-amber-700 border border-amber-200',
+  agency:  'bg-honey-400 text-navy-800 border border-honey-500 font-bold',
   pro:     'bg-honey-400 text-navy-800 border border-honey-500 font-bold',
 
   // ── Platforms ──
@@ -96,8 +98,10 @@ const PLATFORM_DOTS = {
 
 function PlanIcon({ variant }) {
   const colours = {
+    local:   '#94A3B8',
     starter: '#94A3B8',
     growth:  '#E07B30',
+    agency:  '#F5C842',
     pro:     '#F5C842',
   }
   const colour = colours[variant]
@@ -162,7 +166,7 @@ export default function Badge({
       )}
 
       {/* Plan tier icon */}
-      {!dot && !icon && !platformDot && ['starter', 'growth', 'pro'].includes(variant) && (
+      {!dot && !icon && !platformDot && ['local', 'starter', 'growth', 'agency', 'pro'].includes(variant) && (
         <PlanIcon variant={variant} />
       )}
 
@@ -182,8 +186,10 @@ export default function Badge({
 
 export function PlanBadge({ plan, ...props }) {
   const labels = {
-    starter: 'Starter',
+    local:   'Local',
+    starter: 'Local',
     growth:  'Growth',
+    agency:  'Agency',
     pro:     'Pro',
   }
   return (

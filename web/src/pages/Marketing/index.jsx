@@ -5,6 +5,8 @@ import Logo from '../../components/ui/Logo.jsx'
 import PlatformIcon from '../../components/ui/PlatformIcon.jsx'
 import SiteFooter from '../../components/marketing/SiteFooter.jsx'
 import HomeFaq, { HomeSeo } from './HomeFaq.jsx'
+import PricingSection from './PricingSection.jsx'
+import { pricingJsonLdOffers } from '../../lib/plans.js'
 
 // ── Animated post card ────────────────────────────────────────────────────────
 function AnimatedPostCard({ platform, content, delay = 0, className = '' }) {
@@ -90,64 +92,15 @@ function HeroIllustration() {
   )
 }
 
-// ── Pricing card ──────────────────────────────────────────────────────────────
-function PricingCard({ tier, price, platforms, features, popular = false, cta = 'Start free trial' }) {
-  return (
-    <div className={`relative flex flex-col rounded-3xl p-7 ${popular ? 'bg-navy-800 text-white ring-2 ring-amber-500 ring-offset-2' : 'bg-white border border-cream-300'}`}
-      style={{ boxShadow: popular ? '0 20px 40px -8px rgb(30 45 74 / 0.3)' : '0 2px 8px rgb(30 45 74 / 0.06)' }}
-    >
-      {popular && (
-        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-          <span className="inline-flex items-center gap-1.5 bg-amber-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
-            <Star className="w-3.5 h-3.5" fill="currentColor" />
-            Most popular
-          </span>
-        </div>
-      )}
-
-      <div className="mb-6">
-        <h3 className={`font-display font-bold text-xl mb-1 ${popular ? 'text-white' : 'text-navy-800'}`}>{tier}</h3>
-        <div className="flex items-baseline gap-1">
-          <span className={`font-display font-black text-4xl ${popular ? 'text-white' : 'text-navy-800'}`}>£{price}</span>
-          <span className={`text-sm font-medium ${popular ? 'text-white/60' : 'text-slate-400'}`}>/month</span>
-          <span className={`text-xs ml-1 ${popular ? 'text-white/50' : 'text-slate-400'}`}>ex. VAT</span>
-        </div>
-        <p className={`text-sm mt-2 ${popular ? 'text-white/70' : 'text-slate-500'}`}>{platforms}</p>
-      </div>
-
-      <ul className="space-y-3 mb-8 flex-1">
-        {features.map((f, i) => (
-          <li key={i} className="flex items-start gap-2.5 text-sm">
-            <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 ${popular ? 'text-amber-400' : 'text-amber-500'}`} />
-            <span className={popular ? 'text-white/80' : 'text-slate-600'}>{f}</span>
-          </li>
-        ))}
-      </ul>
-
-      <Link
-        to="/register"
-        className={`w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 active:scale-[0.98] ${
-          popular
-            ? 'bg-amber-500 text-white hover:bg-amber-600 shadow-amber-lg'
-            : 'bg-navy-800 text-white hover:bg-navy-700'
-        }`}
-      >
-        {cta}
-        <ArrowRight className="w-4 h-4" />
-      </Link>
-    </div>
-  )
-}
-
 // ── Main component ────────────────────────────────────────────────────────────
 //
 // SEO META TAGS — add these via React Helmet (or a Helmet wrapper component) once available:
 //
 // Page title:
-//   "AI Social Media Automation for UK Small Businesses | Postd.uk"
+//   "AI Social Media Automation for UK Small Businesses | postd.uk"
 //
 // Meta description:
-//   "Postd.uk automatically writes and posts social media content for UK small businesses.
+//   "postd.uk automatically writes and posts social media content for UK small businesses.
 //    Connect Google Business Profile, Facebook, LinkedIn and X. From £19/month. 14-day free trial."
 //
 // Open Graph og:title  — same as page title above
@@ -188,49 +141,6 @@ export default function MarketingPage() {
       icon: Zap,
       title: 'Your AI social media posts go live automatically',
       body: 'Our AI reads your website and reviews, writes platform-native content for Google Business Profile, Facebook, LinkedIn and X, and publishes it all on a sensible schedule, fully automated.'
-    }
-  ]
-
-  const pricingPlans = [
-    {
-      tier: 'Starter',
-      price: 19,
-      platforms: 'Facebook, X & LinkedIn',
-      features: [
-        'Facebook, X & LinkedIn included',
-        'AI-generated posts daily',
-        'Post approval inbox',
-        'Website + review content scanning',
-        'Email support',
-        '14-day free trial included'
-      ]
-    },
-    {
-      tier: 'Growth',
-      price: 39,
-      platforms: 'Facebook, X & LinkedIn',
-      popular: true,
-      features: [
-        'Facebook, X & LinkedIn included',
-        'AI-generated posts daily',
-        'Post approval inbox',
-        'Local news content hooks',
-        'Higher posting frequency',
-        'Priority email support',
-        '14-day free trial included'
-      ]
-    },
-    {
-      tier: 'Pro',
-      price: 69,
-      platforms: 'All platforms',
-      features: [
-        'Facebook, X & LinkedIn included',
-        'AI-generated posts daily',
-        'Fully auto-posting option',
-        'Local news content hooks',
-        'Dedicated account manager'
-      ]
     }
   ]
 
@@ -430,31 +340,7 @@ export default function MarketingPage() {
       </section>
 
       {/* ── Pricing ──────────────────────────────────────────────────────────── */}
-      <section id="pricing" className="py-20 sm:py-28 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <span className="inline-block text-amber-500 text-sm font-bold uppercase tracking-widest mb-4">Simple pricing</span>
-            <h2 className="font-display font-black text-navy-800 text-3xl sm:text-4xl lg:text-5xl mb-4 text-balance">
-              Simple pricing for UK small businesses
-            </h2>
-            <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-              All prices ex. VAT. Start your 14-day free trial on any plan, no card required.
-              Cancel anytime, no questions asked.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8 items-center">
-            {pricingPlans.map((plan) => (
-              <PricingCard key={plan.tier} {...plan} />
-            ))}
-          </div>
-
-          <p className="text-center text-sm text-slate-400 mt-8">
-            All prices are exclusive of VAT. UK VAT (20%) applied at checkout via Stripe Tax.
-            Google Business Profile posting is included on all plans.
-          </p>
-        </div>
-      </section>
+      <PricingSection />
 
       <HomeFaq />
 
@@ -493,49 +379,15 @@ export default function MarketingPage() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "SoftwareApplication",
-            "name": "Postd.uk",
+            // Same @id as the site-wide schema in lib/site.js, so crawlers
+            // merge the two into one entity rather than seeing two products.
+            "@id": "https://postd.uk/#software",
+            "name": "postd.uk",
             "url": "https://postd.uk",
             "description": "AI-powered social media automation for UK small businesses. Automatically writes and posts content to Google Business Profile, Facebook, LinkedIn and X. From £19/month.",
             "applicationCategory": "BusinessApplication",
             "operatingSystem": "Web",
-            "offers": [
-              {
-                "@type": "Offer",
-                "name": "Starter",
-                "price": "19.00",
-                "priceCurrency": "GBP",
-                "priceSpecification": {
-                  "@type": "UnitPriceSpecification",
-                  "price": "19.00",
-                  "priceCurrency": "GBP",
-                  "unitText": "MONTH"
-                }
-              },
-              {
-                "@type": "Offer",
-                "name": "Growth",
-                "price": "39.00",
-                "priceCurrency": "GBP",
-                "priceSpecification": {
-                  "@type": "UnitPriceSpecification",
-                  "price": "39.00",
-                  "priceCurrency": "GBP",
-                  "unitText": "MONTH"
-                }
-              },
-              {
-                "@type": "Offer",
-                "name": "Pro",
-                "price": "69.00",
-                "priceCurrency": "GBP",
-                "priceSpecification": {
-                  "@type": "UnitPriceSpecification",
-                  "price": "69.00",
-                  "priceCurrency": "GBP",
-                  "unitText": "MONTH"
-                }
-              }
-            ],
+            "offers": pricingJsonLdOffers(),
             "creator": {
               "@type": "Organization",
               "name": "dijitul",

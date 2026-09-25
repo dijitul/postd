@@ -1,20 +1,38 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { CheckCircle2, XCircle, RefreshCw, Lock, Plus, Share2, AlertCircle, CheckCheck } from 'lucide-react'
+import { CheckCircle2, XCircle, RefreshCw, Lock, Plus, Share2, AlertCircle, CheckCheck, PauseCircle } from 'lucide-react'
 import PlatformIcon from '../../components/ui/PlatformIcon.jsx'
 import { platformsApi } from '../../lib/api.js'
 
-// Platform definitions — display config only, no mock status
+// Platform definitions, display config only. Whether one is locked comes from
+// the plan's entitlements, which the connections endpoint returns alongside.
 // comingSoon = not yet available regardless of plan
-// plan = 'pro' means requires Pro plan
 const PLATFORM_DEFS = [
-  { id: 'facebook',  backendId: 'facebook',               label: 'Facebook',                plan: 'base'       },
-  { id: 'linkedin',  backendId: 'linkedin',               label: 'LinkedIn',                plan: 'base'       },
-  { id: 'x',        backendId: 'twitter',                 label: 'X (Twitter)',             plan: 'base'       },
-  { id: 'google',   backendId: 'google_business_profile', label: 'Google Business Profile', plan: 'base'       },
+  { id: 'facebook',  backendId: 'facebook',               label: 'Facebook'                },
+  { id: 'linkedin',  backendId: 'linkedin',               label: 'LinkedIn'                },
+  { id: 'x',        backendId: 'twitter',                 label: 'X (Twitter)'             },
+  { id: 'google',   backendId: 'google_business_profile', label: 'Google Business Profile' },
 ]
 
-const PLAN_ORDER = { base: 0, starter: 0, growth: 0, pro: 3 }
+/**
+ * Why this plan cannot connect a platform, in words, or null if it can.
+ * Mirrors Entitlements::connectBlockReason on the backend, which has the
+ * final say; this only decides what to show before anyone clicks.
+ */
+function lockReason(def, entitlements, connectedIds) {
+  if (!entitlements || !entitlements.active) return null
+  if (connectedIds.includes(def.backendId)) return null
+
+  if (!entitlements.platforms.includes(def.backendId)) {
+    return def.backendId === 'twitter'
+      ? 'X charges for every post, so it is included from Growth upwards.'
+      : `Not included on the ${entitlements.plan_name} plan.`
+  }
+  if (entitlements.platform_limit != null && connectedIds.length >= entitlements.platform_limit) {
+    return `${entitlements.plan_name} covers any ${entitlements.platform_limit} platforms. Growth adds every platform, or disconnect one to swap.`
+  }
+  return null
+}
 
 function StatusBadge({ status }) {
   const map = {
@@ -22,6 +40,7 @@ function StatusBadge({ status }) {
     expired:      { label: 'Token expired',    cls: 'bg-amber-100 text-amber-700',   Icon: RefreshCw    },
     disconnected: { label: 'Not connected',    cls: 'bg-slate-100 text-slate-500',   Icon: XCircle      },
     locked:       { label: 'Upgrade to unlock',cls: 'bg-purple-100 text-purple-700', Icon: Lock         },
+    paused:       { label: 'Paused on your plan', cls: 'bg-amber-100 text-amber-700', Icon: PauseCircle  },
     coming_soon:  { label: 'Coming soon',      cls: 'bg-slate-100 text-slate-500',   Icon: Lock         },
   }
   const { label, cls, Icon } = map[status] ?? map.disconnected
@@ -33,20 +52,23 @@ function StatusBadge({ status }) {
   )
 }
 
-function PlatformCard({ def, connection, userPlanLevel, onConnect, onDisconnect, onReconnect, onSelectAccount }) {
+function PlatformCard({ def, connection, lockedBecause, onDisconnect, onReconnect, onSelectAccount }) {
   const [loading, setLoading] = useState(false)
   const [savingAccount, setSavingAccount] = useState(false)
   const [accountError, setAccountError] = useState(null)
+  const [connectError, setConnectError] = useState(null)
 
   const isComingSoon = !!def.comingSoon
-  const isLocked = !isComingSoon && def.plan === 'pro' && PLAN_ORDER[def.plan] > userPlanLevel
+  const isLocked = !isComingSoon && !!lockedBecause
   // A lapsed access token is not a disconnection — we refresh those automatically.
   // Only a connection with no usable refresh token needs the user to act.
   const needsReconnect = connection?.needs_reconnect ?? connection?.is_expired ?? false
   const isConnected = !isComingSoon && !!connection && connection.is_active && !needsReconnect
   const isExpired = !isComingSoon && !!connection && needsReconnect
 
-  const status = isComingSoon ? 'coming_soon' : isLocked ? 'locked' : isConnected ? 'connected' : isExpired ? 'expired' : 'disconnected'
+  const isPaused = isConnected && !!connection?.paused_by_plan
+
+  const status = isComingSoon ? 'coming_soon' : isLocked ? 'locked' : isPaused ? 'paused' : isConnected ? 'connected' : isExpired ? 'expired' : 'disconnected'
 
   const accounts = connection?.accounts ?? []
   const connectedAccount = accounts.find((a) => a.is_selected) ?? accounts[0]
@@ -70,13 +92,15 @@ function PlatformCard({ def, connection, userPlanLevel, onConnect, onDisconnect,
 
   const handleConnect = async () => {
     setLoading(true)
+    setConnectError(null)
     try {
       const res = await platformsApi.connect(def.backendId)
       if (res.data?.redirect_url) {
         window.location.href = res.data.redirect_url
       }
     } catch (e) {
-      console.error('Connect failed', e)
+      // A plan limit comes back as a 403 with the reason already worded.
+      setConnectError(e.response?.data?.message ?? 'Could not start connecting. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -179,6 +203,22 @@ function PlatformCard({ def, connection, userPlanLevel, onConnect, onDisconnect,
         </div>
       )}
 
+      {/* Why it is locked or paused, before anyone clicks */}
+      {isLocked && (
+        <p className="text-xs text-slate-500 mb-4">{lockedBecause}</p>
+      )}
+      {isPaused && (
+        <p className="text-xs text-amber-700 mb-4">
+          Still connected, but your plan posts to fewer platforms. Upgrade to post here too, or disconnect another platform to swap.
+        </p>
+      )}
+      {connectError && (
+        <p role="alert" className="text-xs text-red-600 mb-4">
+          {connectError}{' '}
+          <Link to="/billing" className="font-semibold underline">See plans</Link>
+        </p>
+      )}
+
       {/* Last used */}
       {connection?.last_used_at && !isLocked && (
         <p className="text-xs text-slate-400 mb-4">
@@ -196,7 +236,7 @@ function PlatformCard({ def, connection, userPlanLevel, onConnect, onDisconnect,
           to="/billing"
           className="w-full flex items-center justify-center gap-2 bg-purple-50 text-purple-700 font-semibold text-sm py-2.5 rounded-xl border border-purple-200 hover:bg-purple-100 transition-all"
         >
-          <Lock className="w-4 h-4" /> Upgrade to unlock
+          <Lock className="w-4 h-4" /> See plans
         </Link>
       ) : isConnected ? (
         <button
@@ -233,7 +273,7 @@ function PlatformCard({ def, connection, userPlanLevel, onConnect, onDisconnect,
 export default function PlatformsPage() {
   const [connections, setConnections] = useState([])
   const [loading, setLoading] = useState(true)
-  const [userPlanLevel, setUserPlanLevel] = useState(PLAN_ORDER.growth)
+  const [entitlements, setEntitlements] = useState(null)
   const [searchParams, setSearchParams] = useSearchParams()
 
   const connectedPlatform = searchParams.get('connected')
@@ -243,6 +283,7 @@ export default function PlatformsPage() {
     try {
       const res = await platformsApi.getAll()
       setConnections(res.data?.connections ?? [])
+      setEntitlements(res.data?.entitlements ?? null)
     } catch (e) {
       console.error('Failed to load connections', e)
     } finally {
@@ -280,6 +321,12 @@ export default function PlatformsPage() {
       )
     )
   }
+
+  // Same set the backend counts: active, and on a platform we still support.
+  const connectedIds = connections
+    .filter((c) => c.is_active && PLATFORM_DEFS.some((d) => d.backendId === c.platform))
+    .map((c) => c.platform)
+  const planLimitError = oauthError === 'platform_limit' || oauthError === 'platform_not_included'
 
   const connectedCount = PLATFORM_DEFS.filter((def) => {
     const conn = getConnection(def.backendId)
@@ -329,12 +376,13 @@ export default function PlatformsPage() {
           <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-bold text-red-800">
-              {oauthError === 'linkedin_no_pages' ? 'No LinkedIn Company Page found' : 'Connection failed'}
+              {oauthError === 'linkedin_no_pages' ? 'No LinkedIn Company Page found' : planLimitError ? 'Not included on your plan' : 'Connection failed'}
             </p>
             <p className="text-xs text-red-600 mt-0.5">
               {oauthError === 'invalid_state' ? 'The authorisation request expired. Please try again.' :
                oauthError === 'oauth_failed' ? 'The platform rejected the authorisation. Please try again.' :
                oauthError === 'linkedin_no_pages' ? 'We post to LinkedIn Company Pages, and this account does not administer one. Ask to be made an admin of your business Page on LinkedIn, then connect again.' :
+               planLimitError ? <>Your plan has no room for this platform, so it was not connected. <Link to="/billing" className="font-semibold underline">See plans</Link></> :
                'Something went wrong. Please try connecting again.'}
             </p>
           </div>
@@ -359,7 +407,7 @@ export default function PlatformsPage() {
             key={def.id}
             def={def}
             connection={getConnection(def.backendId)}
-            userPlanLevel={userPlanLevel}
+            lockedBecause={lockReason(def, entitlements, connectedIds)}
             onDisconnect={handleDisconnect}
             onReconnect={handleReconnect}
             onSelectAccount={handleSelectAccount}

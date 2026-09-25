@@ -35,10 +35,10 @@ class GenerateWeeklyContentJob implements ShouldQueue
             ->where('onboarding_complete', true)
             ->where('is_active', true)
             ->whereHas('activeSocialConnections')
-            ->whereHas('user', fn ($q) => $q->where(fn ($u) =>
-                $u->whereHas('subscriptions', fn ($s) => $s->active())
-                  ->orWhere('trial_ends_at', '>', now())
-            ))
+            // Subscribed, trialling or comped. Comped accounts were left out
+            // before, so partners and beta testers only ever got posts when
+            // they triggered generation by hand.
+            ->whereHas('user', fn ($q) => $q->active())
             ->get();
 
         Log::info("GenerateWeeklyContentJob: Dispatching generation for {$businesses->count()} businesses");

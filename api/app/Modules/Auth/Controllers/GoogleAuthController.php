@@ -3,6 +3,7 @@
 namespace App\Modules\Auth\Controllers;
 
 use App\Models\User;
+use App\Modules\Billing\Services\EntitlementService;
 use App\Modules\Social\Services\SocialConnectionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -58,6 +59,9 @@ class GoogleAuthController
                 'email'             => $socialUser->getEmail(),
                 'email_verified_at' => now(),
                 'password'          => bcrypt(Str::random(32)),
+                // Google is the main way in, and it was starting accounts with
+                // no trial at all, so nothing was ever generated for them.
+                'trial_ends_at'     => now()->addDays((int) config('plans.trial_days', 14)),
             ]);
 
             Log::info('GoogleAuth: New user created', ['user_id' => $user->id, 'email' => $user->email]);
@@ -79,7 +83,18 @@ class GoogleAuthController
 
         $business = $user->business()->first();
 
-        if ($business) {
+        // Signing in refreshes the GBP token, but must not quietly add GBP as a
+        // new platform to a business whose plan has no room for it (Local with
+        // Facebook and LinkedIn already connected).
+        $gbpRefusal = $business
+            ? app(EntitlementService::class)->connectRefusal($user, $business, 'google_business_profile')
+            : null;
+
+        if ($business && $gbpRefusal) {
+            Log::info('GoogleAuth: GBP not connected, plan has no room for another platform', [
+                'business_id' => $business->id,
+            ]);
+        } elseif ($business) {
             try {
                 $connectionService->upsertConnection(
                     businessId:   $business->id,

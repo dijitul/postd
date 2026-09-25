@@ -31,7 +31,18 @@ class StripeWebhookController extends WebhookController
 
         if ($user) {
             Log::info("StripeWebhookController: Subscription created for user {$user->id}");
-            // Any post-subscription logic here (e.g. onboarding nudges)
+
+            // Subscriptions started through Stripe Checkout only reach us here.
+            // Posts paused when the trial ended get fresh slots rather than all
+            // going out at once.
+            try {
+                app(\App\Modules\Billing\Services\SubscriptionService::class)->resumePausedPosts($user);
+            } catch (\Throwable $e) {
+                Log::error('StripeWebhookController: Failed to resume paused posts', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
     }
 
@@ -115,13 +126,10 @@ class StripeWebhookController extends WebhookController
         }
     }
 
-    private function getUserByStripeId(?string $stripeId): ?\App\Models\User
-    {
-        if (! $stripeId) {
-            return null;
-        }
-        return \App\Models\User::where('stripe_id', $stripeId)->first();
-    }
+    // getUserByStripeId() comes from Cashier's WebhookController. This class
+    // used to redeclare it as private, which PHP refuses outright (the parent's
+    // is protected), so the controller could not even load and every Stripe
+    // webhook failed. Cashier's version does the same lookup.
 
     private function logWebhook(string $eventName, array $payload): void
     {

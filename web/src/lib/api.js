@@ -93,10 +93,20 @@ export const platformsApi = {
 // ─── Billing endpoints ────────────────────────────────────────────────────────
 export const billingApi = {
   getSubscription: () => api.get('/billing/subscription'),
+  // Plans, current plan, and usage against the plan's limits
   getPlans: () => api.get('/billing/plans'),
-  createCheckout: (plan) => api.post('/billing/checkout', { plan }),
+  // New subscribers get a Stripe Checkout { url }; existing ones are switched
+  // straight away and get { message, subscription }.
+  createCheckout: (plan, interval = 'monthly') => api.post('/billing/checkout', { plan, interval }),
   createPortal: () => api.post('/billing/portal'),
   getInvoices: () => api.get('/billing/invoices')
+}
+
+// ─── Locations (businesses) ───────────────────────────────────────────────────
+// Adding a location goes through onboardingApi.createBusiness with new_location.
+export const businessesApi = {
+  getAll: () => api.get('/businesses'),
+  switchTo: (id) => api.post(`/businesses/${id}/switch`),
 }
 
 // ─── Settings endpoints ───────────────────────────────────────────────────────

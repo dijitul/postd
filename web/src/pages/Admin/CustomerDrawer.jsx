@@ -9,10 +9,12 @@ import {
   formatDate, formatDateTime, timeAgo, usd, gbp, platformLabel,
 } from './components.jsx'
 
+// Plan keys from api/config/plans.php. Pro is legacy but can still be comped.
 const PLANS = [
-  { id: 'starter', label: 'Starter (£19/mo)' },
+  { id: 'local', label: 'Local (£19/mo)' },
   { id: 'growth', label: 'Growth (£39/mo)' },
-  { id: 'pro', label: 'Pro (£69/mo)' },
+  { id: 'agency', label: 'Agency (£79/mo)' },
+  { id: 'pro', label: 'Pro, legacy (£69/mo)' },
 ]
 
 function Field({ label, children }) {
