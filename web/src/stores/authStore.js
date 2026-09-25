@@ -2,6 +2,12 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { authApi } from '../lib/api.js'
 
+// GET /auth/user answers { user, businesses }. Storing the whole body as the
+// user hid every field (is_admin, email, business) one level down.
+const userFromMe = (data) => {
+  const body = data.data ?? data
+  return body.user ?? body
+}
 
 const useAuthStore = create(
   persist(
@@ -60,7 +66,7 @@ const useAuthStore = create(
         set({ isLoading: true })
         try {
           const { data } = await authApi.me()
-          const user = data.data ?? data
+          const user = userFromMe(data)
           set({ user, isAuthenticated: true, isLoading: false })
         } catch (err) {
           set({ isLoading: false })
@@ -86,7 +92,7 @@ const useAuthStore = create(
         set({ token, isAuthenticated: true, isLoading: true })
         try {
           const { data } = await authApi.me()
-          const user = data.data ?? data
+          const user = userFromMe(data)
           set({ user, isLoading: false })
         } catch {
           set({ isLoading: false })

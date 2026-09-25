@@ -74,7 +74,8 @@ function AdminRoute({ children }) {
   const { isAuthenticated, user, token } = useAuthStore()
   const hasToken = isAuthenticated || Boolean(token || storedToken())
   if (!hasToken) return <Navigate to="/login" replace />
-  if (user && !user.is_admin) return <Navigate to="/dashboard" replace />
+  // Only a definite "no" redirects. The API enforces admin access itself.
+  if (user && user.is_admin === false) return <Navigate to="/dashboard" replace />
   return children
 }
 
