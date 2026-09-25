@@ -135,7 +135,7 @@ The public routes (`/`, `/terms`, `/privacy`, `/login`, `/register`, `/guides`, 
 - Public pages must render the same on the server as on first client render: no `window`/`localStorage` in render, and use `useHydrated()` for anything auth-dependent.
 - Guides: Markdown with frontmatter in `web/content/guides/`, processed by `web/plugins/guides.js`. An article is only built once its `date` (Europe/London) has arrived. `.github/workflows/publish-guides.yml` rebuilds and copies `web/dist` every day at 06:00 UK, so dated articles go live without a push. `npm run dev` shows future articles with a "scheduled" banner.
 - Nothing public may start with `/posts` (robots.txt disallows it).
-- nginx (`scripts/nginx-postd.uk.conf`) serves prerendered files first, app routes get `app.html` plus `X-Robots-Tag: noindex`, anything else is a real 404. CI does not copy nginx config; apply it by hand.
+- **Production runs Apache, not nginx.** Routing lives in `web/public/.htaccess`, which ships in `dist` on every deploy: prerendered files first, app routes get `app.html` plus `X-Robots-Tag: noindex`, anything else is a real 404, no trailing slashes. The vhost allows overrides (`AllowOverride All`) and `mod_headers` is enabled. `scripts/nginx-postd.uk.conf` holds the equivalent nginx rules for reference only: nginx is installed on the server but has not run since a config error on 16 September 2026, and Apache owns ports 80 and 443. Do not start nginx.
 - `npm run preview` serves `dist/` with the same rules as nginx. `npm run generate:images` rebuilds `og-image.png` and the icons from `public/brand/icon.svg`.
 
 ---
@@ -145,7 +145,8 @@ The public routes (`/`, `/terms`, `/privacy`, `/login`, `/register`, `/guides`, 
 **Provider:** DigitalOcean droplet
 **IP:** 144.126.207.135
 **OS:** Ubuntu 24.04
-**SSH user:** root
+**SSH user:** root, via the `postd` host alias in `~/.ssh/config` (key `~/.ssh/postd_claude`), so `ssh postd`
+**Web server:** Apache 2 (vhosts `/etc/apache2/sites-available/postd.uk-le-ssl.conf` and `api.postd.uk-le-ssl.conf`, Let's Encrypt certificates). Not nginx.
 **App path:** `/var/www/postd/api` (note: no `.uk` in the server path)
 **Log file:** `/var/www/postd/api/storage/logs/laravel.log`
 **Worker log:** `/var/log/postd-worker.log`

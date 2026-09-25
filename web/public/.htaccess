@@ -1,0 +1,58 @@
+# postd.uk routing for Apache, which is what serves the site in production.
+# (scripts/nginx-postd.uk.conf describes the same rules for nginx, which is
+# installed on the server but not running.) Vite copies this file into dist on
+# every build, so the rules ship with the pages they route.
+#
+#   1. Real files (assets, robots.txt, sitemap.xml, images) are served as-is.
+#   2. Public pages are prerendered to <route>/index.html and served from there.
+#   3. App routes get app.html, the empty SPA shell, marked noindex.
+#   4. Anything else is a real 404 with the prerendered 404 page. The vhost's
+#      FallbackResource used to answer every unknown URL with the home page
+#      and a 200, which search engines index as duplicate content.
+
+FallbackResource disabled
+DirectoryIndex index.html
+ErrorDocument 404 /404.html
+
+# /guides is a directory holding index.html. Without this, Apache would
+# redirect it to /guides/, while every canonical URL has no trailing slash.
+DirectorySlash Off
+
+RewriteEngine On
+
+# One URL per page: drop a trailing slash.
+RewriteCond %{REQUEST_URI} !^/$
+RewriteRule ^(.+)/$ /$1 [R=301,L]
+
+RewriteRule ^$ /index.html [L]
+
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+RewriteCond %{DOCUMENT_ROOT}/$1/index.html -f
+RewriteRule ^(.+)$ /$1/index.html [L]
+
+RewriteRule ^(dashboard|posts|inbox|platforms|settings|billing|admin|onboarding|auth)(/.*)?$ /app.html [L]
+
+RewriteRule ^ - [R=404,L]
+
+<IfModule mod_headers.c>
+    <Files "app.html">
+        Header set X-Robots-Tag "noindex, nofollow"
+    </Files>
+
+    # A stale service worker would keep serving old pages after a deploy.
+    <FilesMatch "^(sw\.js|registerSW\.js|manifest\.webmanifest)$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+
+    <If "%{REQUEST_URI} =~ m#^/assets/#">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </If>
+</IfModule>
+
+<IfModule mod_mime.c>
+    AddType text/plain .txt
+    AddType application/xml .xml
+    AddType application/manifest+json .webmanifest
+</IfModule>
