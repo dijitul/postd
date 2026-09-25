@@ -23,10 +23,8 @@ const TONES = ['professional', 'friendly', 'casual']
 
 const PLATFORM_DEFS = [
   { id: 'facebook',  backendId: 'facebook',               label: 'Facebook' },
-  { id: 'instagram', backendId: 'instagram',              label: 'Instagram' },
   { id: 'linkedin',  backendId: 'linkedin',               label: 'LinkedIn' },
   { id: 'x',        backendId: 'twitter',                 label: 'X (Twitter)' },
-  { id: 'tiktok',   backendId: 'tiktok',                  label: 'TikTok' },
   { id: 'google',   backendId: 'google_business_profile', label: 'Google Business Profile' },
 ]
 

@@ -31,12 +31,23 @@ class WebsiteScraperService
     // enough that three of them do not bloat the content source row.
     private const MAX_PAGE_TEXT_CHARS = 2000;
 
+    // Pages read beyond the homepage, and how many of those are kept for articles.
+    private const MAX_EXTRA_PAGES = 10;
+    private const ARTICLE_PAGES = 4;
+
+    // Stop starting new page fetches after this long, so the job's own timeout
+    // is never the thing that ends a scrape of a slow site.
+    private const CRAWL_BUDGET_SECONDS = 60;
+
     private const PHONE_PATTERN = '/(?:\+44|0)[\s\-]?\d{2,4}[\s\-]?\d{3,4}[\s\-]?\d{3,4}/';
     private const EMAIL_PATTERN = '/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/';
 
-    public function __construct()
+    /**
+     * @param  array<string, mixed>  $clientOptions  Merged over the defaults; tests pass a mock handler here.
+     */
+    public function __construct(array $clientOptions = [])
     {
-        $this->httpClient = new Client([
+        $this->httpClient = new Client($clientOptions + [
             'timeout' => 15,
             'connect_timeout' => 10,
             'allow_redirects' => ['max' => 5],
@@ -123,23 +134,38 @@ class WebsiteScraperService
             'text'  => $this->trimBodyText($data['body_text'], self::MAX_PAGE_TEXT_CHARS),
         ]];
 
-        // Also try scraping the /about or /services page if they exist
-        $additionalPages = $this->discoverAdditionalPages($crawler, $url);
-        foreach (array_slice($additionalPages, 0, 2) as $pageUrl) {
-            $additionalData = $this->scrapeAdditionalPage($pageUrl);
+        $data['page_text'][0]['kind'] = 'home';
+        $data['page_text'][0]['lastmod'] = null;
+
+        // Then the rest of the site that says something about the business:
+        // services, about, FAQs and recent articles. Only the homepage and two
+        // fixed paths used to be read, so every post drew on the same three
+        // pages and a new blog post or service never reached the content at all.
+        $startedAt = microtime(true);
+
+        foreach ($this->discoverAdditionalPages($crawler, $url) as $page) {
+            if ((microtime(true) - $startedAt) > self::CRAWL_BUDGET_SECONDS) {
+                break;
+            }
+
+            $additionalData = $this->scrapeAdditionalPage($page['url']);
             if ($additionalData) {
-                $data['services'] = array_unique(array_merge($data['services'], $additionalData['services']));
+                $data['services'] = array_values(array_unique(array_merge($data['services'], $additionalData['services'])));
                 $data['body_text'] .= ' ' . $additionalData['body_text'];
 
                 if (trim($additionalData['body_text']) !== '') {
                     $data['page_text'][] = [
-                        'url'   => $pageUrl,
-                        'title' => $additionalData['page_title'],
-                        'text'  => $this->trimBodyText($additionalData['body_text'], self::MAX_PAGE_TEXT_CHARS),
+                        'url'     => $page['url'],
+                        'title'   => $additionalData['page_title'],
+                        'text'    => $this->trimBodyText($additionalData['body_text'], self::MAX_PAGE_TEXT_CHARS),
+                        'kind'    => $page['kind'],
+                        'lastmod' => $page['lastmod'],
                     ];
                 }
             }
         }
+
+        $data['services'] = array_slice($data['services'], 0, 30);
 
         // Trim body text to avoid sending too many tokens to AI
         $data['body_text'] = $this->trimBodyText($data['body_text'], 3000);
@@ -414,39 +440,227 @@ class WebsiteScraperService
     }
 
     /**
-     * Discover links to /about, /services, /contact pages.
+     * Pages beyond the homepage worth reading, best first.
+     *
+     * Candidates come from the sitemap, which is where a new article or service
+     * page shows up first, and from the homepage's own links. Pages that tell us
+     * what the business does (services, about, FAQs) are always wanted; articles
+     * are taken newest first, so fresh material reaches the posts.
+     *
+     * @return array<int, array{url: string, kind: string, lastmod: string|null}>
      */
     private function discoverAdditionalPages(Crawler $crawler, string $baseUrl): array
     {
-        $interestingPaths = ['/about', '/about-us', '/services', '/our-services', '/what-we-do'];
-        $links = [];
+        $host = strtolower((string) parse_url($baseUrl, PHP_URL_HOST));
+        $candidates = $this->sitemapEntries($baseUrl);
 
         try {
-            $parsedBase = parse_url($baseUrl);
-            $baseOrigin = ($parsedBase['scheme'] ?? 'https').'://'.($parsedBase['host'] ?? '');
+            $crawler->filter('a[href]')->each(function (Crawler $node) use ($baseUrl, &$candidates) {
+                $absolute = $this->absoluteUrl((string) $node->attr('href'), $baseUrl);
 
-            $crawler->filter('a[href]')->each(function (Crawler $node) use ($baseOrigin, $interestingPaths, &$links) {
-                $href = $node->attr('href') ?? '';
-                foreach ($interestingPaths as $path) {
-                    if (str_contains($href, $path)) {
-                        if (str_starts_with($href, 'http')) {
-                            $links[] = $href;
-                        } elseif (str_starts_with($href, '/')) {
-                            $links[] = $baseOrigin.$href;
-                        }
-                    }
+                if ($absolute && ! array_key_exists($absolute, $candidates)) {
+                    $candidates[$absolute] = null;
                 }
             });
         } catch (\Throwable) {
         }
 
-        return array_unique($links);
+        $pages = [];
+        $home = rtrim($baseUrl, '/');
+
+        foreach ($candidates as $candidate => $lastmod) {
+            $candidate = rtrim(strtok((string) $candidate, '#?') ?: (string) $candidate, '/');
+
+            if ($candidate === $home || isset($pages[$candidate]) || ! $this->isContentPage($candidate, $host)) {
+                continue;
+            }
+
+            $pages[$candidate] = [
+                'url'     => $candidate,
+                'kind'    => $this->pageKind($candidate),
+                'lastmod' => $lastmod,
+            ];
+        }
+
+        $rank = ['service' => 0, 'about' => 1, 'faq' => 2, 'article' => 3, 'other' => 4];
+        $pages = array_values($pages);
+
+        usort($pages, function (array $a, array $b) use ($rank) {
+            $byKind = $rank[$a['kind']] <=> $rank[$b['kind']];
+
+            // Newest first within a kind; undated pages after dated ones.
+            return $byKind !== 0 ? $byKind : strcmp((string) $b['lastmod'], (string) $a['lastmod']);
+        });
+
+        // Hold places for articles, or a site with a long services list would
+        // never have its blog read at all.
+        $articles = array_values(array_filter($pages, fn ($p) => $p['kind'] === 'article'));
+        $rest = array_values(array_filter($pages, fn ($p) => $p['kind'] !== 'article'));
+        $articleSlots = min(self::ARTICLE_PAGES, count($articles));
+
+        return array_merge(
+            array_slice($rest, 0, self::MAX_EXTRA_PAGES - $articleSlots),
+            array_slice($articles, 0, $articleSlots)
+        );
+    }
+
+    /**
+     * URLs and last-modified dates from the site's sitemap, if it has one.
+     *
+     * Follows one level of sitemap index, which covers WordPress, Yoast, Wix and
+     * Squarespace. Anything unreadable just means no sitemap, not a failed scrape.
+     *
+     * @return array<string, string|null>
+     */
+    private function sitemapEntries(string $baseUrl): array
+    {
+        $origin = $this->origin($baseUrl);
+        $entries = [];
+
+        foreach (['/sitemap.xml', '/sitemap_index.xml', '/wp-sitemap.xml'] as $path) {
+            $xml = $this->fetchXml($origin.$path);
+
+            if (! $xml) {
+                continue;
+            }
+
+            if ($xml->getName() === 'sitemapindex') {
+                $children = 0;
+
+                foreach ($xml->children() as $child) {
+                    // Post and page sitemaps hold content; tag, category and author ones do not.
+                    $loc = trim((string) $child->loc);
+                    if ($loc === '' || preg_match('/(tag|category|author|product_cat|attachment)/i', $loc)) {
+                        continue;
+                    }
+
+                    if ($childXml = $this->fetchXml($loc)) {
+                        $entries += $this->urlsetEntries($childXml);
+                    }
+
+                    if (++$children >= 4) {
+                        break;
+                    }
+                }
+            } else {
+                $entries += $this->urlsetEntries($xml);
+            }
+
+            if ($entries !== []) {
+                break;
+            }
+        }
+
+        return array_slice($entries, 0, 300, true);
+    }
+
+    /** @return array<string, string|null> */
+    private function urlsetEntries(\SimpleXMLElement $xml): array
+    {
+        $entries = [];
+
+        foreach ($xml->children() as $url) {
+            $loc = trim((string) $url->loc);
+
+            if ($loc !== '') {
+                $lastmod = trim((string) $url->lastmod);
+                $entries[$loc] = $lastmod !== '' ? substr($lastmod, 0, 10) : null;
+            }
+        }
+
+        return $entries;
+    }
+
+    private function fetchXml(string $url): ?\SimpleXMLElement
+    {
+        try {
+            $body = (string) $this->httpClient->get($url, ['timeout' => 8])->getBody();
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if (! str_contains($body, '<urlset') && ! str_contains($body, '<sitemapindex')) {
+            return null;
+        }
+
+        $previous = libxml_use_internal_errors(true);
+        $xml = simplexml_load_string($body, \SimpleXMLElement::class, LIBXML_NONET);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        return $xml ?: null;
+    }
+
+    /** Is this a same-site HTML page that could say something about the business? */
+    private function isContentPage(string $url, string $host): bool
+    {
+        $parts = parse_url($url);
+        $urlHost = strtolower($parts['host'] ?? '');
+
+        // www and the bare domain are the same site.
+        if (preg_replace('/^www\./', '', $urlHost) !== preg_replace('/^www\./', '', $host)) {
+            return false;
+        }
+
+        $path = strtolower($parts['path'] ?? '/');
+
+        if (preg_match('/\.(pdf|jpe?g|png|gif|webp|svg|zip|docx?|xlsx?|mp4|mp3|xml|txt|css|js)$/', $path)) {
+            return false;
+        }
+
+        return ! preg_match(
+            '#/(contact|contact-us|privacy|privacy-policy|cookies?|cookie-policy|terms|legal|accessibility|login|log-in|sign-?in|register|account|my-account|cart|basket|checkout|wp-admin|wp-login|feed|tag|category|author|search|page/\d+)(/|$)#',
+            $path
+        );
+    }
+
+    private function pageKind(string $url): string
+    {
+        $path = strtolower((string) parse_url($url, PHP_URL_PATH));
+
+        return match (true) {
+            (bool) preg_match('#(faq|questions)#', $path) => 'faq',
+            (bool) preg_match('#(about|our-story|who-we-are|meet-the-team|our-team)#', $path) => 'about',
+            (bool) preg_match('#(blog|news|article|insight|guide|advice|tips|case-stud|project|stories|/\d{4}/)#', $path) => 'article',
+            (bool) preg_match('#(service|what-we-do|treatment|menu|pricing|prices|products?|solutions|repairs?|install)#', $path) => 'service',
+            default => 'other',
+        };
+    }
+
+    private function absoluteUrl(string $href, string $baseUrl): ?string
+    {
+        $href = trim($href);
+
+        if ($href === '' || str_starts_with($href, '#') || preg_match('/^(mailto|tel|javascript|sms|whatsapp):/i', $href)) {
+            return null;
+        }
+
+        if (preg_match('#^https?://#i', $href)) {
+            return $href;
+        }
+
+        if (str_starts_with($href, '//')) {
+            return (parse_url($baseUrl, PHP_URL_SCHEME) ?: 'https').':'.$href;
+        }
+
+        if (str_starts_with($href, '/')) {
+            return $this->origin($baseUrl).$href;
+        }
+
+        return rtrim($baseUrl, '/').'/'.$href;
+    }
+
+    private function origin(string $url): string
+    {
+        $parts = parse_url($url);
+
+        return ($parts['scheme'] ?? 'https').'://'.($parts['host'] ?? '');
     }
 
     private function scrapeAdditionalPage(string $url): ?array
     {
         try {
-            $response = $this->httpClient->get($url);
+            $response = $this->httpClient->get($url, ['timeout' => 8]);
             $html = (string) $response->getBody();
             $crawler = new Crawler($html);
 

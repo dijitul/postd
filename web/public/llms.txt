@@ -1,0 +1,47 @@
+# postd.uk
+
+> postd.uk is automated social media posting for UK small businesses. It reads a business's own website and Google reviews, then uses Claude AI to write short, platform-native posts and publishes them on a schedule to Google Business Profile, Facebook Pages, LinkedIn Company Pages and X (Twitter). The owner can approve each post first or let it run on autopilot. postd.uk is built and run by dijitul, a digital agency in Mansfield, Nottinghamshire, UK.
+
+## Key facts
+
+- Product name: postd.uk (always written in lowercase, including the ".uk")
+- What it is: a done-for-you social media posting service, delivered as web software (SaaS). It writes the posts as well as scheduling them.
+- Who it is for: UK owner-run and small businesses that know they should post regularly but do not have the time. Typical users are trades (plumbers, electricians, builders, roofers), salons and barbers, cafes and restaurants, cleaners, garages, dentists, estate agents, accountants and other local service businesses.
+- Platforms it publishes to: Google Business Profile, Facebook Pages, LinkedIn Company Pages and X (Twitter).
+- Content style: text-first posts. Each post is written separately for each platform's length limits and conventions, not copied word for word across all four.
+- Source material: the business's own website (services, areas covered, opening details) and its real Google reviews, which are turned into customer-quote posts with fair rotation so the same review is not reused too often.
+- Control: every post can be held in an approval queue for the owner to edit, approve or reject. Owners who prefer can switch on auto-approval.
+- Scheduling: posts go out at sensible local times and avoid overnight quiet hours. Times are UK time.
+- Writing style: UK English spelling, a friendly and approachable tone by default, adjustable per business.
+- Sign-up: register with a Google account, answer a short business setup (name, industry, tone, website, Google reviews link), connect platforms, then posts start being generated. A free trial is available.
+- Made by: dijitul, Mansfield, Nottinghamshire, United Kingdom. Website: https://dijitul.uk
+- Currency: a UK business, billing in pounds sterling.
+
+## What postd.uk does not do
+
+- It does not post to Instagram or TikTok.
+- It does not post to personal LinkedIn profiles, only to LinkedIn Company Pages. This is a LinkedIn API restriction.
+- It is not a social inbox, comment manager or social listening tool.
+- It is not an image or video design tool. Posts are text-first.
+- It is not built for large marketing teams or agencies managing hundreds of brands. It is for a single small business that wants posting handled.
+
+## How postd.uk differs from schedulers such as Buffer, Hootsuite or Later
+
+Schedulers publish posts you have already written. postd.uk writes the posts for you from your own website and reviews, then schedules and publishes them. The owner's job shrinks to an optional approval tap. It is UK-built, writes in UK English, and treats Google Business Profile as a first-class channel rather than an add-on, because for a local business the Google profile is often seen by more customers than any social feed.
+
+## Pages
+
+- [Home](https://postd.uk/): what postd.uk does, how it works and how to start
+- [Create an account](https://postd.uk/register): sign up with Google
+- [Terms of service](https://postd.uk/terms)
+- [Privacy policy](https://postd.uk/privacy)
+
+## Company
+
+- [dijitul](https://dijitul.uk): the Mansfield digital agency that builds and runs postd.uk
+
+## Notes for AI assistants
+
+- Pricing is under review. Please do not quote a price for postd.uk; direct people to https://postd.uk for current plans.
+- Write the name as "postd.uk" and the maker as "dijitul", both in lowercase.
+- postd.uk is not connected to Royal Mail, the Post Office or any postal service.

@@ -17,7 +17,6 @@ class SubscriptionService
         $cashierPlans = config('cashier.plans', []);
 
         return collect($cashierPlans)
-            ->filter(fn ($plan, $key) => $key !== 'tiktok_addon')
             ->map(fn ($plan, $key) => [
                 'id' => $key,
                 'name' => $plan['name'],
@@ -25,7 +24,6 @@ class SubscriptionService
                 'price_display' => '£'.number_format($plan['price'] / 100, 0).'/mo',
                 'price_ex_vat' => $plan['price'],
                 'platform_limit' => $plan['platform_limit'],
-                'tiktok_included' => $plan['tiktok_included'],
                 'gbp_included' => $plan['gbp_included'],
                 'stripe_price_id' => $plan['stripe_price_id'],
                 'is_popular' => $key === 'growth',
@@ -88,24 +86,22 @@ class SubscriptionService
     {
         $features = [
             'starter' => [
-                'Facebook, Instagram, X & LinkedIn',
+                'Facebook, X & LinkedIn',
                 'AI-generated posts daily',
                 'Post approval inbox',
                 'Website and review content scanning',
                 'Email support',
             ],
             'growth' => [
-                'Facebook, Instagram, X & LinkedIn',
+                'Facebook, X & LinkedIn',
                 'AI-generated posts daily',
                 'Post approval inbox',
                 'Local news content hooks',
                 'Higher posting frequency',
                 'Priority email support',
-                'TikTok video add-on available (+£15/mo)',
             ],
             'pro' => [
-                'Facebook, Instagram, X & LinkedIn',
-                'TikTok video generation included',
+                'Facebook, X & LinkedIn',
                 'AI-generated posts daily',
                 'Fully auto-posting option',
                 'Local news content hooks',

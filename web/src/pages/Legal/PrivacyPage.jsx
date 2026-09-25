@@ -26,10 +26,10 @@ export default function PrivacyPage() {
 
             <section>
               <h2 className="font-display font-bold text-xl text-navy-800 mb-3">1. Introduction</h2>
-              <p>This Privacy Policy explains how Dijitul (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;), the company behind postd.uk, collects, uses, stores, and protects your personal data when you use our Service at <a href="https://postd.uk" className="text-amber-600 hover:text-amber-700">https://postd.uk</a>.</p>
-              <p className="mt-3">We are committed to handling your personal data responsibly and in full compliance with the UK General Data Protection Regulation (UK GDPR) and the Data Protection Act 2018. For the purposes of UK GDPR, Dijitul is the data controller.</p>
+              <p>This Privacy Policy explains how dijitul (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;), the company behind postd.uk, collects, uses, stores, and protects your personal data when you use our Service at <a href="https://postd.uk" className="text-amber-600 hover:text-amber-700">https://postd.uk</a>.</p>
+              <p className="mt-3">We are committed to handling your personal data responsibly and in full compliance with the UK General Data Protection Regulation (UK GDPR) and the Data Protection Act 2018. For the purposes of UK GDPR, dijitul is the data controller.</p>
               <div className="mt-4 bg-cream-100 rounded-xl p-4 text-sm space-y-1">
-                <p><strong>Company:</strong> Dijitul</p>
+                <p><strong>Company:</strong> dijitul</p>
                 <p><strong>Registered in:</strong> England and Wales</p>
                 <p><strong>Address:</strong> Mansfield, Nottinghamshire, England</p>
                 <p><strong>Email:</strong> <a href="mailto:hello@postd.uk" className="text-amber-600 hover:text-amber-700">hello@postd.uk</a></p>
@@ -50,7 +50,7 @@ export default function PrivacyPage() {
                 </div>
                 <div>
                   <p className="font-semibold text-navy-800">Social Media Access Tokens</p>
-                  <p className="text-sm mt-1">When you connect a social media account (Facebook, Instagram, Twitter/X, LinkedIn, TikTok, or Google Business Profile), we receive and store an access token issued by that platform. This token allows us to publish content to your account on your behalf.</p>
+                  <p className="text-sm mt-1">When you connect a social media account (Facebook, X, LinkedIn, or Google Business Profile), we receive and store an access token issued by that platform. This token allows us to publish content to your account on your behalf.</p>
                 </div>
                 <div>
                   <p className="font-semibold text-navy-800">Usage and Service Data</p>
@@ -103,10 +103,10 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="font-display font-bold text-xl text-navy-800 mb-3">5. AI Content Generation and OpenAI</h2>
-              <p>The Service uses OpenAI&apos;s API to power AI content generation. When you use this feature, we send your business description and content preferences to OpenAI to generate post suggestions.</p>
-              <p className="mt-3 font-semibold text-navy-800">We do not send your name, email address, billing details, social media tokens, or any other personal data to OpenAI.</p>
-              <p className="mt-3">Data sent via the API is not used by OpenAI to train their models under their current API terms. Please refer to <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700">OpenAI&apos;s Privacy Policy</a> for further information.</p>
+              <h2 className="font-display font-bold text-xl text-navy-800 mb-3">5. AI Content Generation (Anthropic and OpenAI)</h2>
+              <p>The Service uses Anthropic&apos;s Claude API to write post text, and OpenAI&apos;s API to create optional post images. To write posts, we send Anthropic your business details, public text from your website and your public Google reviews. To create images, we send OpenAI a short description of the image.</p>
+              <p className="mt-3 font-semibold text-navy-800">We do not send your name, email address, billing details, social media tokens, or any other personal data to Anthropic or OpenAI.</p>
+              <p className="mt-3">Under their current commercial API terms, neither provider uses data sent through the API to train their models. Please refer to <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700">Anthropic&apos;s Privacy Policy</a> and <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700">OpenAI&apos;s Privacy Policy</a> for further information.</p>
             </section>
 
             <section>
@@ -143,9 +143,10 @@ export default function PrivacyPage() {
                   <tbody className="divide-y divide-cream-200">
                     {[
                       ['Stripe', 'Payment processing', 'USA (Data Privacy Framework)'],
-                      ['OpenAI', 'AI content generation', 'USA (Standard Contractual Clauses)'],
+                      ['Anthropic', 'AI post writing', 'USA (Standard Contractual Clauses)'],
+                      ['OpenAI', 'AI image generation', 'USA (Standard Contractual Clauses)'],
                       ['Google Analytics', 'Service usage analytics', 'USA (Data Privacy Framework)'],
-                      ['Meta, X, LinkedIn, TikTok, Google', 'Publishing content on your behalf', 'Various'],
+                      ['Meta, X, LinkedIn, Google', 'Publishing content on your behalf', 'Various'],
                       ['Hosting / Infrastructure', 'Data storage and service delivery', 'UK/EU'],
                     ].map(([party, purpose, location]) => (
                       <tr key={party} className="hover:bg-cream-50">
@@ -232,7 +233,7 @@ export default function PrivacyPage() {
               <div className="bg-cream-100 rounded-xl p-4 text-sm space-y-1">
                 <p><strong>Email:</strong> <a href="mailto:hello@postd.uk" className="text-amber-600 hover:text-amber-700">hello@postd.uk</a></p>
                 <p><strong>Website:</strong> <a href="https://postd.uk" className="text-amber-600 hover:text-amber-700">https://postd.uk</a></p>
-                <p><strong>Post:</strong> Dijitul, Mansfield, Nottinghamshire, England</p>
+                <p><strong>Post:</strong> dijitul, Mansfield, Nottinghamshire, England</p>
               </div>
               <p className="mt-3 text-sm">We aim to respond to all enquiries within 5 working days.</p>
             </section>

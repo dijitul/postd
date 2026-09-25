@@ -296,10 +296,7 @@ Posts have `requires_approval = true` by default. `DispatchScheduledPostsJob` on
 
 ### Google Business Profile (GBP)
 
-**Current status:** Awaiting Google's allowlisting approval. Apply at:
-https://support.google.com/business/contact/api_default — select "Application for Basic API Access"
-
-Until approved, GBP posts fail with 429/403. The `mybusinessaccountmanagement.googleapis.com/v1/` endpoint has effectively zero quota for unlisted apps.
+**Current status:** Working (confirmed live 25 September 2026).
 
 **OAuth scopes required:** `https://www.googleapis.com/auth/business.manage`
 
@@ -324,7 +321,7 @@ Fix in `SocialConnectionController::redirect()`: for Twitter, we generate PKCE m
 
 ### LinkedIn
 
-**Current status:** Awaiting LinkedIn's Community Management API approval. Code is complete and deployed; connecting will fail until the product is granted.
+**Current status:** Working (confirmed live 25 September 2026). Company Pages only.
 
 **Company Pages only, and not by choice.** LinkedIn requires the Community Management API to be the ONLY product on a developer app. That rules out "Sign In with LinkedIn using OpenID Connect" and "Share on LinkedIn" on the same app, so we hold no profile scope, `/v2/userinfo` is closed to us, and posting to a personal profile is impossible. Every author is an organisation URN.
 
@@ -387,6 +384,12 @@ Uses Anthropic Claude API via direct HTTP (not the OpenAI PHP SDK).
 - `claude-3-5-haiku-latest`
 - Any model with `-20241022` or earlier date suffix
 
+**How posts stay relevant and new** (`ContentGenerationService`):
+- Every post takes an *angle* from `ANGLE_ROTATION`. Quote angles lift a real review or website line word for word; every other angle is written from one specific page of the business's site (`ANGLE_PAGE_KINDS`), taking the page gone longest without use. `ai_metadata.page_id` records which.
+- `ScrapeBusinessJob` reads the sitemap and homepage links (up to 10 extra pages: services, about, FAQ, newest articles) and keeps `structured_data.page_first_seen`. A page first seen in the last 21 days gets a `whats_new` post once per platform, ahead of the rotation.
+- Each draft is compared (word-trigram overlap) with the last 20 posts; above 0.3 it is rewritten once and the less similar draft kept.
+- `HashtagGuard` strips any hashtag whose words are not in the business's own context (name, industry, location, website, reviews) or a short generic list, plus repeats and anything over the platform's `max_hashtags`. Removed tags are logged and kept in `ai_metadata.removed_hashtags`. Publishers send `content` only; the `hashtags` column is informational.
+
 **Image generation:** Uses OpenAI DALL-E via `GeneratePostImageJob`. Requires `OPENAI_API_KEY`.
 
 ---
@@ -442,15 +445,12 @@ DB::table('failed_jobs')->orderByRaw('id DESC')->first();
 
 | Issue | Priority | Notes |
 |---|---|---|
-| GBP API quota 0 | Blocked on Google | Applied for Basic API Access. GBP posts fail until approved. |
-| GBP location picker blank | Blocked on Google | Requires GBP API to list locations |
 | `ScrapeBusinessJob` crashes | Fixed | `GoogleReviewsService::$apiKey` is `?string` and the service returns early when the key is unset, so a null `GOOGLE_PLACES_API_KEY` no longer throws. |
 | `NotifyTrialEndingCommand` bug | Fixed | `scopeOnTrial` collided with Cashier's `Billable::onTrial()`, so the static call returned a bool. Scope renamed to `scopeTrialing` — use `User::trialing()`. |
 | Jobs from tinker not queued | Known quirk | Run via `->handle()` in tinker instead of `::dispatch()` |
 | Settings page testing | Needs verification | Previously not saving correctly |
 | Retry button for failed posts | Built | `POST /posts/{id}/retry` plus a retry action on the failed filter in `PostsPage.jsx`. Note there is no separate Inbox page — it is the Posts page filtered by status. |
 | Twitter token refresh | Untested | First live test will be when the current token expires (~2 hours post-connect) |
-| LinkedIn Community Management API | Blocked on LinkedIn | Access form submitted, awaiting review. Code complete but untested end to end — connecting fails until the product is granted. |
 | `LINKEDIN_API_VERSION` unverified | Verify before launch | Set to `202506` as a placeholder. Confirm against LinkedIn's current version list; an unsupported value fails every `/rest/*` call. |
 | LinkedIn 60-day reconnect | By design, needs UX | No refresh token is possible. Users must manually reconnect every 60 days — worth a more prominent prompt than the standard expiry email. |
 
@@ -478,7 +478,7 @@ After pushing:
 ## Google Cloud Console
 
 - **OAuth app** in Testing mode — add test users before they can sign in
-- **My Business Account Management API** — quota 0, awaiting allowlisting
+- **My Business Account Management API** — allowlisted and working
 - **Registered callback URLs:**
   - `https://api.postd.uk/api/auth/google/callback` (sign-in)
   - `https://api.postd.uk/api/auth/social/google_business_profile/callback` (GBP connect)

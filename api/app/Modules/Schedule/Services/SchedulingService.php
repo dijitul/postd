@@ -21,11 +21,6 @@ class SchedulingService
             'time_slots' => ['09:00', '12:00', '15:00', '18:00'],
             'avoid_time_range' => ['22:00', '07:00'], // quiet hours
         ],
-        'instagram' => [
-            'preferred_days' => [2, 3, 5, 6], // Tue, Wed, Fri, Sat
-            'time_slots' => ['08:00', '12:00', '17:00', '19:00', '21:00'],
-            'avoid_time_range' => ['23:00', '07:00'],
-        ],
         'twitter' => [
             'preferred_days' => [2, 3, 4, 5], // Tue-Fri
             'time_slots' => ['09:00', '12:00', '15:00', '18:00', '21:00'],
@@ -36,11 +31,6 @@ class SchedulingService
             'preferred_days' => [2, 3, 4], // Tue, Wed, Thu
             'time_slots' => ['07:30', '12:00', '17:30'],
             'avoid_time_range' => ['19:00', '07:00'],
-        ],
-        'tiktok' => [
-            'preferred_days' => [2, 4, 5, 6, 7], // Tue, Thu, Fri, Sat, Sun
-            'time_slots' => ['07:00', '12:00', '19:00', '21:00'],
-            'avoid_time_range' => ['23:00', '06:00'],
         ],
         'google_business_profile' => [
             // GBP posts are less time-sensitive — morning on weekdays works well
@@ -59,10 +49,8 @@ class SchedulingService
      */
     private const MIN_GAP_MINUTES = [
         'facebook' => 2880,
-        'instagram' => 2880,
         'twitter' => 2880,
         'linkedin' => 2880,
-        'tiktok' => 2880,
         'google_business_profile' => 2880,
     ];
 

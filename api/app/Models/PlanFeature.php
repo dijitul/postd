@@ -11,7 +11,6 @@ class PlanFeature extends Model
         'display_name',
         'price_pence',
         'platform_limit',
-        'tiktok_included',
         'gbp_included',
         'ai_images_included',
         'posts_per_month',
@@ -25,7 +24,6 @@ class PlanFeature extends Model
     protected function casts(): array
     {
         return [
-            'tiktok_included' => 'boolean',
             'gbp_included' => 'boolean',
             'ai_images_included' => 'boolean',
             'approval_workflow' => 'boolean',
@@ -52,12 +50,7 @@ class PlanFeature extends Model
             return true;
         }
 
-        // TikTok requires the tiktok_included flag or a TikTok add-on
-        if ($platform === 'tiktok') {
-            return $this->tiktok_included;
-        }
-
-        // All other platforms (facebook, instagram, twitter, linkedin) are included on every plan
+        // All other platforms (facebook, twitter, linkedin) are included on every plan
         return true;
     }
 }

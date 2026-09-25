@@ -447,10 +447,8 @@ function Step3({ onNext, onSkip, defaultValues }) {
 // ── Step 4 — Connect platforms ────────────────────────────────────────────────
 const PLATFORMS = [
   { id: 'facebook',  label: 'Facebook',                plan: 'base'       },
-  { id: 'instagram', label: 'Instagram',               plan: 'base'       },
   { id: 'linkedin',  label: 'LinkedIn',                plan: 'base'       },
   { id: 'x',         label: 'X (Twitter)',             plan: 'base'       },
-  { id: 'tiktok',    label: 'TikTok',                  plan: 'pro'        },
   { id: 'google',    label: 'Google Business Profile', plan: 'base'       },
 ]
 

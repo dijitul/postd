@@ -453,7 +453,7 @@ class SocialConnectionController extends Controller
 
     private function validatePlatform(string $platform): void
     {
-        $valid = ['facebook', 'instagram', 'twitter', 'linkedin', 'tiktok', 'google_business_profile'];
+        $valid = ['facebook', 'twitter', 'linkedin', 'google_business_profile'];
         if (! in_array($platform, $valid)) {
             abort(400, "Unknown platform: {$platform}");
         }

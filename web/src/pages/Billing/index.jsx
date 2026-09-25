@@ -9,7 +9,7 @@ const PLANS = [
     price: 19,
     description: 'Perfect for getting started with social media automation.',
     features: [
-      'Facebook, Instagram, X & LinkedIn',
+      'Facebook, X & LinkedIn',
       'AI-generated posts daily',
       'Post approval inbox',
       'Website and review content scanning',
@@ -23,7 +23,7 @@ const PLANS = [
     popular: true,
     description: 'The most popular choice for growing UK businesses.',
     features: [
-      'Facebook, Instagram, X & LinkedIn',
+      'Facebook, X & LinkedIn',
       'AI-generated posts daily',
       'Post approval inbox',
       'Local news content hooks',
@@ -37,8 +37,7 @@ const PLANS = [
     price: 69,
     description: 'For businesses serious about dominating their social presence.',
     features: [
-      'Facebook, Instagram, X & LinkedIn',
-      'TikTok video generation included',
+      'Facebook, X & LinkedIn',
       'AI-generated posts daily',
       'Fully auto-posting option',
       'Local news content hooks',
@@ -238,29 +237,10 @@ export default function BillingPage() {
           ))}
         </div>
         <p className="text-xs text-slate-400 mt-4 text-center">
-          All prices exclude VAT. UK VAT (20%) applied at checkout. TikTok video add-on: +£15/month on Starter and Growth.
+          All prices exclude VAT. UK VAT (20%) applied at checkout.
           Google Business Profile posting is included on all plans.
         </p>
       </div>
-
-      {/* TikTok add-on */}
-      {currentPlan !== 'pro' && (
-        <div className="bg-navy-800 rounded-2xl p-5 flex items-start gap-4 text-white">
-          <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg">
-            🎵
-          </div>
-          <div className="flex-1">
-            <h3 className="font-display font-bold text-base mb-1">TikTok video add-on — £15/month</h3>
-            <p className="text-white/60 text-sm leading-relaxed mb-3">
-              Add AI-generated TikTok video content to your plan. Included free on Pro.
-            </p>
-            <button className="inline-flex items-center gap-2 bg-amber-500 text-white font-semibold text-sm px-4 py-2 rounded-xl hover:bg-amber-600 transition-all">
-              Add TikTok
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Invoice history */}
       <div>

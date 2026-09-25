@@ -18,10 +18,8 @@ class AppServiceProvider extends ServiceProvider
     {
         // Bind platform implementations
         $this->app->singleton(\App\Modules\Social\Platforms\FacebookPlatform::class);
-        $this->app->singleton(\App\Modules\Social\Platforms\InstagramPlatform::class);
         $this->app->singleton(\App\Modules\Social\Platforms\TwitterPlatform::class);
         $this->app->singleton(\App\Modules\Social\Platforms\LinkedInPlatform::class);
-        $this->app->singleton(\App\Modules\Social\Platforms\TikTokPlatform::class);
         $this->app->singleton(\App\Modules\Social\Platforms\GoogleBusinessProfilePlatform::class);
         $this->app->singleton(\App\Modules\Social\Services\SocialConnectionService::class);
         $this->app->singleton(\App\Modules\Content\Services\ContentGenerationService::class);

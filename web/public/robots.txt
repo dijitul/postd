@@ -1,0 +1,67 @@
+# robots.txt for https://postd.uk
+# postd.uk is built by dijitul (https://dijitul.uk), Mansfield, UK.
+#
+# Policy: the public marketing site is open to search engines AND to AI
+# assistants, both for live answers (search/retrieval bots) and for model
+# training. We want ChatGPT, Claude, Gemini, Perplexity and Copilot to know
+# what postd.uk is. The logged-in app is closed to everyone; it holds nothing
+# useful to a crawler and every route there is behind sign-in anyway.
+
+# ---------------------------------------------------------------------------
+# Default rule for every crawler
+# ---------------------------------------------------------------------------
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /posts
+Disallow: /inbox
+Disallow: /platforms
+Disallow: /settings
+Disallow: /billing
+Disallow: /admin
+Disallow: /onboarding
+Disallow: /auth/
+
+# ---------------------------------------------------------------------------
+# AI assistants: named explicitly so the intent is unambiguous.
+# A crawler obeys only the most specific group that matches it, so each group
+# repeats the app disallows.
+# ---------------------------------------------------------------------------
+
+# OpenAI: ChatGPT search index, ChatGPT live fetches, model training
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: GPTBot
+# Anthropic: Claude search index, Claude live fetches, model training
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: ClaudeBot
+# Perplexity: index and live fetches
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+# Google: Gemini and Vertex AI grounding/training control token
+User-agent: Google-Extended
+# Microsoft Copilot and Bing
+User-agent: Bingbot
+# Apple Intelligence training control token, and Applebot
+User-agent: Applebot
+User-agent: Applebot-Extended
+# Meta AI, Amazon, DuckDuckGo AI answers, Mistral, Common Crawl
+User-agent: Meta-ExternalAgent
+User-agent: Amazonbot
+User-agent: DuckAssistBot
+User-agent: MistralAI-User
+User-agent: CCBot
+Allow: /
+Allow: /llms.txt
+Disallow: /dashboard
+Disallow: /posts
+Disallow: /inbox
+Disallow: /platforms
+Disallow: /settings
+Disallow: /billing
+Disallow: /admin
+Disallow: /onboarding
+Disallow: /auth/
+
+Sitemap: https://postd.uk/sitemap.xml

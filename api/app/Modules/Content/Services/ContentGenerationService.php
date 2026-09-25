@@ -31,16 +31,8 @@ class ContentGenerationService
             'max_words' => 200,
             'emojis' => true,
             'hashtags' => 'minimal (0-2)',
+            'max_hashtags' => 2,
             'special' => 'End with a clear call-to-action. Make it feel like a friend sharing something useful.',
-        ],
-        'instagram' => [
-            'format' => 'Visual-first caption',
-            'tone' => 'Aspirational, lifestyle-focused',
-            'min_words' => 50,
-            'max_words' => 100,
-            'emojis' => true,
-            'hashtags' => '5-10 relevant hashtags at the end',
-            'special' => 'Start with a strong hook line. Describe what the accompanying image would look like.',
         ],
         'twitter' => [
             'format' => 'Punchy, opinionated tweet',
@@ -48,6 +40,7 @@ class ContentGenerationService
             'max_chars' => 260,
             'emojis' => 'sparingly',
             'hashtags' => '1-2 hashtags maximum',
+            'max_hashtags' => 2,
             'special' => 'Either a bold statement or a question that sparks engagement. No fluff.',
         ],
         'linkedin' => [
@@ -57,14 +50,8 @@ class ContentGenerationService
             'max_words' => 300,
             'emojis' => false,
             'hashtags' => '2-3 professional hashtags at the end',
+            'max_hashtags' => 3,
             'special' => 'Lead with an insight or observation. Avoid corporate speak. Be genuinely useful.',
-        ],
-        'tiktok' => [
-            'format' => 'Video script',
-            'tone' => 'Energetic, authentic, relatable',
-            'duration_seconds' => '30-60',
-            'emojis' => true,
-            'special' => 'Hook in first 3 seconds is critical. Structure: Hook → Problem/Story → Value → CTA. Write as a natural spoken script.',
         ],
         'google_business_profile' => [
             'format' => 'Business update post',
@@ -73,6 +60,7 @@ class ContentGenerationService
             'max_words' => 150,
             'emojis' => false,
             'hashtags' => 'none',
+            'max_hashtags' => 0,
             'special' => 'Include a specific CTA. Mention location/area served when relevant. Focus on factual updates.',
         ],
     ];
@@ -176,7 +164,45 @@ class ContentGenerationService
             .'see. Specific and unglamorous beats polished.',
         'faq' =>
             'Answer one real question customers ask. State the question, then answer it plainly and completely.',
+        'whats_new' =>
+            'The business has just added the page below to its website. Tell readers what is new and why it is '
+            .'worth their time, using only what the page says. Lead with the most useful specific from it, not '
+            .'with the fact that something has been published.',
     ];
+
+    /**
+     * Which pages of the business's site each angle should draw its specifics from, best first.
+     *
+     * Only the two quote angles used to touch the website, so half of all posts
+     * were written from a one-line description and a list of service names, and
+     * read as generic as that sounds. Grounding every other angle in a real page
+     * gives the model something specific to say. Quote angles are absent: they
+     * already carry their own line from the site or a review.
+     */
+    private const ANGLE_PAGE_KINDS = [
+        'service_spotlight' => ['service', 'other', 'home'],
+        'customer_problem'  => ['service', 'article', 'faq'],
+        'practical_tip'     => ['article', 'faq', 'service'],
+        'local_angle'       => ['about', 'home', 'service'],
+        'behind_the_scenes' => ['about', 'service', 'article'],
+        'faq'               => ['faq', 'service', 'article'],
+        'whats_new'         => ['article', 'service', 'other', 'faq', 'about'],
+    ];
+
+    /** Angles worth linking to the page they were drawn from, where the platform takes a link. */
+    private const LINKED_PAGE_ANGLES = ['whats_new', 'service_spotlight'];
+
+    /** A page first seen within this many days counts as new and gets its own post. */
+    private const FRESH_PAGE_DAYS = 21;
+
+    /**
+     * Word-trigram overlap above which a draft counts as a rerun of an earlier post.
+     *
+     * Two genuinely different posts for the same business rarely share more
+     * than a few percent of their three word runs; a reworded copy shares a
+     * third or more.
+     */
+    private const MAX_SIMILARITY = 0.3;
 
     public function __construct(
         private readonly SchedulingService $schedulingService,
@@ -346,47 +372,94 @@ class ContentGenerationService
         );
 
         $startTime = microtime(true);
+        $hashtagGuard = new HashtagGuard($this->hashtagVocabulary($businessContext));
+        $comparePosts = $this->postsToCompareAgainst($business);
 
-        $response = $this->callAnthropic([
-            'model'      => self::MODEL,
-            'max_tokens' => $this->maxTokensFor($platform, $platformRules),
-            'system'     => $systemPrompt,
-            'messages'   => [
-                ['role' => 'user', 'content' => $userPrompt],
-            ],
-        ], $platform);
+        $inputTokens = 0;
+        $outputTokens = 0;
+        $costUsd = 0.0;
+        $parsed = null;
+        $similarity = 0.0;
+        $removedHashtags = [];
+        $messages = [['role' => 'user', 'content' => $userPrompt]];
+
+        // One draft, plus one rewrite if the draft turns out to be a rerun of a
+        // recent post. Telling the model what it already wrote only goes so far:
+        // over enough weeks, the same brief drifts back to the same post.
+        for ($attempt = 1; $attempt <= 2; $attempt++) {
+            $response = $this->callAnthropic([
+                'model'      => self::MODEL,
+                'max_tokens' => $this->maxTokensFor($platform, $platformRules),
+                'system'     => $systemPrompt,
+                'messages'   => $messages,
+            ], $platform);
+
+            if (! $response) {
+                break;
+            }
+
+            $body = $response->json();
+            $rawContent = $body['content'][0]['text'] ?? '';
+            $usage = $body['usage'] ?? [];
+
+            $callCost = $this->calculateCost(self::MODEL, $usage['input_tokens'] ?? 0, $usage['output_tokens'] ?? 0);
+            $inputTokens += $usage['input_tokens'] ?? 0;
+            $outputTokens += $usage['output_tokens'] ?? 0;
+            $costUsd += $callCost;
+            $this->logAiCost($business, null, 'text_generation', self::MODEL, $usage['input_tokens'] ?? 0, $usage['output_tokens'] ?? 0, $callCost);
+
+            $draft = $this->extractJson($rawContent);
+
+            if (! $draft || ! isset($draft['content']) || ! is_string($draft['content'])) {
+                Log::error("ContentGenerationService: Bad response format for {$platform}", [
+                    'raw' => $rawContent,
+                ]);
+                break;
+            }
+
+            $draft['content'] = $this->sanitiseContent($draft['content']);
+
+            $checked = $hashtagGuard->clean($draft['content'], $platformRules['max_hashtags'] ?? 0);
+            $draft['content'] = $checked['content'];
+            $draft['hashtags'] = $checked['hashtags'];
+
+            [$draftSimilarity, $closest] = $this->closestMatch($draft['content'], $comparePosts);
+
+            // Keep whichever draft is less like what has already gone out.
+            if (! $parsed || $draftSimilarity < $similarity) {
+                $parsed = $draft;
+                $similarity = $draftSimilarity;
+                $removedHashtags = $checked['removed'];
+            }
+
+            if ($draftSimilarity < self::MAX_SIMILARITY) {
+                break;
+            }
+
+            Log::info("ContentGenerationService: Draft too close to an earlier post on {$platform}, rewriting", [
+                'business_id' => $business->id,
+                'similarity'  => round($draftSimilarity, 2),
+            ]);
+
+            $messages[] = ['role' => 'assistant', 'content' => $rawContent];
+            $messages[] = ['role' => 'user', 'content' => "That reads too much like a post this business has already published:\n\n"
+                .$closest
+                ."\n\nWrite a new post to the same angle that a reader who saw that one would find genuinely new: a "
+                .'different opening, a different detail from the material, a different structure. Same JSON format.'];
+        }
 
         $durationMs = (microtime(true) - $startTime) * 1000;
 
-        if (! $response) {
+        if (! $parsed) {
             return null;
         }
 
-        $body       = $response->json();
-        $rawContent = $body['content'][0]['text'] ?? '';
-        $usage      = $body['usage'] ?? [];
-
-        $inputTokens  = $usage['input_tokens']  ?? 0;
-        $outputTokens = $usage['output_tokens'] ?? 0;
-
-        $parsed = $this->extractJson($rawContent);
-
-        if (isset($parsed['content']) && is_string($parsed['content'])) {
-            $parsed['content'] = $this->sanitiseContent($parsed['content']);
-        }
-
-        if (! $parsed || ! isset($parsed['content'])) {
-            Log::error("ContentGenerationService: Bad response format for {$platform}", [
-                'raw' => $rawContent,
+        if ($removedHashtags) {
+            Log::info("ContentGenerationService: Removed unsupported hashtags on {$platform}", [
+                'business_id' => $business->id,
+                'removed'     => $removedHashtags,
             ]);
-            return null;
         }
-
-        // Calculate token costs
-        $costUsd = $this->calculateCost(self::MODEL, $inputTokens, $outputTokens);
-
-        // Log AI cost
-        $this->logAiCost($business, null, 'text_generation', self::MODEL, $inputTokens, $outputTokens, $costUsd);
 
         // Determine the connection for this platform
         $connection = $business->getConnectionForPlatform($platform);
@@ -422,6 +495,11 @@ class ContentGenerationService
                 // quoting the same review or website line twice in a row.
                 'angle'             => $angle['angle'],
                 'quoted_source_id'  => $angle['source_id'],
+                // The website page the post was written from, so the next run
+                // moves on to a different part of the site.
+                'page_id'           => $angle['page_id'],
+                'similarity'        => round($similarity, 3),
+                'removed_hashtags'  => $removedHashtags,
                 // Kept so click counts can be read back off LinkVine per post.
                 'short_link'        => $shortLink,
             ],
@@ -455,8 +533,8 @@ class ContentGenerationService
             return max(400, ($rules['max_words'] * 2) + 200);
         }
 
-        // TikTok is a spoken script with no word cap, just a duration.
-        return $platform === 'tiktok' ? 600 : 400;
+        // X is capped in characters, not words, and fits well inside this.
+        return 400;
     }
 
     /**
@@ -606,6 +684,113 @@ class ContentGenerationService
     }
 
     /**
+     * Everything a hashtag may legitimately be built from.
+     *
+     * Deliberately excludes the generated post itself: a wrong town in the body
+     * must not vouch for the same wrong town in a hashtag.
+     *
+     * @param  array<string, mixed>  $context
+     * @return string[]
+     */
+    private function hashtagVocabulary(array $context): array
+    {
+        $texts = [
+            $context['business_name'] ?? '',
+            $context['industry'] ?? '',
+            $context['location'] ?? '',
+            $context['description'] ?? '',
+            $context['usp_notes'] ?? '',
+        ];
+
+        $website = $context['website_data'] ?? [];
+        $texts[] = $website['page_title'] ?? '';
+        $texts[] = $website['description'] ?? '';
+        $texts = array_merge($texts, $website['services'] ?? [], $website['key_phrases'] ?? []);
+
+        foreach ($context['website_pages'] ?? [] as $page) {
+            $texts[] = ($page['title'] ?? '').' '.$page['text'];
+        }
+
+        foreach ($context['website_excerpts'] ?? [] as $excerpt) {
+            $texts[] = $excerpt['quote'];
+        }
+
+        foreach ($context['reviews'] ?? [] as $review) {
+            $texts[] = $review['quote'];
+        }
+
+        return array_filter(array_map('strval', $texts));
+    }
+
+    /**
+     * Recent posts across every platform, for the duplicate check.
+     *
+     * @return string[]
+     */
+    private function postsToCompareAgainst(Business $business, int $limit = 20): array
+    {
+        return Post::where('business_id', $business->id)
+            ->whereIn('status', self::LIVE_STATUSES)
+            ->latest('created_at')
+            ->limit($limit)
+            ->pluck('content')
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * How close a draft is to the most similar earlier post, and which post that is.
+     *
+     * Jaccard overlap of word trigrams: cheap, needs no model call, and catches
+     * the failure we actually see, which is the same post lightly reworded.
+     *
+     * @param  string[]  $posts
+     * @return array{0: float, 1: string|null}
+     */
+    private function closestMatch(string $draft, array $posts): array
+    {
+        $draftShingles = $this->shingles($draft);
+        $best = 0.0;
+        $closest = null;
+
+        if ($draftShingles === []) {
+            return [$best, $closest];
+        }
+
+        foreach ($posts as $post) {
+            $shingles = $this->shingles($post);
+
+            if ($shingles === []) {
+                continue;
+            }
+
+            $overlap = count(array_intersect_key($draftShingles, $shingles))
+                / count($draftShingles + $shingles);
+
+            if ($overlap > $best) {
+                $best = $overlap;
+                $closest = $post;
+            }
+        }
+
+        return [$best, $closest];
+    }
+
+    /** @return array<string, true> */
+    private function shingles(string $text): array
+    {
+        $words = preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower($text), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $shingles = [];
+
+        for ($i = 0; $i + 2 < count($words); $i++) {
+            $shingles[$words[$i].' '.$words[$i + 1].' '.$words[$i + 2]] = true;
+        }
+
+        return $shingles;
+    }
+
+    /**
      * Choose the angle for the next post on a platform, plus the exact piece of
      * source material it should quote.
      *
@@ -620,7 +805,18 @@ class ContentGenerationService
      */
     private function selectAngle(Business $business, string $platform, array $context): array
     {
-        $history  = $this->recentAngleHistory($business, $platform);
+        $history = $this->recentAngleHistory($business, $platform);
+        $pages   = $context['website_pages'] ?? [];
+
+        // A page the business has just published jumps the queue, once per
+        // platform. It is the one thing on the site nobody has read yet, and
+        // left to the rotation it could wait a fortnight for its turn.
+        foreach ($pages as $page) {
+            if ($page['fresh'] && ! in_array($page['id'], $history['featured_page_ids'], true)) {
+                return $this->angle('whats_new', null, $page);
+            }
+        }
+
         $rotation = self::ANGLE_ROTATION;
         $size     = count($rotation);
 
@@ -632,23 +828,68 @@ class ContentGenerationService
                 continue;
             }
 
-            return [
-                'angle'     => $angle,
-                'brief'     => self::ANGLE_BRIEFS[$angle],
-                'source'    => $source,
-                'source_id' => $source['id'] ?? null,
-            ];
+            return $this->angle($angle, $source, $this->pageForAngle($angle, $pages, $history['page_ids']));
         }
 
         // Every angle in the rotation needed material we do not have, which can
         // only happen if the whole rotation is quote angles. Fall back to one that
         // never needs a source.
+        return $this->angle('service_spotlight', null, $this->pageForAngle('service_spotlight', $pages, $history['page_ids']));
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $source
+     * @param  array<string, mixed>|null  $page
+     * @return array{angle: string, brief: string, source: array<string, mixed>|null, source_id: string|null, page: array<string, mixed>|null, page_id: string|null}
+     */
+    private function angle(string $angle, ?array $source, ?array $page): array
+    {
         return [
-            'angle'     => 'service_spotlight',
-            'brief'     => self::ANGLE_BRIEFS['service_spotlight'],
-            'source'    => null,
-            'source_id' => null,
+            'angle'     => $angle,
+            'brief'     => self::ANGLE_BRIEFS[$angle],
+            'source'    => $source,
+            'source_id' => $source['id'] ?? null,
+            'page'      => $page,
+            'page_id'   => $page['id'] ?? null,
         ];
+    }
+
+    /**
+     * The page of the business's site this angle should be written from.
+     *
+     * Prefers the kinds of page that suit the angle, and within those the page
+     * gone longest without being used, so over a few weeks the posts work
+     * through the whole site rather than the homepage every time.
+     *
+     * @param  array<int, array<string, mixed>>  $pages
+     * @param  string[]  $usedPageIds  Newest first.
+     * @return array<string, mixed>|null
+     */
+    private function pageForAngle(string $angle, array $pages, array $usedPageIds): ?array
+    {
+        $kinds = self::ANGLE_PAGE_KINDS[$angle] ?? null;
+
+        if (! $kinds || empty($pages)) {
+            return null;
+        }
+
+        $candidates = array_values(array_filter($pages, fn ($p) => in_array($p['kind'], $kinds, true))) ?: $pages;
+
+        usort($candidates, function (array $a, array $b) use ($kinds, $usedPageIds) {
+            // Never used beats used; after that, used longest ago wins.
+            $ageA = array_search($a['id'], $usedPageIds, true);
+            $ageB = array_search($b['id'], $usedPageIds, true);
+            $ageA = $ageA === false ? PHP_INT_MAX : $ageA;
+            $ageB = $ageB === false ? PHP_INT_MAX : $ageB;
+
+            if ($ageA !== $ageB) {
+                return $ageB <=> $ageA;
+            }
+
+            return array_search($a['kind'], $kinds, true) <=> array_search($b['kind'], $kinds, true);
+        });
+
+        return $candidates[0];
     }
 
     /**
@@ -663,7 +904,7 @@ class ContentGenerationService
      * The lookback is deliberately generous: it has to span every platform's
      * share of a week, not just one platform's.
      *
-     * @return array{count: int, source_ids: string[]}
+     * @return array{count: int, source_ids: string[], page_ids: string[], featured_page_ids: string[]}
      */
     private function recentAngleHistory(Business $business, string $platform, int $lookback = 20): array
     {
@@ -672,19 +913,43 @@ class ContentGenerationService
             ->whereIn('status', self::LIVE_STATUSES)
             ->count();
 
-        $sourceIds = Post::where('business_id', $business->id)
+        $recentMeta = Post::where('business_id', $business->id)
             ->whereIn('status', self::LIVE_STATUSES)
             ->latest('created_at')
             ->limit($lookback)
             ->pluck('ai_metadata')
-            ->map(fn ($meta) => is_array($meta) ? ($meta['quoted_source_id'] ?? null) : null)
+            ->filter(fn ($meta) => is_array($meta));
+
+        $sourceIds = $recentMeta
+            ->map(fn (array $meta) => $meta['quoted_source_id'] ?? null)
+            ->filter()
+            ->values()
+            ->all();
+
+        $pageIds = $recentMeta
+            ->map(fn (array $meta) => $meta['page_id'] ?? null)
+            ->filter()
+            ->values()
+            ->all();
+
+        // New pages are announced once per platform, and a fresh page stays fresh
+        // for three weeks, so this has to look back further than the lookback.
+        $featuredPageIds = Post::where('business_id', $business->id)
+            ->where('platform', $platform)
+            ->whereIn('status', self::LIVE_STATUSES)
+            ->where('created_at', '>=', now()->subDays(self::FRESH_PAGE_DAYS + 7))
+            ->pluck('ai_metadata')
+            ->filter(fn ($meta) => is_array($meta) && ($meta['angle'] ?? null) === 'whats_new')
+            ->map(fn (array $meta) => $meta['page_id'] ?? null)
             ->filter()
             ->values()
             ->all();
 
         return [
-            'count'      => $count,
-            'source_ids' => $sourceIds,
+            'count'             => $count,
+            'source_ids'        => $sourceIds,
+            'page_ids'          => $pageIds,
+            'featured_page_ids' => $featuredPageIds,
         ];
     }
 
@@ -823,7 +1088,7 @@ PROMPT;
         // the JSON dump, so the model treats it as copy to lift rather than as
         // more background to paraphrase.
         $contextStr = json_encode(
-            array_diff_key($context, array_flip(['reviews', 'website_excerpts'])),
+            array_diff_key($context, array_flip(['reviews', 'website_excerpts', 'website_pages'])),
             JSON_PRETTY_PRINT
         );
 
@@ -912,8 +1177,8 @@ PROMPT;
 
             $lines[] = 'Review text, to be quoted word for word: "'.$source['quote'].'"';
 
-            // A URL costs characters Twitter does not have and is dead text on
-            // Instagram, so it only goes where a reader can actually follow it.
+            // A URL costs characters Twitter does not have, so it only goes where
+            // a reader can actually follow it.
             if (! empty($context['reviews_url']) && in_array($platform, self::LINK_FRIENDLY_PLATFORMS, true)) {
                 $lines[] = 'Finish by inviting readers to see more reviews at: '.$context['reviews_url'];
                 $lines[] = 'Use that URL exactly as written. Do not shorten or reword it.';
@@ -929,6 +1194,24 @@ PROMPT;
             }
 
             $lines[] = 'Website text, to be quoted word for word: "'.$source['quote'].'"';
+        }
+
+        $page = $angle['page'] ?? null;
+
+        if ($page) {
+            $lines[] = '';
+            $lines[] = 'WEBSITE PAGE TO WRITE FROM (the business\'s own site, background only, NOT source material for quotes):';
+            $lines[] = 'Page: '.($page['title'] ?: $page['url']);
+            $lines[] = $page['text'];
+            $lines[] = '';
+            $lines[] = 'Take the specifics of this post from that page: the services, details, steps and wording it uses. '
+                .'Paraphrase in your own words and put no quotation marks around anything from it. '
+                .'Do not state anything the page and the business context do not support.';
+
+            if (in_array($angle['angle'], self::LINKED_PAGE_ANGLES, true) && in_array($platform, self::LINK_FRIENDLY_PLATFORMS, true)) {
+                $lines[] = 'Finish by pointing readers to the page: '.$page['url'];
+                $lines[] = 'Use that URL exactly as written.';
+            }
         }
 
         return implode("\n", $lines);
@@ -1042,7 +1325,8 @@ PROMPT;
             ];
         }
 
-        $context['website_excerpts'] = $this->websiteExcerpts($websiteSource);
+        $context['website_excerpts'] = $this->websiteExcerpts($websiteSource, 12);
+        $context['website_pages'] = $this->websitePages($websiteSource);
         $context['reviews'] = $this->quotableReviews($business);
 
         if ($business->google_reviews_url) {
@@ -1164,6 +1448,43 @@ PROMPT;
         }
 
         return $excerpts;
+    }
+
+    /**
+     * Each scraped page of the business's site, ready to write a post from.
+     *
+     * @return array<int, array{id: string, url: string, title: string|null, kind: string, text: string, fresh: bool}>
+     */
+    private function websitePages(?ContentSource $source): array
+    {
+        $structured = $source?->structured_data ?? [];
+        $firstSeen = $structured['page_first_seen'] ?? [];
+        $freshSince = now()->subDays(self::FRESH_PAGE_DAYS)->toDateString();
+        $pages = [];
+
+        foreach ($structured['page_text'] ?? [] as $page) {
+            $text = $this->trimToSentence((string) ($page['text'] ?? ''), 1500);
+            $url = (string) ($page['url'] ?? '');
+
+            // A page with a sentence or two on it gives the model nothing to go on.
+            if ($url === '' || mb_strlen($text) < 200) {
+                continue;
+            }
+
+            $pages[] = [
+                'id'    => 'page:'.substr(sha1($url), 0, 12),
+                'url'   => $url,
+                'title' => $page['title'] ?? null,
+                'kind'  => $page['kind'] ?? 'other',
+                'text'  => $text,
+                // The homepage is never news, however recently we first saw it.
+                'fresh' => ($page['kind'] ?? 'other') !== 'home'
+                    && isset($firstSeen[$url])
+                    && $firstSeen[$url] >= $freshSince,
+            ];
+        }
+
+        return $pages;
     }
 
     /**
@@ -1328,7 +1649,7 @@ PROMPT;
 
     private function platformNeedsImage(string $platform): bool
     {
-        return in_array($platform, ['facebook', 'instagram', 'linkedin', 'google_business_profile']);
+        return in_array($platform, ['facebook', 'linkedin', 'google_business_profile']);
     }
 
     private function getPlatformDisplayName(string $platform): string
@@ -1343,7 +1664,17 @@ PROMPT;
     private function getHashtagRule(array $rules): string
     {
         $hashtags = $rules['hashtags'] ?? 'none';
-        return "Hashtags: {$hashtags}";
+
+        if (($rules['max_hashtags'] ?? 0) === 0) {
+            return 'Hashtags: none. Do not use a single hashtag anywhere in the post.';
+        }
+
+        // Anything outside these rules is stripped in code before publishing
+        // (see HashtagGuard), so this is about getting good ones, not the only line of defence.
+        return "Hashtags: {$hashtags}, placed at the very end of the post and listed again in the hashtags array. "
+            .'Build every hashtag only from words in the business context or source material: the services, '
+            .'the industry, the business name, the named location. Never a town, trade or product that is not '
+            .'in that material, and never a trending or generic tag unrelated to the post.';
     }
 
     private function getLengthRule(array $rules): string

@@ -6,9 +6,7 @@ use App\Models\Post;
 use App\Models\PostAttempt;
 use App\Modules\Social\Platforms\FacebookPlatform;
 use App\Modules\Social\Platforms\GoogleBusinessProfilePlatform;
-use App\Modules\Social\Platforms\InstagramPlatform;
 use App\Modules\Social\Platforms\LinkedInPlatform;
-use App\Modules\Social\Platforms\TikTokPlatform;
 use App\Modules\Social\Platforms\TwitterPlatform;
 use App\Modules\Social\Contracts\SocialPlatformInterface;
 use Illuminate\Support\Facades\Log;
@@ -19,18 +17,14 @@ class PostDispatchService
 
     public function __construct(
         FacebookPlatform $facebook,
-        InstagramPlatform $instagram,
         TwitterPlatform $twitter,
         LinkedInPlatform $linkedin,
-        TikTokPlatform $tiktok,
         GoogleBusinessProfilePlatform $gbp,
     ) {
         $this->platformMap = [
             'facebook' => $facebook,
-            'instagram' => $instagram,
             'twitter' => $twitter,
             'linkedin' => $linkedin,
-            'tiktok' => $tiktok,
             'google_business_profile' => $gbp,
         ];
     }
@@ -41,6 +35,13 @@ class PostDispatchService
      */
     public function dispatch(Post $post): bool
     {
+        // Posts written before a platform was dropped can still be queued. Fail
+        // them with a reason the user can read rather than a generic error.
+        if (isset(Post::RETIRED_PLATFORMS[$post->platform])) {
+            $post->markFailed(Post::RETIRED_PLATFORMS[$post->platform].' is no longer supported by postd.');
+            return false;
+        }
+
         $platform = $this->platformMap[$post->platform] ?? null;
 
         if (! $platform) {

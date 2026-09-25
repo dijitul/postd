@@ -88,7 +88,7 @@ class DemoDataSeeder extends Seeder
         );
 
         // Create a few demo posts
-        $platforms = ['facebook', 'instagram', 'google_business_profile'];
+        $platforms = ['facebook', 'linkedin', 'google_business_profile'];
         foreach ($platforms as $i => $platform) {
             Post::firstOrCreate(
                 ['business_id' => $business->id, 'platform' => $platform, 'status' => Post::STATUS_PENDING],
@@ -109,7 +109,7 @@ class DemoDataSeeder extends Seeder
     {
         return match ($platform) {
             'facebook' => "There's something special about the smell of fresh sourdough on a Monday morning. At {$businessName}, we've been baking ours the slow way for over 15 years — 48-hour fermentation, locally sourced flour, and a lot of love. Pop in this week and treat yourself. We're open from 7:30am Monday to Friday! What's your favourite thing to have with a fresh slice? 🍞",
-            'instagram' => "Fresh from the oven and straight to your table. ✨ Our hand-shaped sourdough is baked daily using locally sourced Nottinghamshire flour — no shortcuts, ever. Come find us in Mansfield this week. \n\n#ArtisanBread #Sourdough #Mansfield #LocalBakery #FreshBread #BreadLovers #NottsFood",
+            'linkedin' => "Fifteen years of baking has taught us that the slow way is still the best way. Every sourdough loaf at {$businessName} gets a 48-hour ferment and flour milled here in Nottinghamshire, because shortcuts show in the crumb. Backing local suppliers keeps our bread better and our high street stronger.\n\n#LocalBusiness #Mansfield #Bakery",
             'google_business_profile' => "This week at The Artisan Bakery, we're featuring our seasonal apple and cinnamon sourdough, available Thursday and Friday only. Made with locally grown Bramley apples and our signature slow-ferment dough. Visit us at our Mansfield town centre bakery, open 7:30am to 5pm. Limited loaves — we'd recommend getting in early!",
             default => "Fresh posts daily at {$businessName}.",
         };

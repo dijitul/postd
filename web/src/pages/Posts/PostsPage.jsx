@@ -28,7 +28,7 @@ const STATUS_LABELS = {
   failed:      { label: 'Failed',       cls: 'bg-red-100 text-red-700' },
 }
 
-const KNOWN_PLATFORMS = ['facebook', 'instagram', 'linkedin', 'x', 'tiktok', 'google']
+const KNOWN_PLATFORMS = ['facebook', 'linkedin', 'x', 'google']
 
 // Normalise backend platform IDs to frontend display IDs
 function normalisePlatform(platform) {

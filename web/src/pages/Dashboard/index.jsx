@@ -135,7 +135,7 @@ function IdeaModal({ onClose }) {
 }
 
 // ── Main dashboard ────────────────────────────────────────────────────────────
-const PLATFORM_IDS = ['facebook', 'instagram', 'linkedin', 'google', 'x', 'tiktok']
+const PLATFORM_IDS = ['facebook', 'linkedin', 'google', 'x']
 const BACKEND_MAP = { google: 'google_business_profile', x: 'twitter' }
 
 export default function Dashboard() {
@@ -252,7 +252,7 @@ export default function Dashboard() {
           <h2 className="font-display font-bold text-base text-navy-800">Platform health</h2>
           <Link to="/platforms" className="text-xs font-semibold text-amber-600 hover:text-amber-700 transition-colors">Manage</Link>
         </div>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {PLATFORM_IDS.map((id) => {
             const conn = getConnection(id)
             const status = loading ? 'grey' : platformStatus(conn)

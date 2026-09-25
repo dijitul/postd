@@ -7,9 +7,7 @@ use App\Models\SocialConnection;
 use App\Modules\Social\Contracts\SocialPlatformInterface;
 use App\Modules\Social\Platforms\FacebookPlatform;
 use App\Modules\Social\Platforms\GoogleBusinessProfilePlatform;
-use App\Modules\Social\Platforms\InstagramPlatform;
 use App\Modules\Social\Platforms\LinkedInPlatform;
-use App\Modules\Social\Platforms\TikTokPlatform;
 use App\Modules\Social\Platforms\TwitterPlatform;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -20,18 +18,14 @@ class SocialConnectionService
 
     public function __construct(
         FacebookPlatform $facebook,
-        InstagramPlatform $instagram,
         TwitterPlatform $twitter,
         LinkedInPlatform $linkedin,
-        TikTokPlatform $tiktok,
         GoogleBusinessProfilePlatform $gbp,
     ) {
         $this->platformMap = [
             'facebook' => $facebook,
-            'instagram' => $instagram,
             'twitter' => $twitter,
             'linkedin' => $linkedin,
-            'tiktok' => $tiktok,
             'google_business_profile' => $gbp,
         ];
     }

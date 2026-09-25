@@ -4,7 +4,7 @@
  * Variant groups:
  * - Plan tiers:  starter | growth | pro
  * - Status:      active | pending | failed | paused | draft | scheduled
- * - Platforms:   facebook | instagram | x | linkedin | tiktok | google
+ * - Platforms:   facebook | x | linkedin | google (any other falls back to default)
  * - General:     default | amber | honey | navy | success | warning | error | info
  */
 
@@ -41,10 +41,8 @@ const VARIANTS = {
 
   // ── Platforms ──
   facebook:  'bg-blue-50 text-blue-700 border border-blue-200',
-  instagram: 'bg-pink-50 text-pink-700 border border-pink-200',
   x:         'bg-slate-900 text-white border border-slate-700',
   linkedin:  'bg-blue-50 text-blue-800 border border-blue-200',
-  tiktok:    'bg-slate-900 text-white border border-slate-700',
   google:    'bg-blue-50 text-blue-600 border border-blue-200',
 }
 
@@ -89,10 +87,8 @@ function StatusDot({ variant }) {
 
 const PLATFORM_DOTS = {
   facebook:  'bg-[#1877F2]',
-  instagram: 'bg-[#E1306C]',
   x:         'bg-slate-900',
   linkedin:  'bg-[#0A66C2]',
-  tiktok:    'bg-slate-950',
   google:    'bg-[#4285F4]',
 }
 
@@ -218,10 +214,8 @@ export function StatusBadge({ status, ...props }) {
 export function PlatformBadge({ platform, label, ...props }) {
   const labels = {
     facebook:  'Facebook',
-    instagram: 'Instagram',
     x:         'X',
     linkedin:  'LinkedIn',
-    tiktok:    'TikTok',
     google:    'Google BP',
   }
   return (

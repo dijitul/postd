@@ -119,7 +119,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/portal', [BillingController::class, 'portal'])->name('billing.portal');
         Route::post('/payment-method', [BillingController::class, 'updatePaymentMethod'])->name('billing.payment-method');
         Route::get('/subscription', [BillingController::class, 'subscription'])->name('billing.subscription');
-        Route::post('/tiktok-addon', [BillingController::class, 'addTikTokAddon'])->name('billing.tiktok-addon');
     });
 
     // ── Analytics ─────────────────────────────────────────────────────────

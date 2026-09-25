@@ -6,13 +6,11 @@ import { platformsApi } from '../../lib/api.js'
 
 // Platform definitions — display config only, no mock status
 // comingSoon = not yet available regardless of plan
-// plan = 'pro' means requires Pro plan or TikTok add-on
+// plan = 'pro' means requires Pro plan
 const PLATFORM_DEFS = [
   { id: 'facebook',  backendId: 'facebook',               label: 'Facebook',                plan: 'base'       },
-  { id: 'instagram', backendId: 'instagram',              label: 'Instagram',               plan: 'base'       },
   { id: 'linkedin',  backendId: 'linkedin',               label: 'LinkedIn',                plan: 'base'       },
   { id: 'x',        backendId: 'twitter',                 label: 'X (Twitter)',             plan: 'base'       },
-  { id: 'tiktok',   backendId: 'tiktok',                  label: 'TikTok',                  plan: 'pro'        },
   { id: 'google',   backendId: 'google_business_profile', label: 'Google Business Profile', plan: 'base'       },
 ]
 

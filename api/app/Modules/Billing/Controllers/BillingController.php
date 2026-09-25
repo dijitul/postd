@@ -209,38 +209,4 @@ class BillingController extends Controller
             ],
         ]);
     }
-
-    /**
-     * Add the TikTok add-on to an existing subscription.
-     */
-    public function addTikTokAddon(Request $request): JsonResponse
-    {
-        $user = $request->user();
-
-        if (! $user->subscribed()) {
-            return response()->json([
-                'message' => 'You must have an active subscription to add the TikTok add-on.',
-                'error' => 'not_subscribed',
-            ], 422);
-        }
-
-        if ($user->activePlanName() === 'pro') {
-            return response()->json([
-                'message' => 'TikTok is already included in your Pro plan.',
-                'error' => 'already_included',
-            ], 422);
-        }
-
-        try {
-            $addonPriceId = config('cashier.plans.tiktok_addon.stripe_price_id');
-            $user->subscription()->addPrice($addonPriceId);
-
-            return response()->json(['message' => 'TikTok add-on added successfully.']);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'message' => 'Failed to add TikTok add-on: '.$e->getMessage(),
-                'error' => 'addon_failed',
-            ], 422);
-        }
-    }
 }

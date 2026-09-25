@@ -1270,7 +1270,6 @@ class AdminController extends Controller
             'google_business_profile' => 'Google Business Profile',
             'twitter' => 'X',
             'linkedin' => 'LinkedIn',
-            'tiktok' => 'TikTok',
             default => ucfirst($platform),
         };
     }

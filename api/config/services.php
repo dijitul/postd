@@ -30,12 +30,6 @@ return [
         'redirect' => env('FACEBOOK_REDIRECT_URI'),
     ],
 
-    'instagram' => [
-        'client_id' => env('INSTAGRAM_APP_ID'),
-        'client_secret' => env('INSTAGRAM_APP_SECRET'),
-        'redirect' => env('INSTAGRAM_REDIRECT_URI'),
-    ],
-
     'twitter' => [
         'client_id' => env('TWITTER_CLIENT_ID'),
         'client_secret' => env('TWITTER_CLIENT_SECRET'),
@@ -63,12 +57,6 @@ return [
         // after release. Confirm against LinkedIn's current docs before going
         // live, and bump it through env rather than editing this default.
         'version' => env('LINKEDIN_API_VERSION', '202608'),
-    ],
-
-    'tiktok' => [
-        'client_id' => env('TIKTOK_CLIENT_KEY'),
-        'client_secret' => env('TIKTOK_CLIENT_SECRET'),
-        'redirect' => env('TIKTOK_REDIRECT_URI'),
     ],
 
     'google' => [
@@ -99,11 +87,6 @@ return [
         'key' => env('LINKVINE_API_KEY'),
         'base_url' => env('LINKVINE_BASE_URL', 'https://linkvine.uk/api'),
         'domain' => env('LINKVINE_DOMAIN', 'lnkz.uk'),
-    ],
-
-    'creatomate' => [
-        'key' => env('CREATOMATE_API_KEY'),
-        'base_url' => 'https://api.creatomate.com/v1',
     ],
 
     'newsapi' => [

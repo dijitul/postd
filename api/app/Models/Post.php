@@ -26,11 +26,20 @@ class Post extends Model
 
     public const PLATFORMS = [
         'facebook',
-        'instagram',
         'twitter',
         'linkedin',
-        'tiktok',
         'google_business_profile',
+    ];
+
+    /**
+     * Platforms postd used to publish to, keyed to their display name.
+     *
+     * Old posts and connections for these can still exist, so they are named
+     * here to fail cleanly rather than as an unknown platform.
+     */
+    public const RETIRED_PLATFORMS = [
+        'instagram' => 'Instagram',
+        'tiktok' => 'TikTok',
     ];
 
     protected $fillable = [

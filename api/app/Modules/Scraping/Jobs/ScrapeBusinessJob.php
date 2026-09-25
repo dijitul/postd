@@ -20,7 +20,9 @@ class ScrapeBusinessJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    public int $timeout = 120;
+    // The website crawl stops starting new pages after 60 seconds, and a page
+    // fetch can take up to 8 more, with the reviews fetch still to follow.
+    public int $timeout = 180;
     public int $tries = 3;
     public int $backoff = 60;
 
@@ -75,6 +77,27 @@ class ScrapeBusinessJob implements ShouldQueue
                 $this->business->update($updates);
             }
 
+            // When each page was first seen, carried across scrapes, so content
+            // generation can tell a page the business has just published from
+            // one that has sat there for years. On the very first scrape
+            // everything is new to us but nothing is new to the business, so
+            // those pages are backdated and never announced as fresh.
+            $existing = ContentSource::where('business_id', $this->business->id)
+                ->where('type', ContentSource::TYPE_WEBSITE)
+                ->where('source_url', $this->business->website_url)
+                ->first();
+
+            // A row scraped before first-seen dates were kept counts as a first
+            // scrape too, or every page of every existing site would be announced
+            // as new the day this shipped.
+            $firstSeen = $existing?->structured_data['page_first_seen'] ?? null;
+            $isFirstScrape = $firstSeen === null;
+            $firstSeen ??= [];
+
+            foreach ($data['page_text'] as $page) {
+                $firstSeen[$page['url']] ??= $isFirstScrape ? '1970-01-01' : now()->toDateString();
+            }
+
             // Store as a content source
             ContentSource::updateOrCreate(
                 [
@@ -98,6 +121,7 @@ class ScrapeBusinessJob implements ShouldQueue
                         // Per-page copy, so content generation can quote a line and
                         // say which page of the site it came from.
                         'page_text' => $data['page_text'],
+                        'page_first_seen' => $firstSeen,
                     ],
                     'scraped_at' => now(),
                     'processed' => false,

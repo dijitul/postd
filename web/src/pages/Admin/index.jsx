@@ -183,7 +183,7 @@ export default function AdminPage() {
             <div className="h-6 w-px bg-white/15 hidden sm:block" />
             <div className="hidden sm:flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-amber-400" />
-              <span className="text-sm font-semibold text-white/80">Dijitul Admin</span>
+              <span className="text-sm font-semibold text-white/80">dijitul admin</span>
             </div>
           </div>
 
@@ -986,7 +986,7 @@ export default function AdminPage() {
 
         <footer className="border-t border-white/10 pt-6 text-center">
           <p className="text-2xs text-white/20">
-            postd.uk admin — Dijitul internal use only. Built in Mansfield, UK.
+            postd.uk admin, dijitul internal use only. Built in Mansfield, UK.
             {overview?.generated_at && ` Data as at ${formatDate(overview.generated_at)}.`}
           </p>
         </footer>

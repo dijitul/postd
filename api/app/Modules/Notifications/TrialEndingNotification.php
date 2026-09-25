@@ -37,7 +37,7 @@ class TrialEndingNotification extends Notification implements ShouldQueue
             ->line("To keep your posts going, just pick a plan:")
             ->line("**Starter** — £19/mo — 2 platforms + Google Business Profile")
             ->line("**Growth** — £39/mo — 4 platforms + Google Business Profile *(most popular)*")
-            ->line("**Pro** — £69/mo — Everything, including TikTok video generation")
+            ->line("**Pro** — £69/mo — Everything, including fully automatic posting")
             ->line("All plans include a free Google Business Profile connection — something your competitors are probably missing.")
             ->action('Choose a plan', config('app.frontend_url').'/billing/plans')
             ->line("No card trickery. Cancel any time. UK VAT added at checkout.")

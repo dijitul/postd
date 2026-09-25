@@ -76,10 +76,8 @@ export function timeAgo(iso) {
 
 export const PLATFORM_LABELS = {
   facebook: 'Facebook',
-  instagram: 'Instagram',
   twitter: 'X',
   linkedin: 'LinkedIn',
-  tiktok: 'TikTok',
   google_business_profile: 'Google BP',
 }
 

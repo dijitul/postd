@@ -50,30 +50,22 @@ function HeroIllustration() {
         <div className="absolute top-2 left-1/2 -translate-x-1/2 -translate-y-2 animate-bounce-subtle" style={{ animationDelay: '0ms' }}>
           <PlatformIcon platform="facebook" size="lg" className="shadow-lg rounded-2xl" />
         </div>
-        <div className="absolute top-12 right-4 animate-bounce-subtle" style={{ animationDelay: '400ms' }}>
-          <PlatformIcon platform="instagram" size="lg" className="shadow-lg rounded-2xl" />
-        </div>
-        <div className="absolute bottom-12 right-4 animate-bounce-subtle" style={{ animationDelay: '800ms' }}>
+        <div className="absolute top-1/2 right-4 -translate-y-1/2 animate-bounce-subtle" style={{ animationDelay: '400ms' }}>
           <PlatformIcon platform="linkedin" size="lg" className="shadow-lg rounded-2xl" />
         </div>
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 translate-y-2 animate-bounce-subtle" style={{ animationDelay: '200ms' }}>
           <PlatformIcon platform="google" size="lg" className="shadow-lg rounded-2xl" />
         </div>
-        <div className="absolute bottom-12 left-4 animate-bounce-subtle" style={{ animationDelay: '600ms' }}>
+        <div className="absolute top-1/2 left-4 -translate-y-1/2 animate-bounce-subtle" style={{ animationDelay: '600ms' }}>
           <PlatformIcon platform="x" size="lg" className="shadow-lg rounded-2xl" />
-        </div>
-        <div className="absolute top-12 left-4 animate-bounce-subtle" style={{ animationDelay: '1000ms' }}>
-          <PlatformIcon platform="tiktok" size="lg" className="shadow-lg rounded-2xl" />
         </div>
 
         {/* Connector lines (decorative) */}
         <svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 320 320">
           <line x1="160" y1="160" x2="160" y2="20" stroke="#E07B30" strokeWidth="1.5" strokeDasharray="4 4" />
-          <line x1="160" y1="160" x2="280" y2="80" stroke="#E07B30" strokeWidth="1.5" strokeDasharray="4 4" />
-          <line x1="160" y1="160" x2="280" y2="240" stroke="#E07B30" strokeWidth="1.5" strokeDasharray="4 4" />
+          <line x1="160" y1="160" x2="290" y2="160" stroke="#E07B30" strokeWidth="1.5" strokeDasharray="4 4" />
           <line x1="160" y1="160" x2="160" y2="300" stroke="#E07B30" strokeWidth="1.5" strokeDasharray="4 4" />
-          <line x1="160" y1="160" x2="40" y2="240" stroke="#E07B30" strokeWidth="1.5" strokeDasharray="4 4" />
-          <line x1="160" y1="160" x2="40" y2="80" stroke="#E07B30" strokeWidth="1.5" strokeDasharray="4 4" />
+          <line x1="160" y1="160" x2="30" y2="160" stroke="#E07B30" strokeWidth="1.5" strokeDasharray="4 4" />
         </svg>
       </div>
 
@@ -87,7 +79,7 @@ function HeroIllustration() {
       </div>
       <div className="absolute -top-4 -right-4 w-52 hidden lg:block">
         <AnimatedPostCard
-          platform="instagram"
+          platform="google"
           content="Quality you can see. Expertise you can trust. Come and see us today!"
           delay={900}
         />
@@ -154,7 +146,7 @@ function PricingCard({ tier, price, platforms, features, popular = false, cta = 
 //
 // Meta description:
 //   "Postd.uk automatically writes and posts social media content for UK small businesses.
-//    Connect Facebook, Instagram, X and LinkedIn. From £19/month. 14-day free trial."
+//    Connect Google Business Profile, Facebook, LinkedIn and X. From £19/month. 14-day free trial."
 //
 // Open Graph og:title  — same as page title above
 // Open Graph og:description — same as meta description above
@@ -170,12 +162,10 @@ export default function MarketingPage() {
   }, [])
 
   const platforms = [
+    { id: 'google', label: 'Google Business', badge: null },
     { id: 'facebook', label: 'Facebook', badge: null },
-    { id: 'instagram', label: 'Instagram', badge: null },
-    { id: 'x', label: 'X (Twitter)', badge: null },
     { id: 'linkedin', label: 'LinkedIn', badge: null },
-    { id: 'tiktok', label: 'TikTok', badge: 'Add-on' },
-    { id: 'google', label: 'Google Business', badge: null }
+    { id: 'x', label: 'X (Twitter)', badge: null }
   ]
 
   const steps = [
@@ -189,13 +179,13 @@ export default function MarketingPage() {
       number: '02',
       icon: Globe,
       title: 'Connect your platforms',
-      body: 'Link your Facebook, Instagram, LinkedIn, and X (Twitter) in a few taps. We handle the rest.'
+      body: 'Link your Google Business Profile, Facebook, LinkedIn and X (Twitter) in a few taps. We handle the rest.'
     },
     {
       number: '03',
       icon: Zap,
       title: 'Your AI social media posts go live automatically',
-      body: 'Our AI reads your website and reviews, writes platform-native content for Facebook, Instagram, X and LinkedIn, and publishes it all on a perfect schedule — fully automated.'
+      body: 'Our AI reads your website and reviews, writes platform-native content for Google Business Profile, Facebook, LinkedIn and X, and publishes it all on a sensible schedule, fully automated.'
     }
   ]
 
@@ -203,9 +193,9 @@ export default function MarketingPage() {
     {
       tier: 'Starter',
       price: 19,
-      platforms: 'Facebook, Instagram, X & LinkedIn',
+      platforms: 'Facebook, X & LinkedIn',
       features: [
-        'Facebook, Instagram, X & LinkedIn included',
+        'Facebook, X & LinkedIn included',
         'AI-generated posts daily',
         'Post approval inbox',
         'Website + review content scanning',
@@ -216,10 +206,10 @@ export default function MarketingPage() {
     {
       tier: 'Growth',
       price: 39,
-      platforms: 'Facebook, Instagram, X & LinkedIn',
+      platforms: 'Facebook, X & LinkedIn',
       popular: true,
       features: [
-        'Facebook, Instagram, X & LinkedIn included',
+        'Facebook, X & LinkedIn included',
         'AI-generated posts daily',
         'Post approval inbox',
         'Local news content hooks',
@@ -231,10 +221,9 @@ export default function MarketingPage() {
     {
       tier: 'Pro',
       price: 69,
-      platforms: 'All platforms + TikTok video',
+      platforms: 'All platforms',
       features: [
-        'Facebook, Instagram, X & LinkedIn included',
-        'TikTok video generation included',
+        'Facebook, X & LinkedIn included',
         'AI-generated posts daily',
         'Fully auto-posting option',
         'Local news content hooks',
@@ -309,7 +298,7 @@ export default function MarketingPage() {
 
               <p className="text-lg sm:text-xl text-slate-600 mb-8 max-w-xl mx-auto lg:mx-0 text-pretty leading-relaxed">
                 Give us your website, your Google Reviews link, and a bit about your business.
-                Our AI writes and automatically posts content to Facebook, Instagram, X and LinkedIn every single day — so you never have to think about social media again.
+                Our AI writes and automatically posts content to Google Business Profile, Facebook, LinkedIn and X every single day, so you never have to think about social media again.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mb-10">
@@ -413,7 +402,7 @@ export default function MarketingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
             {platforms.map(({ id, label, badge }) => (
               <div
                 key={id}
@@ -431,21 +420,6 @@ export default function MarketingPage() {
             ))}
           </div>
 
-          {/* TikTok add-on callout */}
-          <div className="mt-10 bg-navy-800 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-4">
-            <div className="flex-shrink-0">
-              <PlatformIcon platform="tiktok" size="lg" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-display font-bold text-white mb-1">TikTok video add-on — £15/month</h3>
-              <p className="text-white/60 text-sm leading-relaxed">
-                Add AI-generated short-form video content for TikTok to any plan. Included free on Pro.
-              </p>
-            </div>
-            <Link to="/register" className="flex-shrink-0 inline-flex items-center gap-2 bg-amber-500 text-white font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-amber-600 transition-all">
-              Add TikTok video automation <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
         </div>
       </section>
 
@@ -471,7 +445,6 @@ export default function MarketingPage() {
 
           <p className="text-center text-sm text-slate-400 mt-8">
             All prices are exclusive of VAT. UK VAT (20%) applied at checkout via Stripe Tax.
-            TikTok video add-on available for +£15/month on Starter and Growth plans.
             Google Business Profile posting is included on all plans.
           </p>
         </div>
@@ -514,7 +487,7 @@ export default function MarketingPage() {
             "@type": "SoftwareApplication",
             "name": "Postd.uk",
             "url": "https://postd.uk",
-            "description": "AI-powered social media automation for UK small businesses. Automatically writes and posts content to Facebook, Instagram, X and LinkedIn. From £19/month.",
+            "description": "AI-powered social media automation for UK small businesses. Automatically writes and posts content to Google Business Profile, Facebook, LinkedIn and X. From £19/month.",
             "applicationCategory": "BusinessApplication",
             "operatingSystem": "Web",
             "offers": [
@@ -557,7 +530,7 @@ export default function MarketingPage() {
             ],
             "creator": {
               "@type": "Organization",
-              "name": "Dijitul",
+              "name": "dijitul",
               "url": "https://dijitul.uk"
             }
           })

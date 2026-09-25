@@ -127,9 +127,14 @@ class Business extends Model
             ->first();
     }
 
+    /**
+     * Active connections on platforms postd still supports. A connection left
+     * over from a retired platform is ignored, so nothing is generated for it.
+     */
     public function connectedPlatforms(): array
     {
         return $this->activeSocialConnections()
+            ->whereIn('platform', Post::PLATFORMS)
             ->pluck('platform')
             ->toArray();
     }

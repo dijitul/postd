@@ -26,16 +26,16 @@ export default function TermsPage() {
 
             <section>
               <h2 className="font-display font-bold text-xl text-navy-800 mb-3">1. Introduction and Agreement</h2>
-              <p>These Terms of Service (&ldquo;Terms&rdquo;) govern your use of postd.uk (&ldquo;the Service&rdquo;), a social media automation platform operated by Dijitul (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;), a company registered in England and Wales, with its principal place of business in Mansfield, Nottinghamshire.</p>
+              <p>These Terms of Service (&ldquo;Terms&rdquo;) govern your use of postd.uk (&ldquo;the Service&rdquo;), a social media automation platform operated by dijitul (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;), a company registered in England and Wales, with its principal place of business in Mansfield, Nottinghamshire.</p>
               <p className="mt-3">By registering for an account, starting a free trial, or using any part of the Service, you (&ldquo;the User&rdquo;, &ldquo;you&rdquo;, &ldquo;your&rdquo;) agree to be bound by these Terms in full. If you do not agree with any part of these Terms, you must not use the Service.</p>
-              <p className="mt-3">These Terms form a legally binding contract between you and Dijitul. We recommend you read them carefully and retain a copy for your records.</p>
+              <p className="mt-3">These Terms form a legally binding contract between you and dijitul. We recommend you read them carefully and retain a copy for your records.</p>
               <p className="mt-3">We may update these Terms from time to time. We will notify you of material changes by email or via an in-app notification at least 14 days before the changes take effect. Continued use of the Service after that date constitutes acceptance of the revised Terms.</p>
               <p className="mt-3">If you have any questions about these Terms, please contact us at <a href="mailto:hello@postd.uk" className="text-amber-600 hover:text-amber-700">hello@postd.uk</a>.</p>
             </section>
 
             <section>
               <h2 className="font-display font-bold text-xl text-navy-800 mb-3">2. The Service</h2>
-              <p>postd.uk is a software-as-a-service (SaaS) product that enables users to schedule, automate, and publish content to their social media accounts, including but not limited to Facebook, Instagram, Twitter/X, LinkedIn, TikTok, and Google Business Profile (&ldquo;Connected Platforms&rdquo;).</p>
+              <p>postd.uk is a software-as-a-service (SaaS) product that enables users to schedule, automate, and publish content to their social media accounts, including but not limited to Facebook, X, LinkedIn, and Google Business Profile (&ldquo;Connected Platforms&rdquo;).</p>
               <p className="mt-3">The Service includes an AI-assisted content generation feature that suggests or drafts social media posts on your behalf, based on information you provide about your business.</p>
               <p className="mt-3">We reserve the right to modify, suspend, or discontinue any part of the Service at any time. Where possible, we will provide advance notice of significant changes. We will not be liable to you or any third party for any modification, suspension, or discontinuation of the Service.</p>
               <p className="mt-3">The Service is intended for use by businesses and sole traders operating lawfully in the United Kingdom. You must be at least 18 years of age and have the legal authority to enter into these Terms.</p>
@@ -72,7 +72,7 @@ export default function TermsPage() {
 
             <section>
               <h2 className="font-display font-bold text-xl text-navy-800 mb-3">7. Limitation of Liability</h2>
-              <p className="font-semibold text-navy-800">postd.uk and Dijitul will not be liable for any loss of business, revenue, profits, reputation, data, or customers, or any other indirect or consequential loss arising from your use of the Service, including but not limited to losses arising from: content published via the Service; the suspension or banning of any social media account; errors in AI-generated content; service downtime; or changes to Connected Platform APIs or policies.</p>
+              <p className="font-semibold text-navy-800">postd.uk and dijitul will not be liable for any loss of business, revenue, profits, reputation, data, or customers, or any other indirect or consequential loss arising from your use of the Service, including but not limited to losses arising from: content published via the Service; the suspension or banning of any social media account; errors in AI-generated content; service downtime; or changes to Connected Platform APIs or policies.</p>
               <p className="mt-3">Our total aggregate liability to you shall not exceed the total fees paid by you to us in the three months immediately preceding the event giving rise to the claim.</p>
               <p className="mt-3">Nothing in these Terms limits our liability for death or personal injury caused by our negligence, or for fraud or fraudulent misrepresentation.</p>
             </section>
@@ -97,7 +97,7 @@ export default function TermsPage() {
 
             <section>
               <h2 className="font-display font-bold text-xl text-navy-800 mb-3">11. Intellectual Property</h2>
-              <p>The Service, including its software, design, and branding, is owned by or licensed to Dijitul. You retain ownership of all content you create, upload, or input into the Service. By using the Service, you grant us a limited licence to store and process your content solely to deliver the Service to you.</p>
+              <p>The Service, including its software, design, and branding, is owned by or licensed to dijitul. You retain ownership of all content you create, upload, or input into the Service. By using the Service, you grant us a limited licence to store and process your content solely to deliver the Service to you.</p>
             </section>
 
             <section>
@@ -118,7 +118,7 @@ export default function TermsPage() {
 
             <section>
               <h2 className="font-display font-bold text-xl text-navy-800 mb-3">15. General Provisions</h2>
-              <p>These Terms, together with our Privacy Policy, constitute the entire agreement between you and us regarding your use of the Service. If any provision of these Terms is found to be unlawful or unenforceable, the remaining provisions shall continue in full force. Formal notices should be sent to <a href="mailto:hello@postd.uk" className="text-amber-600 hover:text-amber-700">hello@postd.uk</a> or addressed to Dijitul, Mansfield, Nottinghamshire, England.</p>
+              <p>These Terms, together with our Privacy Policy, constitute the entire agreement between you and us regarding your use of the Service. If any provision of these Terms is found to be unlawful or unenforceable, the remaining provisions shall continue in full force. Formal notices should be sent to <a href="mailto:hello@postd.uk" className="text-amber-600 hover:text-amber-700">hello@postd.uk</a> or addressed to dijitul, Mansfield, Nottinghamshire, England.</p>
             </section>
 
           </div>
