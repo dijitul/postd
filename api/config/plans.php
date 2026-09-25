@@ -35,6 +35,11 @@ $agencyEntitlements = [
 
 return [
 
+    // dijitul is VAT registered and prices are shown plus VAT. This 20%
+    // exclusive Stripe tax rate is attached to every new subscription through
+    // User::taxRates(). Create it with php artisan billing:setup-stripe.
+    'vat_tax_rate_id' => env('STRIPE_TAX_RATE_VAT'),
+
     'trial_days' => 14,
 
     // Trials run on this plan's entitlements, less the trial caps below.

@@ -222,6 +222,7 @@ STRIPE_PLAN_GROWTH_ANNUAL=
 STRIPE_PLAN_AGENCY_ANNUAL=
 STRIPE_PRICE_EXTRA_LOCATION=    # Agency add-on, £19/month per location beyond 3
 STRIPE_PLAN_PRO=                # legacy £69, existing subscribers only
+STRIPE_TAX_RATE_VAT=            # 20% UK VAT, exclusive. Added to every new subscription
 
 # Google Places (website scraping — leave blank if not set up, see Known Issues)
 GOOGLE_PLACES_API_KEY=
@@ -423,6 +424,10 @@ Uses Anthropic Claude API via direct HTTP (not the OpenAI PHP SDK).
 ---
 
 ## Plans and Entitlements
+
+**VAT:** dijitul is VAT registered. Prices are quoted plus VAT (`VAT_SUFFIX` in `web/src/lib/plans.js`), and `User::taxRates()` makes Cashier attach the `STRIPE_TAX_RATE_VAT` rate to every new subscription and Checkout session. Checkout collects a billing address and the customer's VAT number. Subscriptions created before the rate existed are not changed automatically, because adding VAT raises their bill.
+
+**Stripe setup:** `php artisan billing:setup-stripe --dry-run`, then without `--dry-run`. It creates the VAT rate and any missing prices (Agency monthly and annual, Local and Growth annual, extra location) with amounts read from `config/plans.php`, reuses the existing Starter and Growth products, tags everything with lookup keys so a rerun never duplicates, and prints the `.env` lines. Run it against a test key first.
 
 Approved structure (full reasoning in `docs/marketing/pricing-and-platforms.md`):
 

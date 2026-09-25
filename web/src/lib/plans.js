@@ -6,9 +6,9 @@
 // Billing page takes prices, availability and limits from the API and only
 // borrows the wording below.
 
-// Shown after every price. Empty while VAT status is being confirmed. Set it
-// to something like ' + VAT' and every price on the site follows.
-export const VAT_SUFFIX = ''
+// Shown after every price. dijitul is VAT registered and prices are quoted
+// exclusive of VAT, which Stripe adds at checkout (see config/plans.php).
+export const VAT_SUFFIX = ' + VAT'
 
 export const ANNUAL_MONTHS_FREE = 2
 
@@ -120,6 +120,7 @@ export function pricingJsonLdOffers() {
         price: plan.monthly.toFixed(2),
         priceCurrency: 'GBP',
         unitText: 'MONTH',
+        valueAddedTaxIncluded: false,
       },
     },
     {
@@ -132,6 +133,7 @@ export function pricingJsonLdOffers() {
         price: plan.annual.toFixed(2),
         priceCurrency: 'GBP',
         unitText: 'YEAR',
+        valueAddedTaxIncluded: false,
       },
     },
   ])

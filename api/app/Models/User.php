@@ -261,4 +261,18 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return 'id';
     }
+
+    /**
+     * Tax rates Cashier attaches to every new subscription and Checkout session.
+     *
+     * UK VAT at 20%, added on top of the plan price. Existing subscriptions
+     * keep whatever they were created with; adding VAT to those would raise
+     * a customer's bill, so it is done deliberately, never on deploy.
+     *
+     * @return string[]
+     */
+    public function taxRates(): array
+    {
+        return array_values(array_filter([config('plans.vat_tax_rate_id')]));
+    }
 }

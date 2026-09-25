@@ -91,10 +91,22 @@ class SubscriptionService
             $builder->trialUntil($user->trial_ends_at);
         }
 
-        $checkout = $builder->checkout([
+        $sessionOptions = [
             'success_url' => $successUrl,
             'cancel_url' => $cancelUrl,
-        ], [
+            // Customers are businesses, and most will want their company name
+            // and VAT number on the invoice to reclaim the VAT we charge.
+            'tax_id_collection' => ['enabled' => true],
+            'billing_address_collection' => 'required',
+        ];
+
+        // Stripe refuses tax ID collection for an existing customer unless it
+        // may save the name and address entered on the Checkout page.
+        if ($user->stripe_id) {
+            $sessionOptions['customer_update'] = ['name' => 'auto', 'address' => 'auto'];
+        }
+
+        $checkout = $builder->checkout($sessionOptions, [
             'name' => $user->name,
             'email' => $user->email,
             'metadata' => ['user_id' => $user->id],
@@ -186,9 +198,8 @@ class SubscriptionService
         try {
             $subscription = $user->newSubscription('default', $priceId)
                 ->withMetadata(['plan' => $planName, 'interval' => $interval, 'user_id' => $user->id])
-                ->create($paymentMethodId, [
-                    'automatic_tax' => ['enabled' => true], // Stripe Tax for UK VAT
-                ]);
+                // VAT comes from User::taxRates(), as it does for Checkout.
+                ->create($paymentMethodId);
 
             Log::info("SubscriptionService: User {$user->id} subscribed to {$planName} ({$interval})");
 
