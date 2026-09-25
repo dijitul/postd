@@ -6,8 +6,11 @@ import {
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import Logo from '../ui/Logo.jsx'
+import LocationSwitcher from './LocationSwitcher.jsx'
 import useAuthStore from '../../stores/authStore.js'
 import { postsApi, POSTS_CHANGED_EVENT } from '../../lib/api.js'
+
+let userRefreshedThisLoad = false
 
 const NAV_ITEMS = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -45,9 +48,18 @@ function NavItem({ to, icon: Icon, label, badge, pendingCount, onClick }) {
 
 export function AppLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { user, logout } = useAuthStore()
+  const { user, logout, fetchUser } = useAuthStore()
   const navigate = useNavigate()
   const location = useLocation()
+
+  // The stored user can be days old. Refresh it once per app load so the plan
+  // and the current location (which drive the switcher) are up to date. The
+  // layout remounts on every route, hence the module-level flag.
+  useEffect(() => {
+    if (userRefreshedThisLoad) return
+    userRefreshedThisLoad = true
+    fetchUser()
+  }, [fetchUser])
 
   // Posts awaiting review. Recounted on mount, on navigation, and whenever a
   // page reports that it has approved/rejected/retried something.
@@ -196,10 +208,15 @@ export function AppLayout({ children }) {
           </div>
 
           <div className="hidden lg:flex items-center gap-2">
-            {/* Breadcrumb placeholder */}
+            <LocationSwitcher />
           </div>
 
           <div className="flex items-center gap-2">
+            {/* On phones the switcher sits beside the bell, as the left of the
+                bar holds the menu button and logo. */}
+            <div className="lg:hidden">
+              <LocationSwitcher />
+            </div>
             <Link
               to="/posts"
               className="relative p-2 rounded-xl text-slate-500 hover:bg-cream-300 transition-all"

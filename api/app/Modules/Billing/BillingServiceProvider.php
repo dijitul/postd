@@ -11,6 +11,15 @@ class BillingServiceProvider extends ServiceProvider
         $this->app->singleton(
             \App\Modules\Billing\Services\SubscriptionService::class
         );
+
+        $this->app->singleton(
+            \App\Modules\Billing\Services\PlanCatalogue::class,
+            fn () => \App\Modules\Billing\Services\PlanCatalogue::fromConfig()
+        );
+
+        $this->app->singleton(
+            \App\Modules\Billing\Services\EntitlementService::class
+        );
     }
 
     public function boot(): void

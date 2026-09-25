@@ -7,6 +7,7 @@ use App\Modules\Auth\Controllers\GoogleAuthController;
 use App\Modules\Billing\Controllers\BillingController;
 use App\Modules\Billing\Webhooks\StripeWebhookController;
 use App\Modules\Content\Controllers\ContentController;
+use App\Modules\Onboarding\Controllers\BusinessController;
 use App\Modules\Onboarding\Controllers\OnboardingController;
 use App\Modules\Social\Controllers\SocialConnectionController;
 use Illuminate\Support\Facades\Route;
@@ -85,6 +86,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/industries', [OnboardingController::class, 'industries'])->name('onboarding.industries');
     });
 
+    // ── Locations (businesses) ────────────────────────────────────────────
+    // Adding one goes through POST /onboarding/business with new_location.
+    Route::prefix('businesses')->group(function () {
+        Route::get('/', [BusinessController::class, 'index'])->name('businesses.index');
+        Route::post('/{id}/switch', [BusinessController::class, 'switch'])->name('businesses.switch');
+    });
+
     // ── Social Connections ────────────────────────────────────────────────
     Route::prefix('social')->group(function () {
         Route::get('/connections', [SocialConnectionController::class, 'index'])->name('social.connections.index');
@@ -111,6 +119,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // ── Billing ───────────────────────────────────────────────────────────
     Route::prefix('billing')->group(function () {
         Route::get('/plans', [BillingController::class, 'plans'])->name('billing.plans');
+        Route::post('/checkout', [BillingController::class, 'checkout'])->name('billing.checkout');
         Route::post('/subscribe', [BillingController::class, 'subscribe'])->name('billing.subscribe');
         Route::post('/cancel', [BillingController::class, 'cancel'])->name('billing.cancel');
         Route::post('/resume', [BillingController::class, 'resume'])->name('billing.resume');

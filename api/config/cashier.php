@@ -15,31 +15,7 @@ return [
     'logger' => env('CASHIER_LOGGER'),
     'calculate_taxes' => true,
 
-    'plans' => [
-        'starter' => [
-            'name' => 'Starter',
-            'price' => 1900, // in pence
-            'platform_limit' => null, // all text platforms included
-            'gbp_included' => true,
-            'stripe_price_id' => env('STRIPE_PLAN_STARTER'),
-        ],
-        'growth' => [
-            'name' => 'Growth',
-            'price' => 3900,
-            'platform_limit' => null, // all text platforms included
-            'gbp_included' => true,
-            'stripe_price_id' => env('STRIPE_PLAN_GROWTH'),
-        ],
-        'pro' => [
-            'name' => 'Pro',
-            'price' => 6900,
-            'platform_limit' => null, // all text platforms included
-            'gbp_included' => true,
-            'stripe_price_id' => env('STRIPE_PLAN_PRO'),
-        ],
-    ],
-
-    'trial_days' => 14,
-    'trial_plan' => 'growth',
+    // Plans, prices and limits live in config/plans.php, the single source of
+    // truth for billing and entitlements.
 
 ];

@@ -46,10 +46,15 @@ class DispatchScheduledPostsJob implements ShouldQueue
         $this->reclaimStalePosts();
 
         $duePosts = Post::query()
-            ->with(['business', 'connection'])
+            ->with(['business.user', 'connection'])
             ->where('status', Post::STATUS_SCHEDULED)
             ->where('scheduled_at', '<=', now())
-            ->get();
+            ->get()
+            // Accounts with no plan (trial over, subscription lapsed) are paused,
+            // not failed: their posts stay scheduled and untouched, and
+            // SubscriptionService::resumePausedPosts moves them forward when a
+            // plan is chosen so they do not all go out in the same minute.
+            ->filter(fn (Post $post) => $post->business?->user?->hasActivePlan());
 
         if ($duePosts->isEmpty()) {
             return;

@@ -47,12 +47,12 @@ class PostPublishJob implements ShouldQueue
 
         // Check the business still has an active subscription or trial
         $user = $post->business->user;
+        // The plan lapsed between dispatch and now. Pause rather than fail: the
+        // post goes back to scheduled, the dispatcher leaves it alone while
+        // there is no plan, and it resumes when one is chosen.
         if (! $user->hasActivePlan()) {
-            $post->update([
-                'status' => Post::STATUS_FAILED,
-                'failure_reason' => 'Account subscription has expired.',
-            ]);
-            Log::warning("PostPublishJob: Skipping post {$post->id} — subscription expired for user {$user->id}");
+            $post->update(['status' => Post::STATUS_SCHEDULED]);
+            Log::warning("PostPublishJob: Pausing post {$post->id}, no active plan for user {$user->id}");
             return;
         }
 

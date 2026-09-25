@@ -31,7 +31,7 @@ class AuthController extends Controller
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'trial_ends_at' => now()->addDays(14),
+                'trial_ends_at' => now()->addDays((int) config('plans.trial_days', 14)),
                 'referral_code' => Str::upper(Str::random(8)),
                 'referred_by' => $this->resolveReferral($request->referral_code),
             ]);
@@ -297,6 +297,10 @@ class AuthController extends Controller
             'is_on_trial' => $user->isOnValidTrial(),
             'has_active_plan' => $user->hasActivePlan(),
             'active_plan' => $user->activePlanName(),
+            // The location currently being worked on, and how many there are,
+            // so the header knows whether to offer the location switcher.
+            'business' => $user->business?->only(['id', 'name', 'onboarding_complete']),
+            'business_count' => $user->businesses()->count(),
             'created_at' => $user->created_at->toIso8601String(),
         ];
     }

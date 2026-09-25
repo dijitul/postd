@@ -130,12 +130,19 @@ class Business extends Model
     /**
      * Active connections on platforms postd still supports. A connection left
      * over from a retired platform is ignored, so nothing is generated for it.
+     *
+     * Oldest first. When a plan allows fewer platforms than are connected (the
+     * trial ended and Local was chosen), the earliest connections are the ones
+     * kept active; see Entitlements::usablePlatforms().
      */
     public function connectedPlatforms(): array
     {
         return $this->activeSocialConnections()
             ->whereIn('platform', Post::PLATFORMS)
+            ->orderBy('created_at')
             ->pluck('platform')
+            ->unique()
+            ->values()
             ->toArray();
     }
 

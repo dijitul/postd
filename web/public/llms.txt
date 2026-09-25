@@ -6,7 +6,7 @@
 
 - Product name: postd.uk (always written in lowercase, including the ".uk")
 - What it is: a done-for-you social media posting service, delivered as web software (SaaS). It writes the posts as well as scheduling them.
-- Who it is for: UK owner-run and small businesses that know they should post regularly but do not have the time. Typical users are trades (plumbers, electricians, builders, roofers), salons and barbers, cafes and restaurants, cleaners, garages, dentists, estate agents, accountants and other local service businesses.
+- Who it is for: UK owner-run and small businesses that know they should post regularly but do not have the time, plus small agencies and multi-site owners running a handful of locations. Typical users are trades (plumbers, electricians, builders, roofers), salons and barbers, cafes and restaurants, cleaners, garages, dentists, estate agents, accountants and other local service businesses.
 - Platforms it publishes to: Google Business Profile, Facebook Pages, LinkedIn Company Pages and X (Twitter).
 - Content style: text-first posts. Each post is written separately for each platform's length limits and conventions, not copied word for word across all four.
 - Source material: the business's own website (services, areas covered, opening details) and its real Google reviews, which are turned into customer-quote posts with fair rotation so the same review is not reused too often.
@@ -23,7 +23,7 @@
 - It does not post to personal LinkedIn profiles, only to LinkedIn Company Pages. This is a LinkedIn API restriction.
 - It is not a social inbox, comment manager or social listening tool.
 - It is not an image or video design tool. Posts are text-first.
-- It is not built for large marketing teams or agencies managing hundreds of brands. It is for a single small business that wants posting handled.
+- It is not an enterprise tool for large marketing teams managing hundreds of brands. It suits a single small business that wants posting handled, and small agencies or multi-site owners looking after a handful of locations from one account.
 
 ## How postd.uk differs from schedulers such as Buffer, Hootsuite or Later
 

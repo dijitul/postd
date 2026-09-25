@@ -4,6 +4,7 @@ namespace App\Modules\Social\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\SocialConnection;
+use App\Modules\Billing\Services\EntitlementService;
 use App\Modules\Social\Platforms\LinkedInPlatform;
 use App\Modules\Social\Services\SocialConnectionService;
 use Illuminate\Http\JsonResponse;
@@ -17,7 +18,8 @@ use Illuminate\Support\Str;
 class SocialConnectionController extends Controller
 {
     public function __construct(
-        private readonly SocialConnectionService $connectionService
+        private readonly SocialConnectionService $connectionService,
+        private readonly EntitlementService $entitlements
     ) {}
 
     /**
@@ -30,6 +32,9 @@ class SocialConnectionController extends Controller
             return response()->json(['connections' => []]);
         }
 
+        $entitlements = $this->entitlements->forUser($request->user());
+        $usable = $entitlements->usablePlatforms($business->connectedPlatforms());
+
         $connections = $business->socialConnections()
             ->with('platformAccounts')
             ->get()
@@ -37,6 +42,9 @@ class SocialConnectionController extends Controller
                 'id' => $conn->id,
                 'platform' => $conn->platform,
                 'is_active' => $conn->is_active,
+                // Connected, but beyond what the plan writes for (a trial that
+                // became Local with four platforms connected). Kept, not deleted.
+                'paused_by_plan' => $entitlements->active && $conn->is_active && ! in_array($conn->platform, $usable, true),
                 'is_expired' => $conn->isExpired(),
                 // Whether the user must actually reconnect. An expired access
                 // token we hold a refresh token for is not a broken connection.
@@ -54,7 +62,12 @@ class SocialConnectionController extends Controller
                 ]),
             ]);
 
-        return response()->json(['connections' => $connections]);
+        return response()->json([
+            'connections' => $connections,
+            // Lets the Platforms page show locked platforms and the upgrade
+            // wording without a second request.
+            'entitlements' => $entitlements->toArray(),
+        ]);
     }
 
     /**
@@ -63,6 +76,14 @@ class SocialConnectionController extends Controller
     public function redirect(Request $request, string $platform): JsonResponse
     {
         $this->validatePlatform($platform);
+
+        // Check the plan before sending anyone off to authorise, so they hear
+        // "Local covers 2 platforms" here rather than after a round trip to
+        // Facebook. Reconnecting an existing platform is always allowed.
+        $business = $request->user()->business;
+        if ($business && ($refusal = $this->entitlements->connectRefusal($request->user(), $business, $platform))) {
+            return response()->json($refusal, 403);
+        }
 
         $state = Str::random(40);
 
@@ -186,6 +207,15 @@ class SocialConnectionController extends Controller
         if (! $business) {
             Log::error('OAuth callback: no business for user', ['user_id' => $user->id, 'platform' => $platform]);
             return redirect($redirectBase . '?error=no_business');
+        }
+
+        // Checked again here: the plan or the connections may have changed in
+        // the minutes the user spent on the platform's consent screen.
+        if ($refusal = $this->entitlements->connectRefusal($user, $business, $platform)) {
+            return redirect($redirectBase . '?' . http_build_query([
+                'error'    => $refusal['error'],
+                'platform' => $platform,
+            ]));
         }
 
         // Twitter: exchange code manually using the PKCE verifier we stored at redirect time.

@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Business;
 use App\Models\BusinessSetting;
 use App\Models\PlatformAccount;
+use App\Modules\Billing\Services\EntitlementService;
+use App\Modules\Billing\Services\Entitlements;
+use App\Modules\Billing\Services\SubscriptionService;
 use App\Modules\Onboarding\Requests\BusinessSetupRequest;
 use App\Modules\Scraping\Jobs\ScrapeBusinessJob;
 use App\Modules\Social\Platforms\GoogleBusinessProfilePlatform;
@@ -17,6 +20,14 @@ use Illuminate\Support\Facades\Log;
 
 class OnboardingController extends Controller
 {
+    /** Settings fields holding a posts-per-week cadence, and their platform. */
+    private const CADENCE_FIELDS = [
+        'posts_per_week_facebook' => 'facebook',
+        'posts_per_week_twitter' => 'twitter',
+        'posts_per_week_linkedin' => 'linkedin',
+        'posts_per_week_gbp' => 'google_business_profile',
+    ];
+
     /**
      * Return the onboarding status for the current user.
      */
@@ -60,16 +71,53 @@ class OnboardingController extends Controller
     /**
      * Create a new business during onboarding.
      */
-    public function createBusiness(BusinessSetupRequest $request, SocialConnectionService $connectionService): JsonResponse
-    {
+    public function createBusiness(
+        BusinessSetupRequest $request,
+        SocialConnectionService $connectionService,
+        EntitlementService $entitlementService,
+        SubscriptionService $subscriptionService
+    ): JsonResponse {
         $user = $request->user();
+        $existing = $user->businesses()->count();
 
-        // Only allow one business per user for now (can expand later)
-        if ($user->businesses()->exists()) {
-            return response()->json([
-                'message' => 'You already have a business set up. Use PUT to update it.',
-                'error' => 'business_exists',
-            ], 409);
+        if ($existing > 0) {
+            // Without new_location this is a returning user re-running the
+            // wizard, and the frontend falls back to updating on a 409.
+            if (! $request->boolean('new_location')) {
+                return response()->json([
+                    'message' => 'You already have a business set up. Use PUT to update it.',
+                    'error' => 'business_exists',
+                ], 409);
+            }
+
+            $entitlements = $entitlementService->forUser($user);
+            $blocked = $entitlements->addLocationBlockReason($existing, $entitlementService->extraLocations($user));
+
+            if ($blocked === Entitlements::LIMIT_EXTRA_LOCATION) {
+                // An extra Agency location costs money, so it is only added
+                // once the user has seen the price and said yes.
+                if (! $request->boolean('confirm_extra_location')) {
+                    return response()->json($entitlementService->limitResponse($blocked, $entitlements), 402);
+                }
+
+                try {
+                    $subscriptionService->addExtraLocation($user);
+                } catch (\Throwable $e) {
+                    Log::warning('OnboardingController: Could not add an extra location', [
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage(),
+                    ]);
+
+                    return response()->json([
+                        'message' => $e instanceof \InvalidArgumentException
+                            ? $e->getMessage()
+                            : 'We could not add the extra location to your subscription just now. Please try again, or get in touch.',
+                        'error' => 'extra_location_failed',
+                    ], 422);
+                }
+            } elseif ($blocked) {
+                return response()->json($entitlementService->limitResponse($blocked, $entitlements), 403);
+            }
         }
 
         $business = Business::create([
@@ -90,9 +138,15 @@ class OnboardingController extends Controller
             'approval_window_hours' => 24,
         ]);
 
+        // A new location becomes the one being worked on, so the rest of the
+        // wizard and the dashboard afterwards are about it.
+        $user->forceFill(['current_business_id' => $business->id])->save();
+
         // Pick up cached Google tokens (set during Google auth callback)
         // and create the GBP connection immediately so the user doesn't need to connect again.
-        $tokenData = Cache::get("google_tokens_{$user->id}");
+        // Only for a first business: those tokens belong to the sign-in, not to
+        // whichever extra location happens to be added next.
+        $tokenData = $existing === 0 ? Cache::get("google_tokens_{$user->id}") : null;
         if ($tokenData) {
             try {
                 $connection = $connectionService->upsertConnection(
@@ -358,6 +412,7 @@ class OnboardingController extends Controller
         }
 
         $settings = $business->getOrCreateSettings();
+        $entitlements = app(EntitlementService::class)->forUser($request->user());
 
         return response()->json([
             'business' => $business->only([
@@ -365,6 +420,11 @@ class OnboardingController extends Controller
                 'tone', 'city', 'postcode', 'phone', 'description', 'usp_notes',
             ]),
             'settings' => $settings,
+            // Most posts a week each platform may have on this plan, so the
+            // cadence picker can show higher options as locked, not missing.
+            'posts_per_week_caps' => app(EntitlementService::class)->postsPerWeekCaps($entitlements),
+            'plan' => $entitlements->plan,
+            'plan_name' => $entitlements->planName,
         ]);
     }
 
@@ -387,13 +447,36 @@ class OnboardingController extends Controller
             'include_local_news_hooks' => ['nullable', 'boolean'],
             'include_review_content' => ['nullable', 'boolean'],
             'posts_per_week_facebook' => ['nullable', 'integer', 'min:0', 'max:14'],
-            'posts_per_week_twitter' => ['nullable', 'integer', 'min:0', 'max:21'],
-            'posts_per_week_linkedin' => ['nullable', 'integer', 'min:0', 'max:7'],
+            'posts_per_week_twitter' => ['nullable', 'integer', 'min:0', 'max:14'],
+            'posts_per_week_linkedin' => ['nullable', 'integer', 'min:0', 'max:14'],
             'posts_per_week_gbp' => ['nullable', 'integer', 'min:0', 'max:7'],
             'notify_post_failed' => ['nullable', 'boolean'],
             'notify_weekly_summary' => ['nullable', 'boolean'],
             'notify_token_expiring' => ['nullable', 'boolean'],
         ]);
+
+        // Cadence above the plan is refused with the reason and the upgrade,
+        // rather than silently saved and never delivered. The static max above
+        // is only a sanity bound; this is the real limit.
+        $entitlementService = app(EntitlementService::class);
+        $entitlements = $entitlementService->forUser($request->user());
+
+        foreach (self::CADENCE_FIELDS as $field => $platform) {
+            $requested = $request->input($field);
+            if ($requested === null || ! $entitlements->active) {
+                continue;
+            }
+
+            if ((int) $requested > $entitlements->postsPerWeekCap($platform)) {
+                $refusal = $entitlementService->limitResponse(
+                    Entitlements::LIMIT_POSTS_PER_WEEK,
+                    $entitlements,
+                    ['platform' => $platform]
+                );
+
+                return response()->json($refusal + ['errors' => [$field => [$refusal['message']]]], 422);
+            }
+        }
 
         $settings = $business->getOrCreateSettings();
         $settings->update($request->all());

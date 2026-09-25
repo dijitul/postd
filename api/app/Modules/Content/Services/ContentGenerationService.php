@@ -6,6 +6,8 @@ use App\Models\Business;
 use App\Models\ContentBrief;
 use App\Models\ContentSource;
 use App\Models\Post;
+use App\Modules\Billing\Services\EntitlementService;
+use App\Modules\Billing\Services\Entitlements;
 use App\Modules\Schedule\Services\SchedulingService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -78,19 +80,6 @@ class ContentGenerationService
         Post::STATUS_DISPATCHING,
         Post::STATUS_POSTED,
     ];
-
-    /**
-     * A platform gets at most one post every this many days.
-     *
-     * Generation previously wrote to every connected platform on every daily run
-     * until the weekly target was met, so a week of content landed in the first
-     * few days and read as relentless. The spacing itself is enforced by
-     * SchedulingService, which will not place a slot within 48 hours of another
-     * post on the same platform. This constant only caps how many posts a week
-     * can hold, so we never generate one the scheduler would push past the
-     * horizon and we would then discard.
-     */
-    private const MIN_DAYS_BETWEEN_POSTS = 2;
 
     /** Matches BusinessSetting::getPostsPerWeekForPlatform's own fallback. */
     private const DEFAULT_POSTS_PER_WEEK = 3;
@@ -206,7 +195,8 @@ class ContentGenerationService
 
     public function __construct(
         private readonly SchedulingService $schedulingService,
-        private readonly LinkShortenerService $linkShortener
+        private readonly LinkShortenerService $linkShortener,
+        private readonly EntitlementService $entitlementService
     ) {}
 
     /**
@@ -216,7 +206,18 @@ class ContentGenerationService
     public function generateFromBrief(ContentBrief $brief): array
     {
         $business = $brief->business()->with(['settings', 'activeSocialConnections'])->first();
-        $platforms = $business->connectedPlatforms();
+        $entitlements = $this->entitlementService->forBusiness($business);
+
+        // No plan (the trial ended, or a subscription lapsed): generation
+        // pauses. Nothing already written is touched.
+        if (! $entitlements->active) {
+            Log::info("ContentGenerationService: Skipping business {$business->id} - no active plan");
+            return [];
+        }
+
+        // Only the platforms the plan covers. A Local account that kept four
+        // connections from its trial is written for on the first two only.
+        $platforms = $entitlements->usablePlatforms($business->connectedPlatforms());
 
         if (empty($platforms)) {
             Log::warning("ContentGenerationService: No connected platforms for business {$business->id}");
@@ -228,8 +229,20 @@ class ContentGenerationService
 
         $horizonEnd = now()->addDays(self::SCHEDULE_HORIZON_DAYS);
 
+        // X is capped in total during the trial, because every X post costs us.
+        $twitterRemaining = $this->entitlementService->twitterPostsRemaining($business);
+
         foreach ($platforms as $platform) {
-            $needed = $this->postsNeededForHorizon($business, $platform);
+            $target = $this->postsPerWeekTarget($business, $platform, $entitlements);
+            $needed = $this->postsNeededForHorizon($business, $platform, $target);
+
+            if ($platform === 'twitter' && $twitterRemaining !== null && $needed > $twitterRemaining) {
+                Log::info('ContentGenerationService: Holding X to the trial allowance', [
+                    'business_id' => $business->id,
+                    'remaining'   => $twitterRemaining,
+                ]);
+                $needed = $twitterRemaining;
+            }
 
             if ($needed < 1) {
                 Log::info("ContentGenerationService: Skipping {$platform} - the week ahead is already full", [
@@ -242,7 +255,7 @@ class ContentGenerationService
                 // Work the slot out first. It costs nothing, and if the next free
                 // one falls outside the week we want to know before paying for a
                 // post that would sit beyond the horizon the user is reviewing.
-                $slot = $this->schedulingService->getNextSlot($business, $platform);
+                $slot = $this->schedulingService->getNextSlot($business, $platform, $target);
 
                 if ($slot->greaterThan($horizonEnd)) {
                     Log::info("ContentGenerationService: Stopping {$platform} - next free slot is beyond the horizon", [
@@ -298,17 +311,12 @@ class ContentGenerationService
      *
      * A target of 0 switches a platform off without disconnecting it.
      */
-    private function postsNeededForHorizon(Business $business, string $platform): int
+    private function postsNeededForHorizon(Business $business, string $platform, int $target): int
     {
-        $settings = $business->settings;
-        $target = $settings
-            ? $settings->getPostsPerWeekForPlatform($platform)
-            : self::DEFAULT_POSTS_PER_WEEK;
-
-        // The 48 hour spacing caps what a week can physically hold, so a setting
-        // of 10 a week would otherwise have us generating posts the scheduler
-        // then pushes past the horizon and we discard.
-        $target = min($target, $this->maxPostsInHorizon());
+        // The minimum spacing caps what a week can physically hold, so a target
+        // above it would have us generating posts the scheduler then pushes
+        // past the horizon and we discard.
+        $target = min($target, $this->maxPostsInHorizon($target));
 
         if ($target <= 0) {
             return 0;
@@ -323,10 +331,29 @@ class ContentGenerationService
         return max(0, $target - $scheduled);
     }
 
-    /** Most posts that fit in the horizon at the minimum spacing. */
-    private function maxPostsInHorizon(): int
+    /**
+     * The business's chosen posts a week for a platform, held to its plan.
+     *
+     * The saved setting is left alone, so a Growth customer who drops to
+     * Local and back gets their 7 a week again; Local simply writes 3 in the
+     * meantime.
+     */
+    private function postsPerWeekTarget(Business $business, string $platform, Entitlements $entitlements): int
     {
-        return intdiv(self::SCHEDULE_HORIZON_DAYS, self::MIN_DAYS_BETWEEN_POSTS) + 1;
+        $settings = $business->settings;
+        $requested = $settings
+            ? $settings->getPostsPerWeekForPlatform($platform)
+            : self::DEFAULT_POSTS_PER_WEEK;
+
+        return $entitlements->clampPostsPerWeek($platform, $requested);
+    }
+
+    /** Most posts that fit in the horizon at the spacing used for this cadence. */
+    private function maxPostsInHorizon(int $postsPerWeek): int
+    {
+        $gap = SchedulingService::minGapMinutesFor($postsPerWeek);
+
+        return intdiv(self::SCHEDULE_HORIZON_DAYS * 24 * 60, $gap) + 1;
     }
 
     /**
@@ -505,8 +532,13 @@ class ContentGenerationService
             ],
         ]);
 
-        // Queue image generation if the platform benefits from it and images are enabled
-        if ($this->platformNeedsImage($platform) && ($business->settings?->generate_images ?? true)) {
+        // Queue image generation if the platform benefits from it, images are
+        // enabled and the plan has one left this month. Once the allowance is
+        // used the post simply goes out text-only; GeneratePostImageJob checks
+        // again when it runs, since one run can queue several at once.
+        if ($this->platformNeedsImage($platform)
+            && ($business->settings?->generate_images ?? true)
+            && $this->entitlementService->aiImagesRemaining($business) > 0) {
             \App\Modules\Content\Jobs\GeneratePostImageJob::dispatch($post, $parsed['image_prompt'] ?? null)
                 ->onQueue('generation')
                 ->delay(now()->addSeconds(5));

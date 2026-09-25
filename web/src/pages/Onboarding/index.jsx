@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -445,23 +445,21 @@ function Step3({ onNext, onSkip, defaultValues }) {
 }
 
 // ── Step 4 — Connect platforms ────────────────────────────────────────────────
+// Nothing is locked here: onboarding runs on the Growth trial, or for a new
+// Agency location, and both include every platform. Plan limits for anyone
+// else are applied on the Platforms page and by the API.
 const PLATFORMS = [
-  { id: 'facebook',  label: 'Facebook',                plan: 'base'       },
-  { id: 'linkedin',  label: 'LinkedIn',                plan: 'base'       },
-  { id: 'x',         label: 'X (Twitter)',             plan: 'base'       },
-  { id: 'google',    label: 'Google Business Profile', plan: 'base'       },
+  { id: 'facebook',  label: 'Facebook'                },
+  { id: 'linkedin',  label: 'LinkedIn'                },
+  { id: 'x',         label: 'X (Twitter)'             },
+  { id: 'google',    label: 'Google Business Profile' },
 ]
 
-function Step4({ onNext, onSkip, userPlan = 'growth', gbpAlreadyConnected = false }) {
+function Step4({ onNext, onSkip, gbpAlreadyConnected = false }) {
   const [connected, setConnected] = useState(new Set())
   const [connecting, setConnecting] = useState(null)
 
-  const planOrder = { base: 0, starter: 0, growth: 0, pro: 3 }
-  const userPlanLevel = planOrder[userPlan] ?? 0
-
-  const isLocked = (plan) => {
-    return plan === 'pro' && planOrder[plan] > userPlanLevel
-  }
+  const isLocked = () => false
 
   const handleConnect = async (platformId) => {
     if (connected.has(platformId)) {
@@ -490,7 +488,7 @@ function Step4({ onNext, onSkip, userPlan = 'growth', gbpAlreadyConnected = fals
       <div className="space-y-3">
         {PLATFORMS.map((platform) => {
           const isComingSoon = !!platform.comingSoon
-          const locked = !isComingSoon && isLocked(platform.plan)
+          const locked = !isComingSoon && isLocked()
           const isConnected = !isComingSoon && (isGbpConnected(platform.id) || connected.has(platform.id))
           const isConnecting = connecting === platform.id
           const isGbpAutoConnected = platform.id === 'google' && gbpAlreadyConnected
@@ -673,6 +671,12 @@ const STEPS = [
 
 // ── Main wizard ───────────────────────────────────────────────────────────────
 export default function OnboardingPage() {
+  // /onboarding?new=1 sets up an additional location rather than re-running
+  // setup for the current one.
+  const [searchParams] = useSearchParams()
+  const isNewLocation = searchParams.get('new') === '1'
+  // Set when adding this location costs extra, until the user agrees to it.
+  const [extraLocationOffer, setExtraLocationOffer] = useState(null)
   const [step, setStep] = useState(1)
   const [formData, setFormData] = useState({})
   const [businessId, setBusinessId] = useState(null)
@@ -685,7 +689,9 @@ export default function OnboardingPage() {
   const businessName = formData.business_name || user?.business?.name || ''
 
   // Did the user pick a GBP location? That means GBP is already connected.
-  const gbpConnected = !!formData._gbpLocationId
+  // Not for an extra location, though: the sign-in's Google tokens are only
+  // used for the first business, so GBP is connected from the Platforms page.
+  const gbpConnected = !isNewLocation && !!formData._gbpLocationId
 
   const handleNext = async (data = {}) => {
     setSubmitError(null)
@@ -701,6 +707,8 @@ export default function OnboardingPage() {
       setIsSubmitting(true)
       try {
         const payload = {
+          ...(isNewLocation ? { new_location: true } : {}),
+          ...(data._confirmExtraLocation ? { confirm_extra_location: true } : {}),
           name:            merged.business_name,
           industry:        merged.industry,
           tone:            merged.tone || 'friendly',
@@ -712,9 +720,20 @@ export default function OnboardingPage() {
 
         let res
         try {
-          res = await onboardingApi.createBusiness(payload)
+          // Once this run has created the business, coming back to step 1
+          // edits it. Creating again would add a second new location.
+          res = businessId
+            ? await onboardingApi.updateBusiness(payload)
+            : await onboardingApi.createBusiness(payload)
+          setExtraLocationOffer(null)
         } catch (err) {
-          if (err.response?.status === 409) {
+          if (err.response?.status === 402 && err.response?.data?.error === 'extra_location_required') {
+            // An extra Agency location has a monthly price. Show it and wait
+            // for a yes before anything is added to the subscription.
+            setExtraLocationOffer({ message: err.response.data.message, data })
+            setIsSubmitting(false)
+            return
+          } else if (err.response?.status === 409 && !isNewLocation) {
             // Business already exists (e.g. returning user) — update instead
             res = await onboardingApi.updateBusiness(payload)
           } else {
@@ -753,6 +772,10 @@ export default function OnboardingPage() {
 
     setFormData(merged)
     setStep((s) => s + 1)
+  }
+
+  const confirmExtraLocation = () => {
+    if (extraLocationOffer) handleNext({ ...extraLocationOffer.data, _confirmExtraLocation: true })
   }
 
   const handleBack = () => {
@@ -811,8 +834,37 @@ export default function OnboardingPage() {
                   <currentStep.icon className="w-5 h-5 text-amber-600" />
                 </div>
               </div>
-              <h1 className="font-display font-bold text-xl text-navy-800 mb-1">{currentStep.title}</h1>
-              <p className="text-sm text-slate-500">{currentStep.subtitle}</p>
+              <h1 className="font-display font-bold text-xl text-navy-800 mb-1">
+                {isNewLocation && step === 1 ? 'Add a location' : currentStep.title}
+              </h1>
+              <p className="text-sm text-slate-500">
+                {isNewLocation && step === 1
+                  ? 'Set up the next business or site. Your other locations carry on as they are.'
+                  : currentStep.subtitle}
+              </p>
+            </div>
+          )}
+
+          {/* An extra Agency location has a price: say so and wait for a yes */}
+          {step === 1 && extraLocationOffer && (
+            <div className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-4">
+              <p className="text-sm text-amber-900 mb-3">{extraLocationOffer.message}</p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={confirmExtraLocation}
+                  disabled={isSubmitting}
+                  className="inline-flex items-center justify-center gap-2 bg-navy-800 text-white font-semibold text-sm px-4 py-2.5 rounded-xl hover:bg-navy-700 disabled:opacity-60"
+                >
+                  {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Yes, add this location
+                </button>
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100"
+                >
+                  Not now
+                </button>
+              </div>
             </div>
           )}
 

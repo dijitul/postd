@@ -10,6 +10,7 @@ import {
 import useAuthStore from '../../stores/authStore.js'
 import { settingsApi, platformsApi } from '../../lib/api.js'
 import PlatformIcon from '../../components/ui/PlatformIcon.jsx'
+import PostingFrequency from './PostingFrequency.jsx'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -184,6 +185,9 @@ export default function SettingsPage() {
   const [prefsError, setPrefsError] = useState(null)
   const [notifications, setNotifications] = useState({ email: true, postApproval: true, weeklyDigest: true })
   const [connections, setConnections] = useState([])
+  const [cadence, setCadence] = useState(null)
+  const [cadenceCaps, setCadenceCaps] = useState(null)
+  const [planName, setPlanName] = useState('your plan')
 
   const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
     resolver: zodResolver(businessSchema),
@@ -217,6 +221,9 @@ export default function SettingsPage() {
         })
 
         setAutoApprove(prefs?.auto_approve_posts ?? false)
+        setCadence(prefs)
+        setCadenceCaps(settingsRes.data?.posts_per_week_caps ?? null)
+        setPlanName(settingsRes.data?.plan_name ?? 'your plan')
         setConnections(connectionsRes.data?.connections ?? [])
       } catch (e) {
         console.error('Settings load failed', e)
@@ -468,6 +475,18 @@ export default function SettingsPage() {
           )}
         </div>
       </SectionCard>
+
+      {/* How often each platform posts, within the plan */}
+      {cadenceCaps && (
+        <SectionCard title="How often to post" icon={Share2}>
+          <PostingFrequency
+            values={cadence}
+            caps={cadenceCaps}
+            planName={planName}
+            onSaved={(change) => setCadence((c) => ({ ...(c ?? {}), ...change }))}
+          />
+        </SectionCard>
+      )}
 
       {/* Notifications */}
       <SectionCard title="Notifications" icon={Bell}>

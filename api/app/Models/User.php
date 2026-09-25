@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Modules\Billing\Services\PlanCatalogue;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -36,6 +37,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'referral_code',
         'referred_by',
         'last_seen_at',
+        'current_business_id',
     ];
 
     protected $hidden = [
@@ -64,9 +66,29 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Business::class);
     }
 
+    /**
+     * The business (location) the user is currently working on.
+     *
+     * Most accounts own exactly one. An Agency account can own several and
+     * picks between them with the switcher, which records the choice in
+     * current_business_id. It is an ordering rather than a filter, so a stale
+     * id (a business since removed) falls back to the newest business instead
+     * of leaving the user with none. Every controller reading $user->business
+     * follows the switch without needing to know about it.
+     */
     public function business(): HasOne
     {
-        return $this->hasOne(Business::class)->latest();
+        $relation = $this->hasOne(Business::class);
+
+        // Read raw: a user fresh from create() has no such attribute loaded,
+        // and strict mode would throw on the property instead of returning null.
+        $currentId = $this->getAttributes()['current_business_id'] ?? null;
+
+        if ($currentId) {
+            $relation->orderByRaw('CASE WHEN businesses.id = ? THEN 0 ELSE 1 END', [$currentId]);
+        }
+
+        return $relation->latest();
     }
 
     // Scopes
@@ -141,24 +163,68 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * The plan key (starter/growth/pro) currently in force, not the Stripe
-     * price ID: callers compare this against config('cashier.plans') keys.
+     * The plan key (local/growth/agency, or legacy pro) currently in force,
+     * not the Stripe price ID: callers compare this against the keys in
+     * config('plans.plans'). 'none' means no plan, and 'unknown' means a
+     * subscription to a Stripe price config/plans.php does not recognise.
      */
     public function activePlanName(): string
     {
+        $catalogue = app(PlanCatalogue::class);
+
         if ($this->isComped()) {
-            return $this->comped_plan;
+            // Comps saved before the rename may still say 'starter'.
+            return $catalogue->normalise($this->comped_plan) ?? $this->comped_plan;
         }
         if ($this->subscribed('default')) {
-            $priceId = $this->subscription('default')?->stripe_price;
-
-            return self::planKeyForPriceId($priceId) ?? 'unknown';
+            return $this->subscribedPlanKey() ?? 'unknown';
         }
         if ($this->isOnValidTrial()) {
-            return config('cashier.trial_plan', 'growth');
+            return $catalogue->trialPlan();
         }
 
         return 'none';
+    }
+
+    /**
+     * The plan behind the Stripe subscription, if there is one.
+     *
+     * Cashier only fills subscriptions.stripe_price for a single-price
+     * subscription. An Agency subscription with extra locations carries two
+     * prices, leaves that column null, and has to be read from its items.
+     */
+    public function subscribedPlanKey(): ?string
+    {
+        return $this->subscribedPlan()['plan'] ?? null;
+    }
+
+    /** 'monthly' or 'annual' for the current subscription, if any. */
+    public function subscribedInterval(): ?string
+    {
+        return $this->subscribedPlan()['interval'] ?? null;
+    }
+
+    /** @return array{plan: string, interval: string}|null */
+    private function subscribedPlan(): ?array
+    {
+        $subscription = $this->subscription('default');
+        if (! $subscription) {
+            return null;
+        }
+
+        $catalogue = app(PlanCatalogue::class);
+        $prices = array_filter(array_merge(
+            [$subscription->stripe_price],
+            $subscription->items->pluck('stripe_price')->all()
+        ));
+
+        foreach ($prices as $priceId) {
+            if ($match = $catalogue->lookupPrice($priceId)) {
+                return $match;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -166,17 +232,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public static function planKeyForPriceId(?string $priceId): ?string
     {
-        if (! $priceId) {
-            return null;
-        }
-
-        foreach (config('cashier.plans', []) as $key => $plan) {
-            if (($plan['stripe_price_id'] ?? null) === $priceId) {
-                return $key;
-            }
-        }
-
-        return null;
+        return app(PlanCatalogue::class)->lookupPrice($priceId)['plan'] ?? null;
     }
 
     /**
