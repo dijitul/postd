@@ -42,6 +42,12 @@ class WebsiteScraperService
     private const MAX_EXTRA_PAGES = 10;
     private const ARTICLE_PAGES = 4;
 
+    // Articles last modified longer ago than this are skipped as old news.
+    private const ARTICLE_MAX_AGE_YEARS = 2;
+
+    /** @var array<string, string> page URL => sitemap group (page, post, other) for the current scrape */
+    private array $sitemapGroups = [];
+
     // Stop starting new page fetches after this long, so the job's own timeout
     // is never the thing that ends a scrape of a slow site.
     private const CRAWL_BUDGET_SECONDS = 60;
@@ -468,18 +474,28 @@ class WebsiteScraperService
     private function discoverAdditionalPages(Crawler $crawler, string $baseUrl): array
     {
         $host = strtolower((string) parse_url($baseUrl, PHP_URL_HOST));
+        $this->sitemapGroups = [];
         $candidates = $this->sitemapEntries($baseUrl);
+        $linkedFromHome = [];
 
         try {
-            $crawler->filter('a[href]')->each(function (Crawler $node) use ($baseUrl, &$candidates) {
+            $crawler->filter('a[href]')->each(function (Crawler $node) use ($baseUrl, &$candidates, &$linkedFromHome) {
                 $absolute = $this->absoluteUrl((string) $node->attr('href'), $baseUrl);
 
-                if ($absolute && ! array_key_exists($absolute, $candidates)) {
+                if (! $absolute) {
+                    return;
+                }
+
+                $linkedFromHome[rtrim(strtok($absolute, '#?') ?: $absolute, '/')] = true;
+
+                if (! array_key_exists($absolute, $candidates)) {
                     $candidates[$absolute] = null;
                 }
             });
         } catch (\Throwable) {
         }
+
+        $staleBefore = now()->subYears(self::ARTICLE_MAX_AGE_YEARS)->toDateString();
 
         $pages = [];
         $home = rtrim($baseUrl, '/');
@@ -491,10 +507,19 @@ class WebsiteScraperService
                 continue;
             }
 
+            $kind = $this->pageKind($candidate, $this->sitemapGroups[$candidate] ?? null);
+
+            // An article nobody has touched in years is old news: a post written
+            // from it would announce a price rise from 2022 as current.
+            if ($kind === 'article' && $lastmod !== null && $lastmod < $staleBefore) {
+                continue;
+            }
+
             $pages[$candidate] = [
                 'url'     => $candidate,
-                'kind'    => $this->pageKind($candidate),
+                'kind'    => $kind,
                 'lastmod' => $lastmod,
+                'linked'  => isset($linkedFromHome[$candidate]),
             ];
         }
 
@@ -503,10 +528,22 @@ class WebsiteScraperService
 
         usort($pages, function (array $a, array $b) use ($rank) {
             $byKind = $rank[$a['kind']] <=> $rank[$b['kind']];
+            if ($byKind !== 0) {
+                return $byKind;
+            }
 
-            // Newest first within a kind; undated pages after dated ones.
-            return $byKind !== 0 ? $byKind : strcmp((string) $b['lastmod'], (string) $a['lastmod']);
+            // The homepage's own links are the site telling us what matters, so
+            // those come before pages only the sitemap knows about (dozens of
+            // near-identical local landing pages, on some sites).
+            if ($a['linked'] !== $b['linked']) {
+                return $a['linked'] ? -1 : 1;
+            }
+
+            // Newest first; undated pages after dated ones.
+            return strcmp((string) $b['lastmod'], (string) $a['lastmod']);
         });
+
+        $pages = array_map(fn (array $p) => array_diff_key($p, ['linked' => true]), $pages);
 
         // Hold places for articles, or a site with a long services list would
         // never have its blog read at all.
@@ -541,21 +578,32 @@ class WebsiteScraperService
             }
 
             if ($xml->getName() === 'sitemapindex') {
-                $children = 0;
+                $children = [];
 
                 foreach ($xml->children() as $child) {
-                    // Post and page sitemaps hold content; tag, category and author ones do not.
+                    // Post and page sitemaps hold content; tag, category, author and
+                    // location (KML) ones do not.
                     $loc = trim((string) $child->loc);
-                    if ($loc === '' || preg_match('/(tag|category|author|product_cat|attachment)/i', $loc)) {
+                    if ($loc === '' || preg_match('/(tag|category|author|product_cat|attachment|local-sitemap|kml)/i', $loc)) {
                         continue;
                     }
 
-                    if ($childXml = $this->fetchXml($loc)) {
-                        $entries += $this->urlsetEntries($childXml);
-                    }
+                    $children[] = $loc;
+                }
 
-                    if (++$children >= 4) {
-                        break;
+                // Pages first. A blog with a few hundred posts otherwise fills the
+                // entry cap before the page sitemap is read, and the site's own
+                // service and about pages never get a look in.
+                usort($children, fn ($a, $b) => $this->sitemapGroupRank($a) <=> $this->sitemapGroupRank($b));
+
+                foreach (array_slice($children, 0, 5) as $loc) {
+                    if ($childXml = $this->fetchXml($loc)) {
+                        $group = $this->sitemapGroup($loc);
+
+                        foreach ($this->urlsetEntries($childXml) as $entryUrl => $lastmod) {
+                            $entries[$entryUrl] ??= $lastmod;
+                            $this->sitemapGroups[rtrim($entryUrl, '/')] ??= $group;
+                        }
                     }
                 }
             } else {
@@ -567,7 +615,24 @@ class WebsiteScraperService
             }
         }
 
-        return array_slice($entries, 0, 300, true);
+        return array_slice($entries, 0, 600, true);
+    }
+
+    /** Which kind of sitemap a child sitemap URL is, from its WordPress-style name. */
+    private function sitemapGroup(string $loc): string
+    {
+        $name = strtolower((string) parse_url($loc, PHP_URL_PATH));
+
+        return match (true) {
+            (bool) preg_match('/page/', $name) => 'page',
+            (bool) preg_match('/(post|blog|news|article)/', $name) => 'post',
+            default => 'other',
+        };
+    }
+
+    private function sitemapGroupRank(string $loc): int
+    {
+        return ['page' => 0, 'other' => 1, 'post' => 2][$this->sitemapGroup($loc)];
     }
 
     /** @return array<string, string|null> */
@@ -630,9 +695,24 @@ class WebsiteScraperService
         );
     }
 
-    private function pageKind(string $url): string
+    /**
+     * What a page is for. The sitemap group wins where there is one: a blog post
+     * called "google-closes-10-services" is an article, not a service page, and
+     * a page is never an article just because its slug says "guide".
+     */
+    private function pageKind(string $url, ?string $sitemapGroup = null): string
     {
         $path = strtolower((string) parse_url($url, PHP_URL_PATH));
+
+        if ($sitemapGroup === 'post') {
+            return str_contains($path, 'faq') ? 'faq' : 'article';
+        }
+
+        if ($sitemapGroup === 'page') {
+            $kind = $this->pageKind($url);
+
+            return $kind === 'article' ? 'other' : $kind;
+        }
 
         return match (true) {
             (bool) preg_match('#(faq|questions)#', $path) => 'faq',
