@@ -119,7 +119,21 @@ GoogleAuthController            handles Google sign-in OAuth callback
 /settings           Business settings
 /billing            Subscription management
 /admin              Dijitul team only
+/guides             Guides index (prerendered, grouped by pillar)
+/guides/<slug>      One guide, from web/content/guides/<file>.md
 ```
+
+### Public site: prerendering and guides
+
+The public routes (`/`, `/terms`, `/privacy`, `/login`, `/register`, `/guides`, `/guides/<slug>`, plus `dist/404.html`) are rendered to static HTML at build time so crawlers and AI bots that do not run JavaScript see the full page. The browser then hydrates it. App routes are still a pure SPA served from `dist/app.html`.
+
+- `npm run build` = client build, SSR build of `src/entry-server.jsx` into `web/.ssr/`, then `scripts/prerender.mjs` (writes the pages, `sitemap.xml`, and adds guides to `llms.txt`).
+- Per-page `<title>`, description, canonical, Open Graph and JSON-LD come from `<Seo />` in `src/lib/head.jsx`. Never hard-code them in `index.html`.
+- Public pages must render the same on the server as on first client render: no `window`/`localStorage` in render, and use `useHydrated()` for anything auth-dependent.
+- Guides: Markdown with frontmatter in `web/content/guides/`, processed by `web/plugins/guides.js`. An article is only built once its `date` (Europe/London) has arrived. `.github/workflows/publish-guides.yml` rebuilds and copies `web/dist` every day at 06:00 UK, so dated articles go live without a push. `npm run dev` shows future articles with a "scheduled" banner.
+- Nothing public may start with `/posts` (robots.txt disallows it).
+- nginx (`scripts/nginx-postd.uk.conf`) serves prerendered files first, app routes get `app.html` plus `X-Robots-Tag: noindex`, anything else is a real 404. CI does not copy nginx config; apply it by hand.
+- `npm run preview` serves `dist/` with the same rules as nginx. `npm run generate:images` rebuilds `og-image.png` and the icons from `public/brand/icon.svg`.
 
 ---
 

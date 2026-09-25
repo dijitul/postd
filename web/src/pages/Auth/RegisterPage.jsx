@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { Eye, EyeOff, ArrowRight, AlertCircle, Check, Shield, ChevronDown } from 'lucide-react'
 import Logo from '../../components/ui/Logo.jsx'
 import useAuthStore from '../../stores/authStore.js'
+import { Seo } from '../../lib/head.jsx'
 
 function GoogleIcon() {
   return (
@@ -94,6 +95,11 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-cream-200 honeycomb-bg flex flex-col items-center justify-center px-4 py-12">
+      <Seo
+        title="Start Your Free Trial | postd.uk"
+        description="Create a postd.uk account with Google and let it write and publish your social media posts to Google Business Profile, Facebook, LinkedIn and X."
+        path="/register"
+      />
 
       <div className="w-full max-w-md">
 

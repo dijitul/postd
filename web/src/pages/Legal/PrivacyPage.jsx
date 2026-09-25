@@ -1,12 +1,19 @@
 import { Link } from 'react-router-dom'
 import Logo from '../../components/ui/Logo.jsx'
+import { Seo } from '../../lib/head.jsx'
+import SiteFooter from '../../components/marketing/SiteFooter.jsx'
 
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-cream-200">
+      <Seo
+        title="Privacy Policy | postd.uk"
+        description="How postd.uk collects, uses and protects your data, including connected social accounts, cookies and your rights under UK GDPR."
+        path="/privacy"
+      />
       <header className="border-b border-cream-300 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/"><Logo size="md" /></Link>
+          <Logo size="md" />
           <Link to="/register" className="text-sm font-semibold text-amber-600 hover:text-amber-700 transition-colors">
             Start free trial
           </Link>
@@ -246,6 +253,7 @@ export default function PrivacyPage() {
           </div>
         </div>
       </main>
+      <SiteFooter />
     </div>
   )
 }

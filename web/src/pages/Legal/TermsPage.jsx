@@ -1,12 +1,19 @@
 import { Link } from 'react-router-dom'
 import Logo from '../../components/ui/Logo.jsx'
+import { Seo } from '../../lib/head.jsx'
+import SiteFooter from '../../components/marketing/SiteFooter.jsx'
 
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-cream-200">
+      <Seo
+        title="Terms of Service | postd.uk"
+        description="The terms that apply when you use postd.uk, the automated social media posting service for UK small businesses run by dijitul in Mansfield."
+        path="/terms"
+      />
       <header className="border-b border-cream-300 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/"><Logo size="md" /></Link>
+          <Logo size="md" />
           <Link to="/register" className="text-sm font-semibold text-amber-600 hover:text-amber-700 transition-colors">
             Start free trial
           </Link>
@@ -129,6 +136,7 @@ export default function TermsPage() {
           </div>
         </div>
       </main>
+      <SiteFooter />
     </div>
   )
 }

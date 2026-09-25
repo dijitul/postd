@@ -836,3 +836,75 @@
     display: none !important;
   }
 }
+
+/* ─── Guides: article body typography ──────────────────────────────────────── */
+/* Markdown from web/content/guides is rendered to plain HTML at build time,  */
+/* so it is styled here rather than with utility classes.                      */
+
+@layer components {
+  .guide-prose {
+    @apply text-slate-700 text-base sm:text-lg leading-relaxed;
+    overflow-wrap: break-word;
+  }
+  .guide-prose > * + * { @apply mt-5; }
+
+  /* Answer-first intro: the opening paragraph reads as the lead. */
+  .guide-prose > p:first-child { @apply text-lg sm:text-xl text-navy-800 font-medium; }
+
+  .guide-prose h2 {
+    @apply font-display font-black text-navy-800 text-2xl sm:text-3xl leading-tight mt-12 mb-4 scroll-mt-24;
+  }
+  .guide-prose h3 {
+    @apply font-display font-bold text-navy-800 text-xl sm:text-2xl leading-snug mt-8 mb-3 scroll-mt-24;
+  }
+  .guide-prose h4 { @apply font-display font-bold text-navy-800 text-lg mt-6 mb-2; }
+  .guide-prose h2 + *,
+  .guide-prose h3 + *,
+  .guide-prose h4 + * { @apply mt-0; }
+
+  .guide-prose .heading-anchor {
+    @apply float-left -ml-6 pr-2 w-6 text-amber-500 opacity-0 no-underline transition-opacity hidden sm:block;
+  }
+  .guide-prose h2:hover .heading-anchor,
+  .guide-prose h3:hover .heading-anchor,
+  .guide-prose .heading-anchor:focus { @apply opacity-100; }
+
+  .guide-prose a:not(.heading-anchor),
+  .guide-faq-answer a {
+    @apply text-amber-700 font-medium underline decoration-amber-300 underline-offset-2 hover:text-amber-800 hover:decoration-amber-500;
+  }
+  .guide-prose strong { @apply font-semibold text-navy-800; }
+
+  .guide-prose ul { @apply list-disc pl-6 space-y-2; }
+  .guide-prose ol { @apply list-decimal pl-6 space-y-2; }
+  .guide-prose li::marker { @apply text-amber-500; }
+  .guide-prose li > ul,
+  .guide-prose li > ol { @apply mt-2; }
+
+  .guide-prose blockquote {
+    @apply border-l-4 border-amber-500 bg-white rounded-r-2xl px-5 py-4 text-navy-800 italic;
+  }
+  .guide-prose hr { @apply my-10 border-cream-300; }
+
+  .guide-prose code {
+    @apply font-mono text-[0.9em] bg-cream-300 text-navy-800 rounded px-1.5 py-0.5;
+  }
+  .guide-prose pre {
+    @apply bg-navy-900 text-cream-200 rounded-2xl p-4 overflow-x-auto text-sm;
+  }
+  .guide-prose pre code { @apply bg-transparent p-0; color: inherit; }
+
+  .guide-prose img { @apply rounded-2xl border border-cream-300 max-w-full h-auto; }
+
+  /* Tables scroll sideways on phones instead of squashing. */
+  .guide-prose .table-wrap {
+    @apply overflow-x-auto rounded-2xl border border-cream-300 bg-white;
+    -webkit-overflow-scrolling: touch;
+  }
+  .guide-prose .table-wrap:focus-visible { @apply outline-none ring-2 ring-amber-500; }
+  .guide-prose table { @apply w-full text-sm sm:text-base border-collapse; min-width: 32rem; }
+  .guide-prose thead { @apply bg-navy-800 text-white; }
+  .guide-prose th { @apply text-left font-semibold px-4 py-3 align-bottom; }
+  .guide-prose td { @apply px-4 py-3 align-top border-t border-cream-300; }
+  .guide-prose tbody tr:nth-child(even) { @apply bg-cream-100; }
+}

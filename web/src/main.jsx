@@ -19,7 +19,7 @@ const queryClient = new QueryClient({
   }
 })
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+const app = (
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
@@ -28,3 +28,29 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </QueryClientProvider>
   </React.StrictMode>
 )
+
+const rootElement = document.getElementById('root')
+
+// Public pages (home, legal, guides, 404) arrive as prerendered HTML and are
+// hydrated. App routes are served the empty shell (app.html) and rendered
+// entirely in the browser, as before.
+const currentRoute = window.location.pathname.replace(/(.)\/+$/, '$1')
+const renderedRoute = rootElement.dataset.route
+
+if (rootElement.firstElementChild && (renderedRoute === '*' || renderedRoute === currentRoute)) {
+  // A guide's body lives in its own chunk. Load it before hydrating so the
+  // first render matches the static HTML instead of suspending mid-article.
+  const guideMatch = window.location.pathname.match(/^\/guides\/([^/]+)\/?$/)
+  const ready = guideMatch
+    ? import('./lib/guides.js').then(({ loadGuide }) => loadGuide(decodeURIComponent(guideMatch[1])))
+    : Promise.resolve()
+
+  ready
+    .catch(() => {})
+    .then(() => ReactDOM.hydrateRoot(rootElement, app))
+} else {
+  // Prerendered HTML for a different route (see prerender.mjs) is thrown away
+  // rather than hydrated against the wrong page.
+  rootElement.replaceChildren()
+  ReactDOM.createRoot(rootElement).render(app)
+}

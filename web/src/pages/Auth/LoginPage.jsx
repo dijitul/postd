@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react'
 import Logo from '../../components/ui/Logo.jsx'
 import useAuthStore from '../../stores/authStore.js'
+import { Seo } from '../../lib/head.jsx'
 
 function GoogleIcon() {
   return (
@@ -46,6 +47,12 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-cream-200 honeycomb-bg flex flex-col items-center justify-center px-4 py-12">
+      <Seo
+        title="Log in | postd.uk"
+        description="Log in to postd.uk to review, approve and schedule the social media posts written for your business."
+        path="/login"
+        robots="noindex, follow"
+      />
 
       {/* Card */}
       <div className="w-full max-w-md">

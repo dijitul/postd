@@ -1,0 +1,98 @@
+name: Publish scheduled guides
+
+# Rebuilds the web front end every morning so guides dated today go live
+# without a code push. Guides live in web/content/guides/*.md and are only
+# built once their `date` (UK time) has arrived; see web/plugins/guides.js.
+#
+# Deploys web/dist ONLY, exactly as deploy.yml's "Copy web dist to server"
+# step does. No API deploy, no migrations, no maintenance mode.
+#
+# It rebuilds every day rather than only on days a guide is due, so a missed
+# or failed run catches up the next morning. Unchanged files are simply
+# copied over themselves.
+
+on:
+  schedule:
+    # 06:00 UK time. GitHub cron runs in UTC, so fire at both 05:00 UTC
+    # (06:00 BST, summer) and 06:00 UTC (06:00 GMT, winter); the first step
+    # lets only the one that matches the current UK offset through.
+    - cron: '0 5 * * *'
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+# Shares the deploy queue with deploy.yml so the two never copy files at the
+# same time.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build and publish web/dist
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    environment:
+      name: production
+      url: https://postd.uk/guides
+
+    steps:
+      - name: Check this is the 06:00 UK run
+        id: due
+        run: |
+          # Decide by which cron fired rather than the clock, because GitHub
+          # can start scheduled runs late. In summer (BST, +0100) the 05:00 UTC
+          # trigger is 06:00 UK; in winter (GMT, +0000) the 06:00 UTC one is.
+          OFFSET=$(TZ=Europe/London date +%z)
+          TODAY=$(TZ=Europe/London date +%F)
+          echo "today=$TODAY" >> "$GITHUB_OUTPUT"
+          RUN=true
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            CRON="${{ github.event.schedule }}"
+            if [ "$OFFSET" = "+0100" ] && [ "$CRON" != "0 5 * * *" ]; then RUN=false; fi
+            if [ "$OFFSET" = "+0000" ] && [ "$CRON" != "0 6 * * *" ]; then RUN=false; fi
+          fi
+          echo "UK offset $OFFSET, trigger '${{ github.event.schedule }}', run=$RUN"
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout main
+        if: steps.due.outputs.run == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Node.js 20
+        if: steps.due.outputs.run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        if: steps.due.outputs.run == 'true'
+        working-directory: web
+        run: npm install
+
+      - name: Build production bundle
+        if: steps.due.outputs.run == 'true'
+        working-directory: web
+        env:
+          VITE_API_URL: https://api.postd.uk
+          VITE_APP_NAME: postd.uk
+        run: npm run build
+
+      - name: Copy web dist to server
+        if: steps.due.outputs.run == 'true'
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "web/dist/"
+          target: "/var/www/postd/"
+          strip_components: 0
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Scheduled guide publish FAILED for ${{ steps.due.outputs.today }}."
+          echo "::error::Check the build step above. The live site is unchanged."

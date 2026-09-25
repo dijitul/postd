@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import useAuthStore from './stores/authStore.js'
+import useHydrated from './lib/useHydrated.js'
 import AppLayout from './components/layout/AppLayout.jsx'
 import CookieBanner from './components/ui/CookieBanner.jsx'
 
@@ -18,6 +19,9 @@ const SettingsPage    = lazy(() => import('./pages/Settings/index.jsx'))
 const AdminPage       = lazy(() => import('./pages/Admin/index.jsx'))
 const TermsPage       = lazy(() => import('./pages/Legal/TermsPage.jsx'))
 const PrivacyPage     = lazy(() => import('./pages/Legal/PrivacyPage.jsx'))
+const GuidesIndexPage = lazy(() => import('./pages/Guides/GuidesIndexPage.jsx'))
+const GuidePage       = lazy(() => import('./pages/Guides/GuidePage.jsx'))
+const NotFoundPage    = lazy(() => import('./pages/NotFoundPage.jsx'))
 
 // ── Loading fallback ─────────────────────────────────────────────────────────
 function PageLoader() {
@@ -38,16 +42,36 @@ function PageLoader() {
 }
 
 // ── Route guards ─────────────────────────────────────────────────────────────
+// Guarded so the build-time prerender (no window, no localStorage) can import
+// this file. App routes are never prerendered, but public routes share it.
+function storedToken() {
+  try {
+    return typeof localStorage === 'undefined' ? null : localStorage.getItem('postd_token')
+  } catch {
+    return null
+  }
+}
+
+// Public pages set their own title through <Seo />. Signed-in pages share one,
+// so a title such as "Log in | postd.uk" does not linger after signing in.
+function useAppTitle() {
+  useEffect(() => {
+    document.title = 'postd.uk'
+  }, [])
+}
+
 function ProtectedRoute({ children }) {
+  useAppTitle()
   const { isAuthenticated, token } = useAuthStore()
-  const hasToken = isAuthenticated || Boolean(token || localStorage.getItem('postd_token'))
+  const hasToken = isAuthenticated || Boolean(token || storedToken())
   if (!hasToken) return <Navigate to="/login" replace />
   return children
 }
 
 function AdminRoute({ children }) {
+  useAppTitle()
   const { isAuthenticated, user, token } = useAuthStore()
-  const hasToken = isAuthenticated || Boolean(token || localStorage.getItem('postd_token'))
+  const hasToken = isAuthenticated || Boolean(token || storedToken())
   if (!hasToken) return <Navigate to="/login" replace />
   if (user && !user.is_admin) return <Navigate to="/dashboard" replace />
   return children
@@ -55,7 +79,10 @@ function AdminRoute({ children }) {
 
 function GuestRoute({ children }) {
   const { isAuthenticated } = useAuthStore()
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />
+  // /login and /register are prerendered signed out. Wait for hydration to
+  // finish before redirecting, so the first client render matches the HTML.
+  const hydrated = useHydrated()
+  if (hydrated && isAuthenticated) return <Navigate to="/dashboard" replace />
   return children
 }
 
@@ -77,6 +104,8 @@ export default function App() {
         <Route path="/" element={<MarketingPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/guides" element={<GuidesIndexPage />} />
+        <Route path="/guides/:slug" element={<GuidePage />} />
 
         {/* Auth — guests only */}
         <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
@@ -107,8 +136,10 @@ export default function App() {
           element={<AdminRoute><AdminPage /></AdminRoute>}
         />
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Fallback: a real "not found" page. nginx serves the prerendered
+            copy with a 404 status, so unknown URLs are not indexed as
+            duplicates of the home page. */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>
   )

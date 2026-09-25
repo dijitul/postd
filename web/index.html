@@ -5,12 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
-    <!-- Primary Meta -->
-    <title>AI Social Media Automation for UK Small Businesses | postd.uk</title>
-    <meta name="description" content="postd.uk automatically writes and posts social media content for UK small businesses. Connect Google Business Profile, Facebook, LinkedIn and X (Twitter). AI-generated posts every day. From £19/month. 14-day free trial." />
-    <meta name="keywords" content="social media automation UK, AI social media posting, automated social media for small business, Facebook LinkedIn automation, Google Business Profile automation, social media management UK, AI content generation" />
+    <!--
+      Page-specific tags (title, description, robots, canonical, Open Graph,
+      Twitter card, JSON-LD) are written per route by scripts/prerender.mjs
+      in place of the marker below, and kept up to date in the browser by
+      <Seo /> (src/lib/head.jsx). Do not hard-code them here.
+    -->
+    <!--app-head-->
     <meta name="author" content="dijitul, Mansfield" />
-    <meta name="robots" content="index, follow" />
 
     <!-- Theme -->
     <meta name="theme-color" content="#E07B30" />
@@ -26,33 +28,13 @@
 
     <!-- Favicon / Icons -->
     <link rel="icon" type="image/svg+xml" href="/brand/icon.svg" />
-    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-72.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/icons/icon-96.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-    <!-- Open Graph -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://postd.uk/" />
-    <meta property="og:title" content="AI Social Media Automation for UK Small Businesses | postd.uk" />
-    <meta property="og:description" content="postd.uk automatically writes and posts social media content for UK small businesses. Connect Google Business Profile, Facebook, LinkedIn and X. From £19/month. 14-day free trial." />
-    <meta property="og:image" content="https://postd.uk/og-image.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="postd.uk — automated social media for UK businesses" />
-    <meta property="og:site_name" content="postd.uk" />
-    <meta property="og:locale" content="en_GB" />
-
-    <!-- Twitter / X Card -->
-    <meta name="twitter:card" content="summary_large_image" />
+    <!-- Twitter / X account -->
     <meta name="twitter:site" content="@postduk" />
-    <meta name="twitter:title" content="AI Social Media Automation for UK Small Businesses | postd.uk" />
-    <meta name="twitter:description" content="postd.uk writes and posts your social media content automatically. Google Business Profile, Facebook, LinkedIn and X. From £19/month. 14-day free trial, no card required." />
-    <meta name="twitter:image" content="https://postd.uk/og-image.png" />
 
-    <!-- Canonical -->
-    <link rel="canonical" href="https://postd.uk/" />
-
-    <!-- Google Fonts — preconnect for performance -->
+    <!-- Google Fonts: preconnect for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -60,36 +42,7 @@
       rel="stylesheet"
     />
 
-    <!-- Structured Data -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "postd.uk",
-      "applicationCategory": "BusinessApplication",
-      "operatingSystem": "Web, iOS, Android",
-      "description": "Automated social media posting for UK small businesses.",
-      "url": "https://postd.uk",
-      "creator": {
-        "@type": "Organization",
-        "name": "dijitul",
-        "url": "https://dijitul.uk",
-        "address": {
-          "@type": "PostalAddress",
-          "addressLocality": "Mansfield",
-          "addressCountry": "GB"
-        }
-      },
-      "offers": {
-        "@type": "AggregateOffer",
-        "priceCurrency": "GBP",
-        "lowPrice": "19",
-        "highPrice": "69",
-        "offerCount": "3"
-      }
-    }
-    </script>
-    <!-- Google Analytics — consent denied by default until user accepts cookies -->
+    <!-- Google Analytics: consent denied by default until user accepts cookies -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
@@ -103,7 +56,7 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-QLSYF2DZCL"></script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><!--app-html--></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

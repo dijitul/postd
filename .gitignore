@@ -24,6 +24,7 @@ web/.env
 web/.env.*
 !web/.env.example
 web/.vite/
+web/.ssr/
 
 # OS
 .DS_Store

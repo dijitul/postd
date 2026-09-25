@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, Check, Star, Zap, Globe, MessageSquare, TrendingUp, Clock } from 'lucide-react'
 import Logo from '../../components/ui/Logo.jsx'
 import PlatformIcon from '../../components/ui/PlatformIcon.jsx'
+import SiteFooter from '../../components/marketing/SiteFooter.jsx'
+import HomeFaq, { HomeSeo } from './HomeFaq.jsx'
 
 // ── Animated post card ────────────────────────────────────────────────────────
 function AnimatedPostCard({ platform, content, delay = 0, className = '' }) {
@@ -234,6 +236,7 @@ export default function MarketingPage() {
 
   return (
     <div className="min-h-screen bg-cream-200 honeycomb-bg">
+      <HomeSeo />
 
       {/* ── Nav ──────────────────────────────────────────────────────────────── */}
       <header
@@ -255,6 +258,9 @@ export default function MarketingPage() {
               <a href="#pricing" className="text-sm font-medium text-navy-700 hover:text-amber-500 transition-colors">
                 Pricing
               </a>
+              <Link to="/guides" className="text-sm font-medium text-navy-700 hover:text-amber-500 transition-colors">
+                Guides
+              </Link>
             </nav>
 
             <div className="flex items-center gap-3">
@@ -298,7 +304,7 @@ export default function MarketingPage() {
 
               <p className="text-lg sm:text-xl text-slate-600 mb-8 max-w-xl mx-auto lg:mx-0 text-pretty leading-relaxed">
                 Give us your website, your Google Reviews link, and a bit about your business.
-                Our AI writes and automatically posts content to Google Business Profile, Facebook, LinkedIn and X every single day, so you never have to think about social media again.
+                Our AI writes and automatically posts content to Google Business Profile, Facebook, LinkedIn and X every week, so you never have to think about social media again.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mb-10">
@@ -356,8 +362,8 @@ export default function MarketingPage() {
               How AI social media automation works
             </h2>
             <p className="text-lg text-slate-500 max-w-2xl mx-auto text-pretty">
-              Most social media management tools are a second job. Postd.uk is different.
-              Set it up once and your automated social media posts go out every day without any effort from you.
+              Most social media management tools are a second job. postd.uk is different.
+              Set it up once and your automated social media posts go out every week without any effort from you.
             </p>
           </div>
 
@@ -450,6 +456,8 @@ export default function MarketingPage() {
         </div>
       </section>
 
+      <HomeFaq />
+
       {/* ── Final CTA ────────────────────────────────────────────────────────── */}
       <section className="py-20 sm:py-28 bg-gradient-navy relative overflow-hidden">
         <div className="absolute inset-0 honeycomb-bg opacity-30 pointer-events-none" />
@@ -461,8 +469,8 @@ export default function MarketingPage() {
             Automated social media posting, sorted.
           </h2>
           <p className="text-white/70 text-lg sm:text-xl mb-10 max-w-xl mx-auto text-pretty">
-            Join hundreds of UK small businesses who have stopped worrying about social media
-            and let AI handle their daily posting, so they can focus on what they do best.
+            Stop worrying about social media. postd writes and publishes your posts from your
+            own website and reviews, so you can get on with what you do best.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
@@ -538,27 +546,7 @@ export default function MarketingPage() {
       />
 
       {/* ── Footer ───────────────────────────────────────────────────────────── */}
-      <footer className="bg-navy-950 py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <Logo variant="reversed" size="sm" asLink={false} />
-
-            <nav className="flex items-center gap-6">
-              <Link to="/privacy" className="text-sm text-white/40 hover:text-white/70 transition-colors">Privacy</Link>
-              <Link to="/terms" className="text-sm text-white/40 hover:text-white/70 transition-colors">Terms</Link>
-              <Link to="/login" className="text-sm text-white/40 hover:text-white/70 transition-colors">Log in</Link>
-            </nav>
-
-            <p className="text-xs text-white/30 text-center sm:text-right">
-              Made by{' '}
-              <a href="https://dijitul.uk" className="text-white/50 hover:text-white/70 transition-colors" target="_blank" rel="noopener noreferrer">
-                dijitul
-              </a>{' '}
-              in Mansfield, UK
-            </p>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   )
 }
