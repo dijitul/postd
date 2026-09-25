@@ -81,6 +81,12 @@ class ScrapeBusinessJob implements ShouldQueue
         try {
             $data = $scraperService->scrape($this->business->website_url);
 
+            // Sites serve mis-encoded text often enough (a Windows-1252 page
+            // declared as UTF-8, a stray byte in a CMS field) that one bad
+            // character must not stop the whole scrape saving. Anything that is
+            // not valid UTF-8 is replaced rather than rejected.
+            $data = $this->validUtf8($data);
+
             // Update the business with any useful structured data
             $updates = [];
             if (! $this->business->description && $data['meta_description']) {
@@ -153,6 +159,29 @@ class ScrapeBusinessJob implements ShouldQueue
 
             return [];
         }
+    }
+
+    /**
+     * @template T
+     * @param  T  $value
+     * @return T
+     */
+    private function validUtf8(mixed $value): mixed
+    {
+        if (is_string($value)) {
+            return mb_scrub($value, 'UTF-8');
+        }
+
+        if (is_array($value)) {
+            $clean = [];
+            foreach ($value as $key => $item) {
+                $clean[is_string($key) ? mb_scrub($key, 'UTF-8') : $key] = $this->validUtf8($item);
+            }
+
+            return $clean;
+        }
+
+        return $value;
     }
 
     public function failed(\Throwable $exception): void

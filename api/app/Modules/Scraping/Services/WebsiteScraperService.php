@@ -736,10 +736,14 @@ class WebsiteScraperService
 
     private function trimBodyText(string $text, int $maxChars): string
     {
-        if (strlen($text) <= $maxChars) {
+        if (mb_strlen($text) <= $maxChars) {
             return $text;
         }
-        return substr($text, 0, $maxChars).'...';
+
+        // Characters, not bytes. substr() here cut through the middle of
+        // multi-byte characters (£, curly quotes, accents), and the invalid
+        // UTF-8 it left behind made the whole scrape fail to save as JSON.
+        return mb_substr($text, 0, $maxChars).'...';
     }
 
     private function emptyResult(string $url): array
