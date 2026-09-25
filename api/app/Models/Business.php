@@ -37,6 +37,7 @@ class Business extends Model
         'last_scraped_at',
         'last_generated_at',
         'is_active',
+        'images_google_synced_at',
     ];
 
     protected function casts(): array
@@ -47,6 +48,7 @@ class Business extends Model
             'onboarding_completed_at' => 'datetime',
             'last_scraped_at' => 'datetime',
             'last_generated_at' => 'datetime',
+            'images_google_synced_at' => 'datetime',
         ];
     }
 
@@ -85,6 +87,12 @@ class Business extends Model
     public function posts(): HasMany
     {
         return $this->hasMany(Post::class);
+    }
+
+    /** The photo library posts draw their images from. See ImageLibraryService. */
+    public function images(): HasMany
+    {
+        return $this->hasMany(BusinessImage::class);
     }
 
     public function pendingPosts(): HasMany

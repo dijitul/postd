@@ -7,6 +7,7 @@ use App\Modules\Auth\Controllers\GoogleAuthController;
 use App\Modules\Billing\Controllers\BillingController;
 use App\Modules\Billing\Webhooks\StripeWebhookController;
 use App\Modules\Content\Controllers\ContentController;
+use App\Modules\Media\Controllers\ImageController;
 use App\Modules\Onboarding\Controllers\BusinessController;
 use App\Modules\Onboarding\Controllers\OnboardingController;
 use App\Modules\Social\Controllers\SocialConnectionController;
@@ -114,6 +115,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{id}', [ContentController::class, 'update'])->name('posts.update');
         Route::post('/idea', [ContentController::class, 'submitIdea'])->name('posts.idea');
         Route::post('/generate', [ContentController::class, 'triggerGeneration'])->name('posts.generate');
+    });
+
+    // ── Photo library ─────────────────────────────────────────────────────
+    Route::prefix('images')->group(function () {
+        Route::get('/', [ImageController::class, 'index'])->name('images.index');
+        Route::post('/', [ImageController::class, 'store'])->name('images.store')
+            ->middleware('throttle:30,1');
+        Route::post('/refresh', [ImageController::class, 'refresh'])->name('images.refresh');
+        Route::patch('/{id}', [ImageController::class, 'update'])->name('images.update');
+        Route::delete('/{id}', [ImageController::class, 'destroy'])->name('images.destroy');
     });
 
     // ── Billing ───────────────────────────────────────────────────────────

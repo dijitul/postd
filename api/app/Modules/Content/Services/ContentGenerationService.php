@@ -8,6 +8,7 @@ use App\Models\ContentSource;
 use App\Models\Post;
 use App\Modules\Billing\Services\EntitlementService;
 use App\Modules\Billing\Services\Entitlements;
+use App\Modules\Media\Services\ImageLibraryService;
 use App\Modules\Schedule\Services\SchedulingService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -196,7 +197,8 @@ class ContentGenerationService
     public function __construct(
         private readonly SchedulingService $schedulingService,
         private readonly LinkShortenerService $linkShortener,
-        private readonly EntitlementService $entitlementService
+        private readonly EntitlementService $entitlementService,
+        private readonly ImageLibraryService $imageLibrary
     ) {}
 
     /**
@@ -495,6 +497,26 @@ class ContentGenerationService
         $settings = $business->settings;
         $requiresApproval = $settings ? ! $settings->auto_approve_posts : true;
 
+        // The business's own photo first, AI only when there is none to use.
+        // A real photo of their work reads as theirs; a generated one, however
+        // good, reads as stock. The generate_images setting covers both.
+        $wantsImage = $this->platformNeedsImage($platform) && ($settings?->generate_images ?? true);
+        $libraryImage = null;
+
+        // LIBRARY_IMAGES_ENABLED lets a new photo source be reviewed before
+        // it reaches a live post; imports and the Photos page run regardless.
+        if ($wantsImage && config('services.library_images.enabled')) {
+            try {
+                $libraryImage = $this->imageLibrary->pickForPost($business, $this->anglePageUrl($angle), $platform);
+            } catch (\Throwable $e) {
+                // A library problem costs the post its photo, never the post.
+                Log::warning('ContentGenerationService: Could not pick a library photo', [
+                    'business_id' => $business->id,
+                    'error'       => $e->getMessage(),
+                ]);
+            }
+        }
+
         $post = Post::create([
             'business_id'       => $business->id,
             'brief_id'          => $brief->id,
@@ -502,6 +524,7 @@ class ContentGenerationService
             'platform'          => $platform,
             'content'           => $parsed['content'],
             'hashtags'          => $parsed['hashtags'] ?? [],
+            'media_urls'        => $libraryImage ? [$libraryImage->url] : [],
             // Fully automatic posts go straight to scheduled. They used to be
             // written as approved and then scheduled in a second write, which
             // left approved_at null and made an auto-approved post look, in the
@@ -529,16 +552,23 @@ class ContentGenerationService
                 'removed_hashtags'  => $removedHashtags,
                 // Kept so click counts can be read back off LinkVine per post.
                 'short_link'        => $shortLink,
+                // Where the post's picture came from. GeneratePostImageJob
+                // fills this in for AI images once one has been made.
+                'image'             => $libraryImage
+                    ? ['source' => $libraryImage->source, 'business_image_id' => $libraryImage->id]
+                    : null,
             ],
         ]);
 
-        // Queue image generation if the platform benefits from it, images are
-        // enabled and the plan has one left this month. Once the allowance is
-        // used the post simply goes out text-only; GeneratePostImageJob checks
-        // again when it runs, since one run can queue several at once.
-        if (config('services.openai_images.enabled')
-            && $this->platformNeedsImage($platform)
-            && ($business->settings?->generate_images ?? true)
+        // No suitable photo of their own, so fall back to an AI image if the
+        // global switch is on and the plan has one left this month. Once the
+        // allowance is used the post simply goes out text-only;
+        // GeneratePostImageJob checks again when it runs, since one run can
+        // queue several at once. POST_IMAGES_ENABLED only governs this AI step:
+        // library photos cost nothing and are used whatever it says.
+        if (! $libraryImage
+            && $wantsImage
+            && config('services.openai_images.enabled')
             && $this->entitlementService->aiImagesRemaining($business) > 0) {
             \App\Modules\Content\Jobs\GeneratePostImageJob::dispatch($post, $parsed['image_prompt'] ?? null)
                 ->onQueue('generation')
@@ -1678,6 +1708,18 @@ PROMPT;
             'total_tokens'      => $promptTokens + $completionTokens,
             'cost_usd'          => $costUsd,
         ]);
+    }
+
+    /**
+     * The website page a post was written from, for matching it to a photo
+     * from the same page. Page-based angles carry the page; a website quote
+     * carries the URL of the page the line came from. Review quotes have none.
+     *
+     * @param  array<string, mixed>  $angle
+     */
+    private function anglePageUrl(array $angle): ?string
+    {
+        return $angle['page']['url'] ?? $angle['source']['url'] ?? null;
     }
 
     private function platformNeedsImage(string $platform): bool

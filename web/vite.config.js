@@ -7,7 +7,7 @@ import guidesPlugin from './plugins/guides.js'
 // App routes are client-rendered from the app.html shell; everything else is
 // prerendered to static HTML by scripts/prerender.mjs. Keep this list in step
 // with the app location block in scripts/nginx-postd.uk.conf.
-const APP_ROUTES = /^\/(dashboard|posts|inbox|platforms|settings|billing|admin|onboarding|auth)(\/|$)/
+const APP_ROUTES = /^\/(dashboard|posts|inbox|platforms|photos|settings|billing|admin|onboarding|auth)(\/|$)/
 
 const DEFAULT_HEAD = [
   '<title>postd.uk</title>',

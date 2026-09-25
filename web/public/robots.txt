@@ -16,6 +16,7 @@ Disallow: /dashboard
 Disallow: /posts
 Disallow: /inbox
 Disallow: /platforms
+Disallow: /photos
 Disallow: /settings
 Disallow: /billing
 Disallow: /admin
@@ -58,6 +59,7 @@ Disallow: /dashboard
 Disallow: /posts
 Disallow: /inbox
 Disallow: /platforms
+Disallow: /photos
 Disallow: /settings
 Disallow: /billing
 Disallow: /admin

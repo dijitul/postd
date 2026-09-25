@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, FileText, Share2, CreditCard, Settings,
+  LayoutDashboard, FileText, Share2, Images, CreditCard, Settings,
   LogOut, Menu, X, Bell, ChevronRight
 } from 'lucide-react'
 import { clsx } from 'clsx'
@@ -16,7 +16,10 @@ const NAV_ITEMS = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/posts', icon: FileText, label: 'Posts', badge: true },
   { to: '/platforms', icon: Share2, label: 'Platforms' },
-  { to: '/billing', icon: CreditCard, label: 'Billing' },
+  { to: '/photos', icon: Images, label: 'Photos' },
+  // Billing is visited a few times a year, so it gives up its place in the
+  // phone's bottom bar (which fits five) and stays in the slide-out menu.
+  { to: '/billing', icon: CreditCard, label: 'Billing', bottomBar: false },
   { to: '/settings', icon: Settings, label: 'Settings' }
 ]
 
@@ -238,7 +241,7 @@ export function AppLayout({ children }) {
         {/* ── Bottom nav — mobile only ── */}
         <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-cream-300 lg:hidden z-20 pb-safe">
           <div className="flex items-center justify-around px-2 py-2">
-            {NAV_ITEMS.slice(0, 5).map(({ to, icon: Icon, label, badge }) => {
+            {NAV_ITEMS.filter((item) => item.bottomBar !== false).map(({ to, icon: Icon, label, badge }) => {
               const isActive = location.pathname === to || (to !== '/dashboard' && location.pathname.startsWith(to))
               return (
                 <Link

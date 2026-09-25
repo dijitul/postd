@@ -4,6 +4,7 @@ namespace App\Modules\Scraping\Jobs;
 
 use App\Models\Business;
 use App\Models\ContentSource;
+use App\Modules\Media\Jobs\ImportBusinessImagesJob;
 use App\Modules\Scraping\Services\GoogleReviewsService;
 use App\Modules\Scraping\Services\WebsiteScraperService;
 use Illuminate\Bus\Queueable;
@@ -39,10 +40,11 @@ class ScrapeBusinessJob implements ShouldQueue
         Log::info("ScrapeBusinessJob: Starting for business {$this->business->id}");
 
         $scrapeCount = 0;
+        $imageCandidates = [];
 
         // Scrape the website if a URL is provided
         if ($this->business->website_url) {
-            $this->scrapeWebsite($scraperService);
+            $imageCandidates = $this->scrapeWebsite($scraperService);
             $scrapeCount++;
         }
 
@@ -57,10 +59,24 @@ class ScrapeBusinessJob implements ShouldQueue
         // Update the last scraped timestamp
         $this->business->update(['last_scraped_at' => now()]);
 
+        // Photos are fetched in a job of their own, with their own time budget,
+        // so image downloads and the Google media call can never time out or
+        // fail this one. Queued even with no website, for the Google photos.
+        try {
+            ImportBusinessImagesJob::dispatch($this->business, $imageCandidates);
+        } catch (\Throwable $e) {
+            Log::warning("ScrapeBusinessJob: Could not queue the photo import for business {$this->business->id}", [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         Log::info("ScrapeBusinessJob: Completed for business {$this->business->id}. Created {$scrapeCount} content sources.");
     }
 
-    private function scrapeWebsite(WebsiteScraperService $scraperService): void
+    /**
+     * @return array<int, array{url: string, page_url: string}>  Photo candidates for the image library.
+     */
+    private function scrapeWebsite(WebsiteScraperService $scraperService): array
     {
         try {
             $data = $scraperService->scrape($this->business->website_url);
@@ -127,11 +143,15 @@ class ScrapeBusinessJob implements ShouldQueue
                     'processed' => false,
                 ]
             );
+
+            return $data['image_candidates'] ?? [];
         } catch (\Throwable $e) {
             Log::error("ScrapeBusinessJob: Website scrape failed for business {$this->business->id}", [
                 'url' => $this->business->website_url,
                 'error' => $e->getMessage(),
             ]);
+
+            return [];
         }
     }
 

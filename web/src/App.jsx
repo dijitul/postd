@@ -14,6 +14,7 @@ const OnboardingPage  = lazy(() => import('./pages/Onboarding/index.jsx'))
 const Dashboard       = lazy(() => import('./pages/Dashboard/index.jsx'))
 const PostsPage       = lazy(() => import('./pages/Posts/PostsPage.jsx'))
 const PlatformsPage   = lazy(() => import('./pages/Platforms/index.jsx'))
+const PhotosPage      = lazy(() => import('./pages/Photos/index.jsx'))
 const BillingPage     = lazy(() => import('./pages/Billing/index.jsx'))
 const SettingsPage    = lazy(() => import('./pages/Settings/index.jsx'))
 const AdminPage       = lazy(() => import('./pages/Admin/index.jsx'))
@@ -127,6 +128,7 @@ export default function App() {
             bookmarks and any links already sent out in emails. */}
         <Route path="/posts/inbox" element={<Navigate to="/posts" replace />} />
         <Route path="/platforms" element={<ProtectedLayout><PlatformsPage /></ProtectedLayout>} />
+        <Route path="/photos" element={<ProtectedLayout><PhotosPage /></ProtectedLayout>} />
         <Route path="/billing" element={<ProtectedLayout><BillingPage /></ProtectedLayout>} />
         <Route path="/settings" element={<ProtectedLayout><SettingsPage /></ProtectedLayout>} />
 

@@ -182,6 +182,9 @@ class ContentController extends Controller
         $request->validate([
             'content' => ['nullable', 'string', 'max:5000'],
             'scheduled_at' => ['nullable', 'date', 'after:now'],
+            // Only clearing is supported: taking the picture off one post. Adding
+            // an arbitrary URL would let anything be published as the image.
+            'media_urls' => ['sometimes', 'array', 'max:0'],
         ]);
 
         if (! in_array($post->status, [Post::STATUS_PENDING, Post::STATUS_APPROVED, Post::STATUS_SCHEDULED])) {
@@ -194,6 +197,12 @@ class ContentController extends Controller
         }
         if ($request->filled('scheduled_at')) {
             $updates['scheduled_at'] = $request->scheduled_at;
+        }
+        if ($request->has('media_urls')) {
+            $updates['media_urls'] = [];
+            // Flagged so an AI image still queued for this post does not put a
+            // picture straight back on it.
+            $updates['ai_metadata'] = array_merge($post->ai_metadata ?? [], ['image_removed' => true]);
         }
 
         $post->update($updates);
@@ -270,6 +279,8 @@ class ContentController extends Controller
             'content_original' => $post->content,
             'content_edited' => $post->content_edited,
             'media_urls' => $post->media_urls ?? [],
+            // website | google | upload | ai, or null for older posts and text-only ones.
+            'image_source' => ! empty($post->media_urls) ? ($post->ai_metadata['image']['source'] ?? null) : null,
             'hashtags' => $post->hashtags ?? [],
             'status' => $post->status,
             'scheduled_at' => $post->scheduled_at?->toIso8601String(),

@@ -86,6 +86,7 @@ All business logic lives under `api/app/Modules/`:
 | **Analytics** | Post performance data |
 | **Admin** | Dijitul team dashboard (impersonate, health checks) |
 | **Notifications** | Email notifications (trial ending, post failed, etc.) |
+| **Media** | Photo library (`business_images`): website, Google and uploaded photos used on posts before any AI image. Photos page API under `/images` |
 
 ### Key Classes
 
@@ -98,6 +99,8 @@ SocialConnectionService         OAuth token storage, refresh, account sync
 SchedulingService               picks optimal posting time (respects quiet hours)
 ScrapeBusinessJob               scrapes website + reviews to build content brief
 GeneratePostsJob                daily job: creates posts for all active platforms
+ImageLibraryService             photo library: imports website/Google photos, uploads, picks a photo per post
+ImportBusinessImagesJob         queued by ScrapeBusinessJob; fetches the photos (own 40s budgets per source)
 DispatchScheduledPostsJob       runs every minute via cron, dispatches due posts
 GoogleAuthController            handles Google sign-in OAuth callback
 PlanCatalogue                   read-only view of config/plans.php: plans, prices, Stripe price lookup
@@ -119,6 +122,7 @@ Entitlements                    pure value object behind EntitlementService, uni
 /posts              Content library
 /inbox              Pending approval queue
 /platforms          Connected social accounts
+/photos             Photo library (new app routes also go in .htaccess, vite.config.js APP_ROUTES, robots.txt and the nginx conf)
 /settings           Business settings
 /billing            Plans, monthly/annual, usage against limits, Stripe Checkout and portal
 /admin              Dijitul team only
@@ -420,7 +424,12 @@ Uses Anthropic Claude API via direct HTTP (not the OpenAI PHP SDK).
 - Each draft is compared (word-trigram overlap) with the last 20 posts; above 0.3 it is rewritten once and the less similar draft kept.
 - `HashtagGuard` strips any hashtag whose words are not in the business's own context (name, industry, location, website, reviews) or a short generic list, plus repeats and anything over the platform's `max_hashtags`. Removed tags are logged and kept in `ai_metadata.removed_hashtags`. Publishers send `content` only; the `hashtags` column is informational.
 
-**Image generation:** Uses OpenAI DALL-E via `GeneratePostImageJob`. Requires `OPENAI_API_KEY`.
+**Post images: real photos first, AI second.** Facebook, LinkedIn and GBP posts get a picture when the business setting `generate_images` is on (X never does).
+- `ImageLibraryService::pickForPost()` runs first, at post creation. It prefers an enabled photo from the same website page the post was written from, then Google and uploaded photos, then any; skips anything used in the last 21 days if something else is available; least recently used first. The rules live in the pure `ImagePicker`. The chosen URL goes straight into `media_urls` and `ai_metadata.image = {source, business_image_id}`.
+- Only when no library photo fits does `GeneratePostImageJob` make an AI image (GPT Image model, gated by `POST_IMAGES_ENABLED` and the plan's AI image allowance). The AI image is also recorded in `business_images` with `source = ai` so the owner sees it, but the picker never reuses AI images.
+- `POST_IMAGES_ENABLED` switches off AI images only. Library photos are free, ignore that switch and do not count towards the allowance (which counts `AiCostLog` rows).
+- Where photos come from: `WebsiteScraperService` returns `image_candidates` (found by the pure `ImageCandidateExtractor`: og:image, img/srcset/lazy attributes, gallery links, inline CSS backgrounds; skips logos, icons, badges, header/nav/footer images and third-party hosts). `ImportBusinessImagesJob` downloads at most 15 new website photos a run and 60 in total, then reads the GBP v4 `accounts.locations.media` list at most once a week (`businesses.images_google_synced_at`), skipping LOGO/PROFILE. Photos must be at least 600x400 with an aspect ratio between 0.5 and 2.2; everything is stored as JPEG, long side at most 2048px, under `library/{business_id}/` on Spaces, deduplicated by SHA-1 per business.
+- Owners manage the library on `/photos`: switch photos off (stock images they only licensed for their website), delete (a photo still on an unpublished post is switched off instead), upload (JPEG/PNG/WebP up to 15MB; HEIC is refused with instructions), and trigger a check (once an hour). A single post's image can be removed on the Posts page (`PUT /posts/{id}` with `media_urls: []`).
 
 ---
 

@@ -32,7 +32,7 @@ RewriteRule ^ - [L]
 RewriteCond %{DOCUMENT_ROOT}/$1/index.html -f
 RewriteRule ^(.+)$ /$1/index.html [L]
 
-RewriteRule ^(dashboard|posts|inbox|platforms|settings|billing|admin|onboarding|auth)(/.*)?$ /app.html [L]
+RewriteRule ^(dashboard|posts|inbox|platforms|photos|settings|billing|admin|onboarding|auth)(/.*)?$ /app.html [L]
 
 RewriteRule ^ - [R=404,L]
 

@@ -75,6 +75,30 @@ export const postsApi = {
   generate: (data) => api.post('/posts/generate', data),
   submitIdea: (data) => api.post('/posts/idea', data),
   retry: (id) => api.post(`/posts/${id}/retry`),
+  // Takes the picture off one post that has not gone out yet.
+  removeImage: (id) => api.put(`/posts/${id}`, { media_urls: [] }),
+}
+
+// ─── Photo library endpoints ──────────────────────────────────────────────────
+export const imagesApi = {
+  getAll: (params) => api.get('/images', { params }),
+  setEnabled: (id, isEnabled) => api.patch(`/images/${id}`, { is_enabled: isEnabled }),
+  // Deletes, or switches off if an upcoming post still uses it; the response says which.
+  remove: (id) => api.delete(`/images/${id}`),
+  // The multipart header matters: with the instance's JSON default, axios would
+  // turn the FormData into JSON and the file would never arrive. In the browser
+  // axios then removes it again so the browser can add the boundary itself.
+  // A phone photo on a slow connection needs longer than the usual 30s.
+  upload: (file, onUploadProgress) => {
+    const form = new FormData()
+    form.append('image', file)
+    return api.post('/images', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000,
+      onUploadProgress,
+    })
+  },
+  refresh: () => api.post('/images/refresh'),
 }
 
 // ─── Platforms endpoints ──────────────────────────────────────────────────────

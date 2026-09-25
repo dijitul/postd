@@ -2,6 +2,7 @@
 
 namespace App\Modules\Scraping\Services;
 
+use App\Modules\Media\Services\ImageCandidateExtractor;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Log;
@@ -10,6 +11,12 @@ use Symfony\Component\DomCrawler\Crawler;
 class WebsiteScraperService
 {
     private readonly Client $httpClient;
+
+    private readonly ImageCandidateExtractor $imageExtractor;
+
+    // Photo candidates handed to the image library per scrape. The library
+    // only fetches 15 new ones a run, so this is plenty to choose from.
+    private const MAX_IMAGE_CANDIDATES = 150;
 
     // Elements that are never useful — skip them
     private const SKIP_TAGS = ['script', 'style', 'noscript', 'iframe', 'svg', 'img', 'nav', 'footer'];
@@ -58,6 +65,8 @@ class WebsiteScraperService
             ],
             'verify' => true,
         ]);
+
+        $this->imageExtractor = new ImageCandidateExtractor();
     }
 
     /**
@@ -76,6 +85,7 @@ class WebsiteScraperService
      *   email_addresses: string[],
      *   location_mentions: string[],
      *   page_text: array<int, array{url: string, title: string|null, text: string}>,
+     *   image_candidates: array<int, array{url: string, page_url: string}>,
      *   scraped_at: string,
      *   url: string,
      * }
@@ -137,6 +147,10 @@ class WebsiteScraperService
         $data['page_text'][0]['kind'] = 'home';
         $data['page_text'][0]['lastmod'] = null;
 
+        // Photos on each page, for the image library. Only the URLs leave here:
+        // the HTML is parsed while we already have it and never stored.
+        $imagesByPage = [$this->imageExtractor->extract($html, $url)];
+
         // Then the rest of the site that says something about the business:
         // services, about, FAQs and recent articles. Only the homepage and two
         // fixed paths used to be read, so every post drew on the same three
@@ -152,6 +166,7 @@ class WebsiteScraperService
             if ($additionalData) {
                 $data['services'] = array_values(array_unique(array_merge($data['services'], $additionalData['services'])));
                 $data['body_text'] .= ' ' . $additionalData['body_text'];
+                $imagesByPage[] = $additionalData['image_candidates'];
 
                 if (trim($additionalData['body_text']) !== '') {
                     $data['page_text'][] = [
@@ -166,6 +181,7 @@ class WebsiteScraperService
         }
 
         $data['services'] = array_slice($data['services'], 0, 30);
+        $data['image_candidates'] = $this->interleaveImageCandidates($imagesByPage);
 
         // Trim body text to avoid sending too many tokens to AI
         $data['body_text'] = $this->trimBodyText($data['body_text'], 3000);
@@ -668,10 +684,46 @@ class WebsiteScraperService
                 'page_title' => $this->extractTitle($crawler),
                 'services' => $this->extractServices($crawler, $crawler->filter('body')->text('')),
                 'body_text' => $this->extractBodyText($crawler),
+                'image_candidates' => $this->imageExtractor->extract($html, $url),
             ];
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    /**
+     * One list of photo candidates, taking each page's best in turn.
+     *
+     * Page by page, a homepage gallery would fill the library's 15 a run on its
+     * own and the services and about pages would never get a look in. Taking the
+     * first from every page, then the second, spreads the photos across the site
+     * so more posts can be matched to a photo from their own page.
+     *
+     * @param  array<int, array<int, array{url: string, page_url: string}>>  $imagesByPage
+     * @return array<int, array{url: string, page_url: string}>
+     */
+    private function interleaveImageCandidates(array $imagesByPage): array
+    {
+        $merged = [];
+
+        for ($depth = 0; count($merged) < self::MAX_IMAGE_CANDIDATES; $depth++) {
+            $foundAtThisDepth = false;
+
+            foreach ($imagesByPage as $pageImages) {
+                if (! isset($pageImages[$depth])) {
+                    continue;
+                }
+
+                $foundAtThisDepth = true;
+                $merged[$pageImages[$depth]['url']] ??= $pageImages[$depth];
+            }
+
+            if (! $foundAtThisDepth) {
+                break;
+            }
+        }
+
+        return array_slice(array_values($merged), 0, self::MAX_IMAGE_CANDIDATES);
     }
 
     private function normaliseUrl(string $url): string
@@ -707,6 +759,7 @@ class WebsiteScraperService
             'email_addresses' => [],
             'location_mentions' => [],
             'page_text' => [],
+            'image_candidates' => [],
         ];
     }
 }

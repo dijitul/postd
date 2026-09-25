@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import {
   Check, X, Edit2, ChevronDown, ChevronUp, CheckCircle2,
-  RefreshCw, RotateCcw, AlertCircle, FileText, ExternalLink
+  RefreshCw, RotateCcw, AlertCircle, FileText, ExternalLink, ImageOff
 } from 'lucide-react'
 import PlatformIcon from '../../components/ui/PlatformIcon.jsx'
 import { postsApi, POSTS_CHANGED_EVENT } from '../../lib/api.js'
@@ -97,7 +97,54 @@ function EditModal({ post, onSave, onClose, saving }) {
 }
 
 // ── Post card ──────────────────────────────────────────────────────────────────
-function PostCard({ post, onApprove, onReject, onEdit, onRetry, actioning }) {
+// Where the picture on a post came from, in the owner's words.
+const IMAGE_SOURCE_LABELS = {
+  website: 'Photo from your website',
+  google: 'Photo from Google',
+  upload: 'Your photo',
+  ai: 'AI image',
+}
+
+function PostImage({ post, canRemove, onRemove, actioning }) {
+  const [broken, setBroken] = useState(false)
+  const url = post.media_urls?.[0]
+  if (!url || broken) return null
+
+  const label = IMAGE_SOURCE_LABELS[post.image_source]
+
+  return (
+    <div className="mt-3">
+      <div className="relative rounded-xl overflow-hidden bg-cream-300 border border-cream-300">
+        <img
+          src={url}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={() => setBroken(true)}
+          className="w-full max-h-72 object-cover"
+        />
+        {label && (
+          <span className="absolute top-2 left-2 px-2 py-1 rounded-lg text-2xs font-bold bg-white/95 text-navy-800 shadow-sm">
+            {label}
+          </span>
+        )}
+      </div>
+      {canRemove && (
+        <button
+          type="button"
+          onClick={() => onRemove(post.id)}
+          disabled={actioning}
+          className="inline-flex items-center gap-1.5 min-h-11 text-xs font-semibold text-slate-500 hover:text-red-600 transition-colors disabled:opacity-50"
+        >
+          <ImageOff className="w-3.5 h-3.5" aria-hidden="true" />
+          Post without this image
+        </button>
+      )}
+    </div>
+  )
+}
+
+function PostCard({ post, onApprove, onReject, onEdit, onRetry, onRemoveImage, actioning }) {
   const [expanded, setExpanded] = useState(false)
   const [swiping, setSwiping] = useState(null)
   const touchStart = useRef(null)
@@ -182,6 +229,9 @@ function PostCard({ post, onApprove, onReject, onEdit, onRetry, actioning }) {
             }
           </button>
         )}
+
+        {/* Same statuses the API lets you edit: nothing that has gone out, or is going out now. */}
+        <PostImage post={post} canRemove={canEdit} onRemove={onRemoveImage} actioning={actioning} />
 
         {post.status === 'posted' && post.platform_post_url && (
           <a
@@ -437,6 +487,19 @@ export default function PostsPage() {
     }
   }
 
+  const handleRemoveImage = async (id) => {
+    setActioningId(id)
+    try {
+      await postsApi.removeImage(id)
+      setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, media_urls: [], image_source: null } : p)))
+    } catch (e) {
+      console.error('Remove image failed', e)
+      setError(e.response?.data?.message ?? 'Could not remove that image. Please try again.')
+    } finally {
+      setActioningId(null)
+    }
+  }
+
   const handleSaveEdit = async (id, content) => {
     setSavingEdit(true)
     try {
@@ -553,6 +616,7 @@ export default function PostsPage() {
               onReject={handleReject}
               onEdit={setEditingPost}
               onRetry={handleRetry}
+              onRemoveImage={handleRemoveImage}
               actioning={actioningId === post.id}
             />
           ))}

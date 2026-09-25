@@ -102,6 +102,11 @@ return [
         'endpoint' => env('SMTP2GO_ENDPOINT', 'https://api.smtp2go.com/v3/email/send'),
     ],
 
+    // The business's own photos (website, Google, uploads) on posts.
+    'library_images' => [
+        'enabled' => (bool) env('LIBRARY_IMAGES_ENABLED', true),
+    ],
+
     // Post images. DALL-E 3 was withdrawn from our key and every image job
     // failed from April 2026 until this moved to the GPT Image models. Model
     // and quality are env-driven so a model retirement is an .env change,

@@ -4,6 +4,7 @@ namespace App\Modules\Content\Jobs;
 
 use App\Models\Post;
 use App\Modules\Billing\Services\EntitlementService;
+use App\Modules\Media\Services\ImageLibraryService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -37,6 +38,14 @@ class GeneratePostImageJob implements ShouldQueue
         }
 
         if (! config('services.openai_images.enabled')) {
+            return;
+        }
+
+        // The post already has a picture (a library photo), or the owner took
+        // its picture off while this was queued. Either way, paying for an AI
+        // image now would override their choice.
+        $this->post->refresh();
+        if (! empty($this->post->media_urls) || ! empty($this->post->ai_metadata['image_removed'])) {
             return;
         }
 
@@ -81,10 +90,20 @@ class GeneratePostImageJob implements ShouldQueue
             $storedPath = "posts/{$business->id}/{$this->post->id}/".uniqid('img_', true).'.jpg';
             Storage::disk('s3')->put($storedPath, $imageData, 'public');
 
+            $imageUrl = Storage::disk('s3')->url($storedPath);
             $mediaUrls = $this->post->media_urls ?? [];
-            $mediaUrls[] = Storage::disk('s3')->url($storedPath);
+            $mediaUrls[] = $imageUrl;
 
-            $this->post->update(['media_urls' => $mediaUrls]);
+            // Listed in the photo library so the owner can see it and switch it
+            // off. ImagePicker never reuses AI images, so this is for display only.
+            $libraryImage = app(ImageLibraryService::class)->recordAiImage($business, $storedPath, $imageUrl, $imageData);
+
+            $this->post->update([
+                'media_urls' => $mediaUrls,
+                'ai_metadata' => array_merge($this->post->ai_metadata ?? [], [
+                    'image' => ['source' => 'ai', 'business_image_id' => $libraryImage?->id],
+                ]),
+            ]);
 
             Log::info("GeneratePostImageJob: Image generated for post {$this->post->id}", [
                 'path' => $storedPath,
