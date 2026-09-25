@@ -41,6 +41,13 @@ RewriteRule ^ - [R=404,L]
         Header set X-Robots-Tag "noindex, nofollow"
     </Files>
 
+    # Pages must be checked with the server on every visit. Without an explicit
+    # rule, phone browsers guessed a lifetime from Last-Modified and kept
+    # showing an old home page after a deploy.
+    <FilesMatch "\.html$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+
     # A stale service worker would keep serving old pages after a deploy.
     <FilesMatch "^(sw\.js|registerSW\.js|manifest\.webmanifest)$">
         Header set Cache-Control "no-cache"

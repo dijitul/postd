@@ -29,6 +29,20 @@ const app = (
   </React.StrictMode>
 )
 
+// When a deploy ships a new service worker it takes over straight away
+// (registerType autoUpdate), but the page already on screen was served by the
+// old one and stays stale until the next visit. Reload once when control
+// changes hands so the new version shows immediately. Skipped on a first
+// visit, where there was no previous worker and nothing is stale.
+if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+  let reloading = false
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloading) return
+    reloading = true
+    window.location.reload()
+  })
+}
+
 const rootElement = document.getElementById('root')
 
 // Public pages (home, legal, guides, 404) arrive as prerendered HTML and are
