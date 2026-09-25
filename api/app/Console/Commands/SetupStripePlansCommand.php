@@ -55,9 +55,22 @@ class SetupStripePlansCommand extends Command
 
         // Local and Growth keep the products their current prices belong to, so
         // the annual price sits alongside the monthly one a subscriber already has.
+        // A fresh Stripe account has neither, so the monthly price is created
+        // too when none is configured.
         foreach (['local' => 'STRIPE_PLAN_LOCAL', 'growth' => 'STRIPE_PLAN_GROWTH'] as $plan => $monthlyEnv) {
             $monthlyId = $catalogue->priceId($plan, PlanCatalogue::INTERVAL_MONTHLY);
-            $productId = $monthlyId ? $this->checkExistingPrice($plan, $monthlyId, $catalogue) : null;
+            $productId = $monthlyId
+                ? $this->checkExistingPrice($plan, $monthlyId, $catalogue)
+                : $this->ensurePrice(
+                    lookupKey: "postd_{$plan}_monthly",
+                    env: $monthlyEnv,
+                    configured: null,
+                    pence: $this->pence($catalogue, $plan, PlanCatalogue::INTERVAL_MONTHLY),
+                    interval: 'month',
+                    productId: null,
+                    productName: 'postd.uk '.$catalogue->name($plan),
+                    plan: $plan,
+                );
 
             $this->ensurePrice(
                 lookupKey: "postd_{$plan}_annual",
