@@ -507,7 +507,7 @@ class ContentGenerationService
         // it reaches a live post; imports and the Photos page run regardless.
         if ($wantsImage && config('services.library_images.enabled')) {
             try {
-                $libraryImage = $this->imageLibrary->pickForPost($business, $this->anglePageUrl($angle), $platform);
+                $libraryImage = $this->imageLibrary->pickForPost($business, $this->anglePageUrl($angle), $platform, $parsed['content']);
             } catch (\Throwable $e) {
                 // A library problem costs the post its photo, never the post.
                 Log::warning('ContentGenerationService: Could not pick a library photo', [

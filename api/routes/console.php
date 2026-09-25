@@ -39,6 +39,13 @@ Schedule::call(function () {
     ->dailyAt('03:00')
     ->withoutOverlapping(120);
 
+// Catch up on library photos whose vetting failed at import, after the 03:00
+// scrape's imports have run. Unvetted photos never go on a post.
+Schedule::command('images:vet')
+    ->name('vet-library-photos')
+    ->dailyAt('04:30')
+    ->withoutOverlapping(60);
+
 // Keep short-lived access tokens warm. Google's last an hour and Twitter's about
 // two, so a daily sweep left them expired for most of the day. The narrow window
 // means this only touches connections actually near expiry, rather than

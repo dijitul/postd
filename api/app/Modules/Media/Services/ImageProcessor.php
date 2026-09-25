@@ -33,6 +33,9 @@ class ImageProcessor
     public const THUMB_LONG_SIDE = 480;
     public const THUMB_QUALITY = 78;
 
+    // Perceptual hashes this many bits apart or fewer are the same photo.
+    public const NEAR_DUPLICATE_BITS = 6;
+
     // Decoding costs about 5 bytes a pixel. 40 megapixels is ~200MB, which is
     // already past what a queue worker should spend on one photo.
     public const MAX_PIXELS = 40_000_000;
@@ -144,6 +147,7 @@ class ImageProcessor
                 'width' => $finalWidth,
                 'height' => $finalHeight,
                 'thumbnail' => $thumbnail,
+                'perceptual_hash' => self::perceptualHash($image),
             ];
         } finally {
             imagedestroy($image);
@@ -315,6 +319,80 @@ class ImageProcessor
         $variance = array_sum(array_map(fn ($v) => ($v - $mean) ** 2, $values)) / count($values);
 
         return sqrt($variance) < self::MIN_LUMA_SPREAD;
+    }
+
+    /**
+     * A 64-bit difference hash of the picture, as 16 hex characters.
+     *
+     * content_hash only matches byte-identical files, but the same photo turns
+     * up resized, recompressed or re-exported: the Google profile copy and the
+     * website copy of one shot, or two uploads of it. Shrunk to 9x8 greyscale,
+     * each bit records whether a pixel is brighter than its right-hand
+     * neighbour, which survives all of those. Near-identical photos land
+     * within a few bits of each other (see isNearDuplicate).
+     */
+    public static function perceptualHash(\GdImage $image): string
+    {
+        $small = imagecreatetruecolor(9, 8);
+        imagecopyresampled($small, $image, 0, 0, 0, 0, 9, 8, imagesx($image), imagesy($image));
+
+        $bits = '';
+        for ($y = 0; $y < 8; $y++) {
+            $previous = null;
+            for ($x = 0; $x < 9; $x++) {
+                $rgb = imagecolorat($small, $x, $y);
+                $luma = 0.299 * (($rgb >> 16) & 0xFF) + 0.587 * (($rgb >> 8) & 0xFF) + 0.114 * ($rgb & 0xFF);
+
+                if ($previous !== null) {
+                    $bits .= $luma > $previous ? '1' : '0';
+                }
+                $previous = $luma;
+            }
+        }
+        imagedestroy($small);
+
+        $hex = '';
+        foreach (str_split($bits, 4) as $nibble) {
+            $hex .= dechex(bindec($nibble));
+        }
+
+        return $hex;
+    }
+
+    /** Perceptual hash of an encoded image, or null if it cannot be decoded. */
+    public static function perceptualHashOfBytes(string $bytes): ?string
+    {
+        $image = @imagecreatefromstring($bytes);
+
+        if (! $image) {
+            return null;
+        }
+
+        try {
+            return self::perceptualHash($image);
+        } finally {
+            imagedestroy($image);
+        }
+    }
+
+    /**
+     * Whether two perceptual hashes are the same photo.
+     *
+     * Up to 6 of 64 bits apart: resizing and recompression move a hash by 0 to
+     * 3 bits, while two different photos of the same room sit well past 10.
+     */
+    public static function isNearDuplicate(?string $a, ?string $b): bool
+    {
+        if (! $a || ! $b || strlen($a) !== 16 || strlen($b) !== 16) {
+            return false;
+        }
+
+        $distance = 0;
+        for ($i = 0; $i < 16; $i++) {
+            $distance += substr_count(decbin(hexdec($a[$i]) ^ hexdec($b[$i])), '1');
+        }
+
+        return $distance <= self::NEAR_DUPLICATE_BITS;
     }
 
     private function encodeJpeg(\GdImage $image, int $quality): string

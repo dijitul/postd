@@ -37,6 +37,16 @@ function pageLabel(url) {
   }
 }
 
+// Why postd switched a photo off by itself, in the owner's terms. The owner
+// can switch any of these back on; this is only postd's first opinion.
+const VETTING_NOTES = {
+  screenshot: 'Looks like a screenshot, so postd switched it off',
+  mostly_text: 'Mostly text, so postd switched it off',
+  logo: 'Looks like a logo, so postd switched it off',
+  unsuitable: 'Not suitable for a post, so postd switched it off',
+  duplicate: 'Same as another photo, so postd switched it off',
+}
+
 function usageText(image) {
   if (!image.use_count) return 'Not used yet'
   const times = image.use_count === 1 ? 'once' : `${image.use_count} times`
@@ -97,6 +107,17 @@ function PhotoCard({ image, onToggle, onDelete, busy }) {
         ) : image.source === 'google' ? (
           <p className="text-xs font-semibold text-navy-700 truncate">Google Business Profile</p>
         ) : null}
+        {image.description && (
+          <p className="text-xs text-slate-600 leading-snug line-clamp-2" title={image.description}>
+            {image.description}
+          </p>
+        )}
+        {!image.is_enabled && image.vetting_note && VETTING_NOTES[image.vetting_note] && (
+          <p className="text-2xs font-semibold text-amber-700">{VETTING_NOTES[image.vetting_note]}</p>
+        )}
+        {image.source !== 'ai' && !image.vetted && image.is_enabled && (
+          <p className="text-2xs text-slate-500">Being checked, used on posts once it has been</p>
+        )}
         <p className="text-2xs text-slate-500">{usageText(image)}</p>
 
         <div className="mt-auto pt-2 flex items-center gap-2">

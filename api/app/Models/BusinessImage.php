@@ -18,6 +18,12 @@ class BusinessImage extends Model
     public const SOURCE_UPLOAD = 'upload';
     public const SOURCE_AI = 'ai';
 
+    // What ImageVetter found the picture to be. Only photos and illustrations
+    // are ever put on a post.
+    public const KIND_PHOTO = 'photo';
+    public const KIND_ILLUSTRATION = 'illustration';
+    public const USABLE_KINDS = [self::KIND_PHOTO, self::KIND_ILLUSTRATION];
+
     public const SOURCES = [
         self::SOURCE_WEBSITE,
         self::SOURCE_GOOGLE,
@@ -37,8 +43,13 @@ class BusinessImage extends Model
         'width',
         'height',
         'content_hash',
+        'perceptual_hash',
         'google_media_name',
         'google_category',
+        'kind',
+        'description',
+        'vetted_at',
+        'vetting_note',
         'is_enabled',
         'last_used_at',
         'use_count',
@@ -51,6 +62,7 @@ class BusinessImage extends Model
             'height' => 'integer',
             'is_enabled' => 'boolean',
             'last_used_at' => 'datetime',
+            'vetted_at' => 'datetime',
             'use_count' => 'integer',
         ];
     }

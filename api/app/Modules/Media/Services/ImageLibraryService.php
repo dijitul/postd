@@ -78,6 +78,7 @@ class ImageLibraryService
     public function __construct(
         private readonly ImageProcessor $processor,
         private readonly ImagePicker $picker,
+        private readonly ImageVetter $vetter,
         private readonly SocialConnectionService $connections,
         array $clientOptions = []
     ) {
@@ -341,7 +342,7 @@ class ImageLibraryService
             return ['image' => $existing, 'created' => false];
         }
 
-        $image = $this->store($business, $processed, ['source' => BusinessImage::SOURCE_UPLOAD]);
+        $image = $this->store($business, $processed, ['source' => BusinessImage::SOURCE_UPLOAD], ownerChosen: true);
 
         if (! $image) {
             // Lost a race with an identical upload; hand back the winner.
@@ -399,11 +400,13 @@ class ImageLibraryService
      * The use is recorded straight away, so the next post written in the same
      * run (another platform, or the next day's slot) moves on to a different photo.
      */
-    public function pickForPost(Business $business, ?string $pageUrl, string $platform): ?BusinessImage
+    public function pickForPost(Business $business, ?string $pageUrl, string $platform, ?string $postText = null): ?BusinessImage
     {
         $images = $business->images()
             ->where('is_enabled', true)
             ->where('source', '!=', BusinessImage::SOURCE_AI)
+            ->whereNotNull('vetted_at')
+            ->whereIn('kind', BusinessImage::USABLE_KINDS)
             ->get();
 
         $chosen = $this->picker->choose(
@@ -413,9 +416,13 @@ class ImageLibraryService
                 'page_url' => $image->page_url,
                 'is_enabled' => $image->is_enabled,
                 'last_used_at' => $image->last_used_at,
+                'vetted' => $image->vetted_at !== null,
+                'kind' => $image->kind,
+                'description' => $image->description,
             ])->all(),
             $pageUrl,
-            now()
+            now(),
+            postText: $postText
         );
 
         if (! $chosen) {
@@ -503,13 +510,28 @@ class ImageLibraryService
      * @param  array{bytes: string, width: int, height: int, thumbnail: string|null}  $processed
      * @param  array<string, mixed>  $attributes
      */
-    private function store(Business $business, array $processed, array $attributes): ?BusinessImage
+    private function store(Business $business, array $processed, array $attributes, bool $ownerChosen = false): ?BusinessImage
     {
         $hash = sha1($processed['bytes']);
 
         if ($business->images()->where('content_hash', $hash)->exists()) {
             return null;
         }
+
+        $perceptualHash = $processed['perceptual_hash'] ?? null;
+        $duplicateOf = $perceptualHash ? $this->nearDuplicateOf($business, $perceptualHash) : null;
+
+        // A near-duplicate is still stored, switched off with the reason, so the
+        // owner can see why and the same file is not downloaded again tomorrow.
+        $vetting = $duplicateOf
+            ? [
+                'is_enabled' => false,
+                'vetting_note' => ImageVetter::NOTE_DUPLICATE,
+                'vetted_at' => now(),
+                'kind' => $duplicateOf->kind,
+                'description' => $duplicateOf->description,
+            ]
+            : $this->vetting($processed['thumbnail'] ?? $processed['bytes'], $ownerChosen);
 
         $disk = Storage::disk('s3');
         $path = "library/{$business->id}/{$hash}.jpg";
@@ -527,8 +549,9 @@ class ImageLibraryService
         }
 
         try {
-            return BusinessImage::create($attributes + [
+            return BusinessImage::create($attributes + $vetting + [
                 'business_id' => $business->id,
+                'perceptual_hash' => $perceptualHash,
                 'storage_path' => $path,
                 'url' => $disk->url($path),
                 'thumbnail_path' => $thumbPath,
@@ -542,6 +565,130 @@ class ImageLibraryService
             // the same, so the winner's row already points at it.
             return null;
         }
+    }
+
+    /**
+     * The vetting columns for a newly stored photo.
+     *
+     * If the check cannot run (API down, timeout), the photo is stored
+     * unvetted, which keeps it off posts until vetPending() gets to it.
+     * Uploads are vetted for their description only: the owner picked them,
+     * so they are never switched off on the model's say-so.
+     *
+     * @return array<string, mixed>
+     */
+    private function vetting(string $jpegBytes, bool $ownerChosen): array
+    {
+        try {
+            $verdict = $this->vetter->vet($jpegBytes);
+        } catch (\Throwable $e) {
+            Log::info('ImageLibraryService: Photo left unvetted for now', ['error' => $e->getMessage()]);
+
+            return ['vetted_at' => null];
+        }
+
+        return [
+            'kind' => $verdict['kind'],
+            'description' => $verdict['description'] ?: null,
+            'vetted_at' => now(),
+            'vetting_note' => $ownerChosen ? null : $verdict['note'],
+            'is_enabled' => $ownerChosen || $verdict['usable'],
+        ];
+    }
+
+    /** An existing photo in this business's library that looks the same, if any. */
+    private function nearDuplicateOf(Business $business, string $perceptualHash, ?string $exceptId = null): ?BusinessImage
+    {
+        return $business->images()
+            ->whereNotNull('perceptual_hash')
+            ->where('source', '!=', BusinessImage::SOURCE_AI)
+            ->when($exceptId, fn ($query) => $query->whereKeyNot($exceptId))
+            ->oldest()
+            ->get(['id', 'perceptual_hash', 'kind', 'description', 'created_at'])
+            ->first(fn (BusinessImage $image) => ImageProcessor::isNearDuplicate($image->perceptual_hash, $perceptualHash));
+    }
+
+    /**
+     * Vet photos that have not been looked at yet.
+     *
+     * Covers photos imported before vetting existed, and any whose check failed
+     * at import. A duplicate of an older photo is switched off rather than
+     * vetted. Run daily by images:vet, and by hand after a backfill.
+     *
+     * @return array{vetted: int, switched_off: int, failed: int}
+     */
+    public function vetPending(?Business $business = null, int $limit = 50): array
+    {
+        $counts = ['vetted' => 0, 'switched_off' => 0, 'failed' => 0];
+        $disk = Storage::disk('s3');
+
+        $images = BusinessImage::query()
+            ->whereNull('vetted_at')
+            ->where('source', '!=', BusinessImage::SOURCE_AI)
+            ->when($business, fn ($query) => $query->where('business_id', $business->id))
+            ->oldest()
+            ->limit($limit)
+            ->get();
+
+        foreach ($images as $image) {
+            try {
+                $bytes = $disk->get($image->thumbnail_path ?: $image->storage_path);
+
+                if (! $bytes) {
+                    throw new \RuntimeException('file missing');
+                }
+
+                $perceptualHash = $image->perceptual_hash
+                    ?? ImageProcessor::perceptualHashOfBytes($disk->get($image->storage_path) ?: $bytes);
+
+                $duplicateOf = $perceptualHash
+                    ? $this->nearDuplicateOf($image->business, $perceptualHash, $image->id)
+                    : null;
+
+                // Only a duplicate of an older photo gives way, so of two copies
+                // the first imported is the one kept.
+                if ($duplicateOf && $duplicateOf->created_at->lessThanOrEqualTo($image->created_at)) {
+                    $image->update([
+                        'perceptual_hash' => $perceptualHash,
+                        'vetted_at' => now(),
+                        'vetting_note' => ImageVetter::NOTE_DUPLICATE,
+                        'is_enabled' => $image->source === BusinessImage::SOURCE_UPLOAD ? $image->is_enabled : false,
+                    ]);
+                    $counts['switched_off']++;
+
+                    continue;
+                }
+
+                $vetting = $this->vetting($bytes, $image->source === BusinessImage::SOURCE_UPLOAD);
+
+                if ($vetting['vetted_at'] === null) {
+                    $counts['failed']++;
+
+                    continue;
+                }
+
+                // A photo the owner has already switched off stays off: vetting
+                // can only ever narrow what the owner allowed, never widen it.
+                if ($image->is_enabled === false) {
+                    unset($vetting['is_enabled']);
+                }
+
+                $image->update($vetting + ['perceptual_hash' => $perceptualHash]);
+                $counts['vetted']++;
+
+                if (($vetting['is_enabled'] ?? true) === false) {
+                    $counts['switched_off']++;
+                }
+            } catch (\Throwable $e) {
+                $counts['failed']++;
+                Log::warning('ImageLibraryService: Could not vet a photo', [
+                    'image_id' => $image->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $counts;
     }
 
     /**
