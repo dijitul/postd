@@ -53,46 +53,62 @@ class GeneratePostImageJob implements ShouldQueue
         // Enhance the prompt with UK-specific and brand-consistent instructions
         $enhancedPrompt = $this->enhancePrompt($prompt, $business->industry);
 
+        $model = config('services.openai_images.model');
+
         try {
+            // GPT Image models always return the image itself as base64. The
+            // old DALL-E request asked for a URL (response_format), which the
+            // API now rejects outright.
             $response = OpenAI::images()->create([
-                'model' => 'dall-e-3',
+                'model' => $model,
                 'prompt' => $enhancedPrompt,
                 'n' => 1,
                 'size' => '1024x1024',
-                'quality' => 'standard',
-                'response_format' => 'url',
+                'quality' => config('services.openai_images.quality'),
+                'output_format' => 'jpeg',
             ]);
 
-            $imageUrl = $response->data[0]->url;
+            $imageData = base64_decode($response->data[0]->b64_json, true);
 
-            // Download and store on DigitalOcean Spaces
-            $storedPath = $this->downloadAndStore($imageUrl, $business->id, $this->post->id);
-
-            if ($storedPath) {
-                $mediaUrls = $this->post->media_urls ?? [];
-                $mediaUrls[] = Storage::disk('s3')->url($storedPath);
-
-                $this->post->update(['media_urls' => $mediaUrls]);
-
-                Log::info("GeneratePostImageJob: Image generated for post {$this->post->id}", [
-                    'path' => $storedPath,
-                ]);
+            if (! $imageData) {
+                throw new \RuntimeException('The image API returned no image data.');
             }
 
-            // Log cost (DALL-E 3 standard 1024x1024 = $0.040 per image)
+            $storedPath = "posts/{$business->id}/{$this->post->id}/".uniqid('img_', true).'.jpg';
+            Storage::disk('s3')->put($storedPath, $imageData, 'public');
+
+            $mediaUrls = $this->post->media_urls ?? [];
+            $mediaUrls[] = Storage::disk('s3')->url($storedPath);
+
+            $this->post->update(['media_urls' => $mediaUrls]);
+
+            Log::info("GeneratePostImageJob: Image generated for post {$this->post->id}", [
+                'path' => $storedPath,
+                'model' => $model,
+            ]);
+
             \App\Models\AiCostLog::create([
                 'business_id' => $business->id,
                 'post_id' => $this->post->id,
                 'operation' => 'image_generation',
-                'model' => 'dall-e-3',
+                'model' => $model,
                 'prompt_tokens' => 0,
                 'completion_tokens' => 0,
                 'total_tokens' => 0,
-                'cost_usd' => 0.04,
+                'cost_usd' => config('services.openai_images.cost_usd'),
             ]);
-
         } catch (\Throwable $e) {
+            // The post still goes out as text, so a failure here is easy to
+            // miss: images silently stopped for five months once already.
+            // Recording it on the post makes it visible in the admin and in
+            // any query for posts that should have had an image.
+            $this->post->update(['ai_metadata' => array_merge($this->post->ai_metadata ?? [], [
+                'image_error' => mb_substr($e->getMessage(), 0, 300),
+                'image_error_at' => now()->toIso8601String(),
+            ])]);
+
             Log::error("GeneratePostImageJob: Failed for post {$this->post->id}", [
+                'model' => $model,
                 'error' => $e->getMessage(),
             ]);
         }
@@ -107,26 +123,11 @@ class GeneratePostImageJob implements ShouldQueue
     private function enhancePrompt(string $basePrompt, string $industry): string
     {
         $ukStyle = "UK setting, authentic British aesthetic, natural photography style, not stock-photo-generic. "
-            ."Warm, inviting atmosphere. Professional but approachable.";
+            ."Warm, inviting atmosphere. Professional but approachable. "
+            // Generated lettering comes out garbled (a van reading "PLUMBNIG"),
+            // and a made-up logo looks like someone else's business.
+            ."No text, words, letters, logos, signage or watermarks anywhere in the image.";
 
         return "{$basePrompt}. {$ukStyle}";
-    }
-
-    private function downloadAndStore(string $url, string $businessId, string $postId): ?string
-    {
-        try {
-            $imageData = file_get_contents($url);
-            if ($imageData === false) {
-                return null;
-            }
-
-            $filename = "posts/{$businessId}/{$postId}/".uniqid('img_', true).'.png';
-            Storage::disk('s3')->put($filename, $imageData, 'public');
-
-            return $filename;
-        } catch (\Throwable $e) {
-            Log::error("GeneratePostImageJob: Failed to store image", ['error' => $e->getMessage()]);
-            return null;
-        }
     }
 }

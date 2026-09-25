@@ -102,4 +102,14 @@ return [
         'endpoint' => env('SMTP2GO_ENDPOINT', 'https://api.smtp2go.com/v3/email/send'),
     ],
 
+    // Post images. DALL-E 3 was withdrawn from our key and every image job
+    // failed from April 2026 until this moved to the GPT Image models. Model
+    // and quality are env-driven so a model retirement is an .env change,
+    // not a deploy. cost_usd is our per-image estimate for the cost log.
+    'openai_images' => [
+        'model' => env('OPENAI_IMAGE_MODEL', 'gpt-image-1-mini'),
+        'quality' => env('OPENAI_IMAGE_QUALITY', 'medium'),
+        'cost_usd' => (float) env('OPENAI_IMAGE_COST_USD', 0.015),
+    ],
+
 ];
