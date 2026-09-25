@@ -11,10 +11,23 @@ class StripeWebhookController extends WebhookController
     /**
      * Handle a Stripe webhook.
      * Extends Cashier's built-in webhook controller for custom event handling.
+     *
+     * This used to call parent::handle(), which Cashier does not have (its
+     * entry point is handleWebhook), so every webhook died with a 500.
      */
     public function handle(Request $request): \Symfony\Component\HttpFoundation\Response
     {
-        return parent::handle($request);
+        // Cashier only checks Stripe's signature when a signing secret is set.
+        // Without one, anyone who found this URL could post a fake
+        // "subscription created" event, so in production nothing is accepted
+        // until STRIPE_WEBHOOK_SECRET is configured.
+        if (! config('cashier.webhook.secret') && app()->isProduction()) {
+            Log::warning('StripeWebhookController: Webhook refused, STRIPE_WEBHOOK_SECRET is not set');
+
+            return response('Webhook signing secret not configured.', 503);
+        }
+
+        return parent::handleWebhook($request);
     }
 
     /**
