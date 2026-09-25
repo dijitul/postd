@@ -1100,7 +1100,7 @@ Respond with ONLY a valid JSON object — no markdown, no code fences, no commen
 {
   "content": "the full post text ready to publish",
   "hashtags": ["hashtag1", "hashtag2"],
-  "image_prompt": "a detailed prompt for an accompanying image (UK-appropriate, authentic photography style, not generic stock photo)"
+  "image_prompt": "one or two plain sentences describing a single photo to go with the post: a real object, place or detail connected to it (the finished job, the tools, the product, the premises). No people at all. UK setting. Describe it the way you would describe an ordinary photo someone took on their phone, not a styled shoot."
 }
 PROMPT;
     }

@@ -120,18 +120,31 @@ class GeneratePostImageJob implements ShouldQueue
 
     private function buildDefaultPrompt(mixed $business): string
     {
-        return "A professional, authentic photograph representing a UK {$business->industry} business called {$business->name}. "
-            ."Natural lighting, real setting, UK aesthetic. Not a generic stock photo.";
+        return "An everyday detail from a UK {$business->industry} business: the premises, the tools of the trade or a finished piece of work.";
     }
 
+    /**
+     * Wrap the post's image idea in the house photo style.
+     *
+     * Two things made the first samples read as AI. People doing the work,
+     * which also implies staff and jobs that do not exist, so people are out
+     * entirely. And polish: perfect light, perfect symmetry, glossy surfaces,
+     * everything spotless. Real small business photos are taken on a phone in
+     * whatever light there is, slightly off level, with the clutter left in,
+     * so the prompt asks for exactly that.
+     */
     private function enhancePrompt(string $basePrompt, string $industry): string
     {
-        $ukStyle = "UK setting, authentic British aesthetic, natural photography style, not stock-photo-generic. "
-            ."Warm, inviting atmosphere. Professional but approachable. "
+        $style = 'An ordinary, unedited photo taken on a mid-range smartphone by the business owner, in the UK. '
+            .'Candid and a little imperfect: framing slightly off-centre or tilted, flat or mixed natural light, '
+            .'some background clutter, visible wear, scuffs, dust and fingerprints, muted true-to-life colours, '
+            .'ordinary depth of field. Not a professional shoot: no dramatic lighting, no golden glow, no heavy '
+            .'background blur, no HDR, no glossy or airbrushed surfaces, nothing perfectly symmetrical or spotless. '
+            .'No people, faces, hands or body parts. '
             // Generated lettering comes out garbled (a van reading "PLUMBNIG"),
             // and a made-up logo looks like someone else's business.
-            ."No text, words, letters, logos, signage or watermarks anywhere in the image.";
+            .'No text, words, letters, numbers, logos, signage, screens showing text or watermarks anywhere in the image.';
 
-        return "{$basePrompt}. {$ukStyle}";
+        return rtrim($basePrompt, ". \n").'. '.$style;
     }
 }
