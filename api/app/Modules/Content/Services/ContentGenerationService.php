@@ -536,7 +536,8 @@ class ContentGenerationService
         // enabled and the plan has one left this month. Once the allowance is
         // used the post simply goes out text-only; GeneratePostImageJob checks
         // again when it runs, since one run can queue several at once.
-        if ($this->platformNeedsImage($platform)
+        if (config('services.openai_images.enabled')
+            && $this->platformNeedsImage($platform)
             && ($business->settings?->generate_images ?? true)
             && $this->entitlementService->aiImagesRemaining($business) > 0) {
             \App\Modules\Content\Jobs\GeneratePostImageJob::dispatch($post, $parsed['image_prompt'] ?? null)

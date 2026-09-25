@@ -107,6 +107,8 @@ return [
     // and quality are env-driven so a model retirement is an .env change,
     // not a deploy. cost_usd is our per-image estimate for the cost log.
     'openai_images' => [
+        // Master switch for AI post images, above each business's own setting.
+        'enabled' => (bool) env('POST_IMAGES_ENABLED', true),
         'model' => env('OPENAI_IMAGE_MODEL', 'gpt-image-1-mini'),
         'quality' => env('OPENAI_IMAGE_QUALITY', 'medium'),
         'cost_usd' => (float) env('OPENAI_IMAGE_COST_USD', 0.015),

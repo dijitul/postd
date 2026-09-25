@@ -36,6 +36,10 @@ class GeneratePostImageJob implements ShouldQueue
             return;
         }
 
+        if (! config('services.openai_images.enabled')) {
+            return;
+        }
+
         $business = $this->post->business;
 
         // Checked here as well as when queued: one generation run queues an
