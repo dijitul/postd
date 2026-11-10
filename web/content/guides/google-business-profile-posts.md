@@ -221,7 +221,7 @@ Your options, from cheapest to least effort:
 | Post by hand in Google | Free | You | You, each time |
 | Google's own Schedule and Repeats | Free | You | Google, at the time you set |
 | A general scheduling tool, such as Buffer | Buffer's paid plans start at $5 per channel per month (US dollars, checked September 2026), and its free plan does not include Google Business Profile | You, with some AI help | The tool |
-| A tool that writes and publishes, such as postd | From £19 a month | The tool, from your website and reviews | The tool, after your approval or automatically |
+| A tool that writes and publishes, such as postd | From £15 a month | The tool, from your website and reviews | The tool, after your approval or automatically |
 
 postd reads your website and your real Google reviews, writes each post in UK English, and publishes it to your Business Profile at a sensible local time. It can also post to Facebook Pages, LinkedIn Company Pages and X, writing a separate version for each. You can approve every post first or let it run on autopilot. The wider question of what to automate and what to keep human is covered in [automated social media posting for UK small businesses](/guides/automated-social-media-posting).
 

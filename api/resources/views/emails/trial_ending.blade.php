@@ -393,7 +393,7 @@
                 <!-- Starter -->
                 <div class="plan-row">
                     <span class="plan-name">Starter</span>
-                    <p class="plan-price"><strong>£19</strong><span>/mo + VAT</span></p>
+                    <p class="plan-price"><strong>£15</strong><span>/mo + VAT</span></p>
                     <p class="plan-features">2 platforms + Google Business Profile. Perfect for just getting started.</p>
                 </div>
 
@@ -401,7 +401,7 @@
                 <div class="plan-row plan-row-popular">
                     <span class="plan-name">Growth</span>
                     <span class="plan-badge">Your current trial</span>
-                    <p class="plan-price"><strong>£39</strong><span>/mo + VAT</span></p>
+                    <p class="plan-price"><strong>£29</strong><span>/mo + VAT</span></p>
                     <p class="plan-features">4 platforms + Google Business Profile. Our most popular plan for established businesses.</p>
                 </div>
 

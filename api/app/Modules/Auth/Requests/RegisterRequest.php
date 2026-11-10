@@ -20,6 +20,7 @@ class RegisterRequest extends FormRequest
             'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
             'referral_code' => ['nullable', 'string', 'max:20'],
             'terms_accepted' => ['required', 'accepted'],
+            'access_code' => ['nullable', 'string', 'max:60'],
         ];
     }
 

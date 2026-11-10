@@ -201,6 +201,27 @@ class BillingController extends Controller
     }
 
     /**
+     * Apply a free-access code to the signed-in account (dijitul's retainer
+     * clients). For people who signed up with Google and skipped the form.
+     */
+    public function redeem(Request $request): JsonResponse
+    {
+        $request->validate(['code' => ['required', 'string', 'max:60']]);
+
+        $plan = \App\Modules\Billing\Services\AccessCodes::planFor($request->input('code'));
+        if (! $plan) {
+            return response()->json(['message' => "That code isn't valid."], 422);
+        }
+
+        $request->user()->forceFill(['comped_plan' => $plan, 'comped_until' => null])->save();
+
+        return response()->json([
+            'message' => 'Code applied. Your account is on us.',
+            'plan' => $plan,
+        ]);
+    }
+
+    /**
      * Create a Stripe Billing Portal session.
      */
     public function portal(Request $request): JsonResponse

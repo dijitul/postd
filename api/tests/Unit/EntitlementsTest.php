@@ -204,8 +204,8 @@ class EntitlementsTest extends TestCase
         $this->assertSame(['plan' => 'pro', 'interval' => 'monthly'], $catalogue->lookupPrice('price_pro_m'));
         $this->assertNull($catalogue->lookupPrice('price_unknown'));
 
-        // Annual counts as a twelfth for MRR: £390 a year is £32.50 a month.
-        $this->assertSame(3250, $catalogue->monthlyValuePence('price_growth_y'));
+        // Annual counts as a twelfth for MRR: £290 a year is £24.16 a month (rounded down).
+        $this->assertSame(2416, $catalogue->monthlyValuePence('price_growth_y'));
         $this->assertSame(6900, $catalogue->monthlyValuePence('price_pro_m'));
     }
 
@@ -244,7 +244,7 @@ class EntitlementsTest extends TestCase
         $this->assertSame('platform_not_included', $x['error']);
         $this->assertSame('growth', $x['upgrade_plan']);
         $this->assertSame('/billing', $x['upgrade_url']);
-        $this->assertStringContainsString('£39 a month', $x['message']);
+        $this->assertStringContainsString('£29 a month', $x['message']);
 
         $cadence = $service->limitResponse(Entitlements::LIMIT_POSTS_PER_WEEK, $local, ['platform' => 'facebook']);
         $this->assertStringContainsString('up to 3 posts a week', $cadence['message']);
@@ -252,7 +252,7 @@ class EntitlementsTest extends TestCase
 
         $location = $service->limitResponse(Entitlements::LIMIT_LOCATIONS, $service->resolve('growth'));
         $this->assertSame('agency', $location['upgrade_plan']);
-        $this->assertStringContainsString('£79 a month', $location['message']);
+        $this->assertStringContainsString('£59 a month', $location['message']);
 
         foreach ([$x, $cadence, $location] as $response) {
             $this->assertStringNotContainsString("\u{2014}", $response['message'], 'no em-dashes in copy');

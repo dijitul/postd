@@ -19,7 +19,7 @@ export const TRIAL = {
   aiImages: 10,
 }
 
-export const EXTRA_LOCATION_PRICE = 19
+export const EXTRA_LOCATION_PRICE = 15
 
 // Everything every plan includes. Kept separate so the cards only list what
 // differs, and the section can say "on every plan" once.
@@ -33,8 +33,8 @@ export const PLANS = [
   {
     id: 'local',
     name: 'Local',
-    monthly: 19,
-    annual: 190,
+    monthly: 15,
+    annual: 150,
     popular: false,
     tagline: 'For one business on the two channels that matter most to it.',
     features: [
@@ -48,8 +48,8 @@ export const PLANS = [
   {
     id: 'growth',
     name: 'Growth',
-    monthly: 39,
-    annual: 390,
+    monthly: 29,
+    annual: 290,
     popular: true,
     tagline: 'Every platform, including X, at up to a post a day.',
     features: [
@@ -63,8 +63,8 @@ export const PLANS = [
   {
     id: 'agency',
     name: 'Agency',
-    monthly: 79,
-    annual: 790,
+    monthly: 59,
+    annual: 590,
     popular: false,
     tagline: 'For multi-site owners and small agencies with a handful of locations.',
     features: [
@@ -92,12 +92,12 @@ export const PLATFORM_NAMES = {
   twitter: 'X',
 }
 
-/** £19, or £32.50 when there are pence. */
+/** £15, or £24.17 when there are pence. */
 export function formatPounds(pounds) {
   return Number.isInteger(pounds) ? `£${pounds}` : `£${pounds.toFixed(2)}`
 }
 
-/** "£19/month" or "£190/year", with the VAT suffix. */
+/** "£15/month" or "£150/year", with the VAT suffix. */
 export function priceLabel(pounds, interval = 'monthly') {
   return `${formatPounds(pounds)}/${interval === 'annual' ? 'year' : 'month'}${VAT_SUFFIX}`
 }

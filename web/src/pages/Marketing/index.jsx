@@ -6,6 +6,7 @@ import PlatformIcon from '../../components/ui/PlatformIcon.jsx'
 import SiteFooter from '../../components/marketing/SiteFooter.jsx'
 import HomeFaq, { HomeSeo } from './HomeFaq.jsx'
 import PricingSection from './PricingSection.jsx'
+import OfficePromo, { OFFICE_URL } from './OfficePromo.jsx'
 import { pricingJsonLdOffers } from '../../lib/plans.js'
 
 // ── Animated post card ────────────────────────────────────────────────────────
@@ -101,7 +102,7 @@ function HeroIllustration() {
 //
 // Meta description:
 //   "postd.uk automatically writes and posts social media content for UK small businesses.
-//    Connect Google Business Profile, Facebook, LinkedIn and X. From £19/month. 14-day free trial."
+//    Connect Google Business Profile, Facebook, LinkedIn and X. From £15/month. 14-day free trial."
 //
 // Open Graph og:title  — same as page title above
 // Open Graph og:description — same as meta description above
@@ -171,6 +172,10 @@ export default function MarketingPage() {
               <Link to="/guides" className="text-sm font-medium text-navy-700 hover:text-amber-500 transition-colors">
                 Guides
               </Link>
+              <a href={OFFICE_URL} className="hidden lg:inline-flex items-center gap-1.5 text-sm font-medium text-navy-700 hover:text-amber-500 transition-colors">
+                Postd Office
+                <span className="text-2xs font-bold uppercase tracking-wide bg-honey-400 text-navy-800 px-1.5 py-0.5 rounded-full">New</span>
+              </a>
             </nav>
 
             <div className="flex items-center gap-3">
@@ -342,6 +347,9 @@ export default function MarketingPage() {
       {/* ── Pricing ──────────────────────────────────────────────────────────── */}
       <PricingSection />
 
+      {/* ── Sister product: Postd Office ─────────────────────────────────────── */}
+      <OfficePromo />
+
       <HomeFaq />
 
       {/* ── Final CTA ────────────────────────────────────────────────────────── */}
@@ -384,7 +392,7 @@ export default function MarketingPage() {
             "@id": "https://postd.uk/#software",
             "name": "postd.uk",
             "url": "https://postd.uk",
-            "description": "AI-powered social media automation for UK small businesses. Automatically writes and posts content to Google Business Profile, Facebook, LinkedIn and X. From £19/month.",
+            "description": "AI-powered social media automation for UK small businesses. Automatically writes and posts content to Google Business Profile, Facebook, LinkedIn and X. From £15/month.",
             "applicationCategory": "BusinessApplication",
             "operatingSystem": "Web",
             "offers": pricingJsonLdOffers(),

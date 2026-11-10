@@ -31,6 +31,7 @@ const schema = z.object({
   terms_accepted: z.boolean().refine((v) => v === true, {
     message: 'You must accept the Terms of Service and Privacy Policy to continue',
   }),
+  access_code: z.string().max(60).optional(),
 }).refine((d) => d.password === d.password_confirmation, {
   message: 'Passwords do not match',
   path: ['password_confirmation']
@@ -76,6 +77,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [showEmailForm, setShowEmailForm] = useState(false)
+  const [showCode, setShowCode] = useState(false)
   const { register: registerUser, loginWithGoogle, isLoading, error, clearError } = useAuthStore()
   const navigate = useNavigate()
 
@@ -255,6 +257,32 @@ export default function RegisterPage() {
                 <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" /> {errors.password_confirmation.message}
                 </p>
+              )}
+            </div>
+
+            {/* Access code (dijitul clients). Optional, and hidden until asked for. */}
+            <div>
+              {showCode ? (
+                <>
+                  <label htmlFor="access_code" className="label">Access code</label>
+                  <input
+                    id="access_code"
+                    type="text"
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    className="input"
+                    {...register('access_code')}
+                  />
+                  <p className="mt-1.5 text-xs text-slate-500">Given to you by dijitul. A valid code means there is nothing to pay.</p>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowCode(true)}
+                  className="text-sm font-semibold text-amber-600 underline min-h-11"
+                >
+                  Have an access code?
+                </button>
               )}
             </div>
 

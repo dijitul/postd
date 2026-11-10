@@ -119,6 +119,8 @@ export const billingApi = {
   getSubscription: () => api.get('/billing/subscription'),
   // Plans, current plan, and usage against the plan's limits
   getPlans: () => api.get('/billing/plans'),
+  // Free-access code for dijitul's retainer clients.
+  redeemCode: (code) => api.post('/billing/redeem', { code }),
   // New subscribers get a Stripe Checkout { url }; existing ones are switched
   // straight away and get { message, subscription }.
   createCheckout: (plan, interval = 'monthly') => api.post('/billing/checkout', { plan, interval }),

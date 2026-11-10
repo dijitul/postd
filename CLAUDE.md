@@ -218,14 +218,14 @@ STRIPE_SECRET=
 STRIPE_WEBHOOK_SECRET=
 
 # Stripe price IDs (see Plans and Entitlements). Blank = hidden on the Billing page.
-STRIPE_PLAN_LOCAL=              # falls back to STRIPE_PLAN_STARTER (same £19 price)
+STRIPE_PLAN_LOCAL=              # £15 (repriced 10 Nov 2026; the old £19 price is archived)
 STRIPE_PLAN_STARTER=
 STRIPE_PLAN_GROWTH=
 STRIPE_PLAN_AGENCY=
 STRIPE_PLAN_LOCAL_ANNUAL=
 STRIPE_PLAN_GROWTH_ANNUAL=
 STRIPE_PLAN_AGENCY_ANNUAL=
-STRIPE_PRICE_EXTRA_LOCATION=    # Agency add-on, £19/month per location beyond 3
+STRIPE_PRICE_EXTRA_LOCATION=    # Agency add-on, £15/month per location beyond 3
 STRIPE_PLAN_PRO=                # legacy £69, existing subscribers only
 STRIPE_TAX_RATE_VAT=            # 20% UK VAT, exclusive. Added to every new subscription
 
@@ -442,19 +442,21 @@ Uses Anthropic Claude API via direct HTTP (not the OpenAI PHP SDK).
 
 Approved structure (full reasoning in `docs/marketing/pricing-and-platforms.md`):
 
-| | Local £19/mo | Growth £39/mo (trial tier) | Agency £79/mo |
+| | Local £15/mo | Growth £29/mo (trial tier) | Agency £59/mo |
 |---|---|---|---|
-| Locations | 1 | 1 | 3, then +£19/mo each |
+| Locations | 1 | 1 | 3, then +£15/mo each |
 | Platforms | any 2 of GBP, Facebook, LinkedIn (no X) | all four | all four, per location |
 | Posts a week, per platform | 3 | 7 | 14 (GBP 7) |
 | AI images a month | 5 | 30 | 100, pooled across locations |
 | Analytics history | 30 days | 12 months | 12 months |
 
-Every plan: autopilot or approval, review-driven posts, regenerating. Annual = 2 months free (£190 / £390 / £790). Prices show with no VAT wording for now; the suffix is `VAT_SUFFIX` in `web/src/lib/plans.js`.
+Every plan: autopilot or approval, review-driven posts, regenerating. Annual = 2 months free (£150 / £290 / £590). Prices show with no VAT wording for now; the suffix is `VAT_SUFFIX` in `web/src/lib/plans.js`.
 
 **Trial:** 14 days on Growth, no card. X capped at 10 posts and AI images at 10 for the whole trial. When it ends, posting pauses (see below); nothing is deleted.
 
 **Legacy plans:** `starter` is an alias of `local` (same Stripe price, `STRIPE_PLAN_LOCAL` falls back to `STRIPE_PLAN_STARTER`). `pro` is not sold any more; existing Pro subscribers keep £69 with Agency entitlements. Migration `2026_09_25_150000` renamed stored `comped_plan` values and dropped the unused `plan_features` table.
+
+**Access codes:** `PROMO_CODES` in the server `.env` ("CODE:plan,...", never in git) maps a code to a free plan for dijitul retainer clients. Entered on /register or on Billing (`POST /billing/redeem`, throttled); a valid code sets `comped_plan` with no end date. Postd Office has the same in its own `.env`.
 
 ### One source of truth
 

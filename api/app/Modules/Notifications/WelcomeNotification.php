@@ -37,7 +37,7 @@ class WelcomeNotification extends Notification implements ShouldQueue
             ->line("**2.** Your first AI-generated posts will appear in your inbox within the next hour.")
             ->line("**3.** Review them, approve the ones you love, and they'll be posted automatically at the perfect time.")
             ->action('Go to your inbox', config('app.frontend_url').'/posts/inbox')
-            ->line("Your trial runs until {$trialEndDate}. After that, plans start from just £19/mo.")
+            ->line("Your trial runs until {$trialEndDate}. After that, plans start from just £15/mo + VAT.")
             ->line("Any questions? Just reply to this email — we're a small UK team and we actually read them.")
             ->salutation("The postd.uk team (built by Dijitul, Mansfield)");
     }

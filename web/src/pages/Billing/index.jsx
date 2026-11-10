@@ -10,6 +10,7 @@ import {
   formatPounds, annualPerMonth,
 } from '../../lib/plans.js'
 import IntervalToggle from '../../components/ui/IntervalToggle.jsx'
+import RedeemCode from '../../components/billing/RedeemCode.jsx'
 
 const pounds = (pence) => (pence == null ? null : pence / 100)
 
@@ -578,6 +579,8 @@ export default function BillingPage() {
           </div>
         </div>
       </div>
+
+      {!comp && !loadingBilling && <RedeemCode />}
     </div>
   )
 }

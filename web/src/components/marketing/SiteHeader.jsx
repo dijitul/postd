@@ -23,6 +23,10 @@ export default function SiteHeader() {
             <Link to="/guides" className="text-sm font-medium text-navy-700 hover:text-amber-500 transition-colors">
               Guides
             </Link>
+            <a href="https://office.postd.uk" className="hidden lg:inline-flex items-center gap-1.5 text-sm font-medium text-navy-700 hover:text-amber-500 transition-colors">
+              Postd Office
+              <span className="text-2xs font-bold uppercase tracking-wide bg-honey-400 text-navy-800 px-1.5 py-0.5 rounded-full">New</span>
+            </a>
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">

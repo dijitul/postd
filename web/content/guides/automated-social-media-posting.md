@@ -112,7 +112,7 @@ The honest answer is anything from nothing to several thousand pounds a month, d
 | Doing it yourself | Your time | Full control | Everything |
 | The platforms' own schedulers | Free | Posts go out at the time you set | Write every post, load each platform separately |
 | A general scheduler, such as Buffer | Buffer's paid plans start at $5 per channel per month, billed in US dollars; its free plan covers three channels and excludes Google Business Profile ([Buffer pricing](https://buffer.com/pricing), checked September 2026) | One place to queue posts for several platforms | Write every post, with optional AI help |
-| A tool that writes and publishes | From about £19 a month | Posts written from your business information and published on a schedule | Approve or edit, or let it run |
+| A tool that writes and publishes | From about £15 a month | Posts written from your business information and published on a schedule | Approve or edit, or let it run |
 | A freelancer | £150 to £800 a month, or £15 to £50 an hour | A person planning, writing and often designing | Brief them, answer questions, approve |
 | A regional agency | £400 to £1,500 a month | A team, strategy, reporting, often paid ads | Meetings, approvals, a contract |
 | A national agency | From £1,500 a month, often much more | As above, at a larger scale | As above |
@@ -195,4 +195,4 @@ If you want to try automation without spending anything, begin with the free sch
 
 If Google is your priority, read our [complete guide to Google Business Profile posts](/guides/google-business-profile-posts) and [how often to post on Google Business Profile](/guides/how-often-post-google-business-profile). For a stock of ideas to automate, see [what to post on Google Business Profile](/guides/what-to-post-on-google-business-profile).
 
-Set it up once, then approve posts as they arrive or let them go out automatically. [Start a 14-day free trial of postd](https://postd.uk/register), no card needed. Plans start at £19 a month.
+Set it up once, then approve posts as they arrive or let them go out automatically. [Start a 14-day free trial of postd](https://postd.uk/register), no card needed. Plans start at £15 a month.

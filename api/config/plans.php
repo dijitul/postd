@@ -40,6 +40,9 @@ return [
     // User::taxRates(). Create it with php artisan billing:setup-stripe.
     'vat_tax_rate_id' => env('STRIPE_TAX_RATE_VAT'),
 
+    // Free-access codes, "CODE:plan,OTHER:plan". Server .env only, never git.
+    'access_codes' => env('PROMO_CODES', ''),
+
     'trial_days' => 14,
 
     // Trials run on this plan's entitlements, less the trial caps below.
@@ -60,7 +63,7 @@ return [
 
     // Agency add-on for each location beyond the three included.
     'extra_location' => [
-        'price' => 1900,
+        'price' => 1500,
         'stripe_price_id' => env('STRIPE_PRICE_EXTRA_LOCATION'),
     ],
 
@@ -72,12 +75,12 @@ return [
             'offered' => true,
             'popular' => false,
             'monthly' => [
-                'price' => 1900,
+                'price' => 1500,
                 // Reuses the old Starter price so existing subscribers need no change.
                 'stripe_price_id' => env('STRIPE_PLAN_LOCAL', env('STRIPE_PLAN_STARTER')),
             ],
             'annual' => [
-                'price' => 19000,
+                'price' => 15000,
                 'stripe_price_id' => env('STRIPE_PLAN_LOCAL_ANNUAL'),
             ],
             'locations' => 1,
@@ -98,11 +101,11 @@ return [
             'offered' => true,
             'popular' => true,
             'monthly' => [
-                'price' => 3900,
+                'price' => 2900,
                 'stripe_price_id' => env('STRIPE_PLAN_GROWTH'),
             ],
             'annual' => [
-                'price' => 39000,
+                'price' => 29000,
                 'stripe_price_id' => env('STRIPE_PLAN_GROWTH_ANNUAL'),
             ],
             'locations' => 1,
@@ -121,11 +124,11 @@ return [
             'offered' => true,
             'popular' => false,
             'monthly' => [
-                'price' => 7900,
+                'price' => 5900,
                 'stripe_price_id' => env('STRIPE_PLAN_AGENCY'),
             ],
             'annual' => [
-                'price' => 79000,
+                'price' => 59000,
                 'stripe_price_id' => env('STRIPE_PLAN_AGENCY_ANNUAL'),
             ],
         ] + $agencyEntitlements,

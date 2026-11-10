@@ -137,6 +137,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/invoices', [BillingController::class, 'invoices'])->name('billing.invoices');
         Route::get('/invoices/{id}/download', [BillingController::class, 'downloadInvoice'])->name('billing.invoice.download');
         Route::post('/portal', [BillingController::class, 'portal'])->name('billing.portal');
+        Route::post('/redeem', [BillingController::class, 'redeem'])->middleware('throttle:10,60')->name('billing.redeem');
         Route::post('/payment-method', [BillingController::class, 'updatePaymentMethod'])->name('billing.payment-method');
         Route::get('/subscription', [BillingController::class, 'subscription'])->name('billing.subscription');
     });

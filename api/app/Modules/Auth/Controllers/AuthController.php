@@ -26,7 +26,17 @@ class AuthController extends Controller
      */
     public function register(RegisterRequest $request): JsonResponse
     {
-        $user = DB::transaction(function () use ($request) {
+        $codePlan = null;
+        if (filled($request->access_code)) {
+            $codePlan = \App\Modules\Billing\Services\AccessCodes::planFor($request->access_code);
+            if (! $codePlan) {
+                throw ValidationException::withMessages([
+                    'access_code' => ["That code isn't valid. Check it, or leave it blank."],
+                ]);
+            }
+        }
+
+        $user = DB::transaction(function () use ($request, $codePlan) {
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
@@ -35,6 +45,11 @@ class AuthController extends Controller
                 'referral_code' => Str::upper(Str::random(8)),
                 'referred_by' => $this->resolveReferral($request->referral_code),
             ]);
+
+            // A valid access code: the plan is on dijitul, with no end date.
+            if ($codePlan) {
+                $user->forceFill(['comped_plan' => $codePlan, 'comped_until' => null])->save();
+            }
 
             event(new Registered($user));
 

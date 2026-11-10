@@ -49,3 +49,6 @@ creds.txt
 
 # Agent worktrees
 .claude/worktrees/
+
+# Postd Office lives in its own repo (dijitul/autodm)
+AutoDM/

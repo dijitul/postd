@@ -14,6 +14,7 @@ const COLUMNS = [
       { label: 'Questions and answers', href: '/#faq' },
       { label: 'Start free trial', to: '/register' },
       { label: 'Log in', to: '/login' },
+      { label: 'Postd Office: DMs and comments', href: 'https://office.postd.uk' },
     ],
   },
   {
@@ -123,7 +124,7 @@ export default function SiteFooter() {
           </nav>
         </div>
 
-        <div className="mt-8 md:mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between text-xs text-white/40">
+        <div className="mt-8 md:mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between text-xs text-white/60">
           <p>&copy; {year} postd.uk</p>
           <p>
             Made by{' '}
