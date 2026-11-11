@@ -62,9 +62,9 @@ export default defineConfig(({ isSsrBuild }) => ({
             manifest: {
               name: 'postd.uk',
               short_name: 'postd',
-              description: 'All your posts. One hive. Automated social media for UK small businesses.',
-              theme_color: '#E07B30',
-              background_color: '#F9F5EE',
+              description: 'Post every week without thinking about it. Automated social media for UK small businesses.',
+              theme_color: '#2340F5',
+              background_color: '#FFFFFF',
               display: 'standalone',
               orientation: 'portrait',
               scope: '/',

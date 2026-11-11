@@ -5,7 +5,7 @@
  * - Plan tiers:  local | growth | agency, plus legacy starter and pro
  * - Status:      active | pending | failed | paused | draft | scheduled
  * - Platforms:   facebook | x | linkedin | google (any other falls back to default)
- * - General:     default | amber | honey | navy | success | warning | error | info
+ * - General:     default | amber (cobalt) | honey (sun) | navy | success | warning | error | info
  */
 
 // ─── Variant definitions ──────────────────────────────────────────────────────
@@ -13,17 +13,17 @@
 const VARIANTS = {
   // ── General ──
   default: 'bg-slate-100 text-slate-700 border border-slate-200',
-  amber:   'bg-amber-50 text-amber-700 border border-amber-200',
-  navy:    'bg-navy-800 text-white border border-navy-700',
-  honey:   'bg-honey-400 text-navy-800 border border-honey-500 font-bold',
-  cream:   'bg-cream-200 text-navy-800 border border-cream-400',
+  amber:   'bg-cobalt-50 text-cobalt-700 border border-cobalt-200',
+  navy:    'bg-navy-900 text-white border border-navy-700',
+  honey:   'bg-sun-400 text-navy-900 border border-sun-500 font-bold',
+  cream:   'bg-cloud text-navy-900 border border-line-strong',
 
   // ── Status ──
   success:   'bg-green-50 text-green-700 border border-green-200',
-  warning:   'bg-amber-50 text-amber-700 border border-amber-200',
+  warning:   'bg-warn-soft text-warn-text border border-yellow-200',
   error:     'bg-red-50 text-red-600 border border-red-200',
   info:      'bg-blue-50 text-blue-700 border border-blue-200',
-  pending:   'bg-purple-50 text-purple-700 border border-purple-200',
+  pending:   'bg-ai-50 text-ai-600 border border-ai-200',
 
   // ── Post status ──
   active:    'bg-green-50 text-green-700 border border-green-200',
@@ -37,9 +37,9 @@ const VARIANTS = {
   // ── Plan tiers ──
   local:   'bg-slate-100 text-slate-700 border border-slate-200',
   starter: 'bg-slate-100 text-slate-700 border border-slate-200',
-  growth:  'bg-amber-50 text-amber-700 border border-amber-200',
-  agency:  'bg-honey-400 text-navy-800 border border-honey-500 font-bold',
-  pro:     'bg-honey-400 text-navy-800 border border-honey-500 font-bold',
+  growth:  'bg-cobalt-50 text-cobalt-700 border border-cobalt-200',
+  agency:  'bg-sun-400 text-navy-900 border border-sun-500 font-bold',
+  pro:     'bg-sun-400 text-navy-900 border border-sun-500 font-bold',
 
   // ── Platforms ──
   facebook:  'bg-blue-50 text-blue-700 border border-blue-200',
@@ -65,7 +65,7 @@ function StatusDot({ variant }) {
     success:   'bg-green-500',
     failed:    'bg-red-500',
     error:     'bg-red-500',
-    warning:   'bg-amber-500',
+    warning:   'bg-warn',
     pending:   'bg-purple-400',
     scheduled: 'bg-blue-500',
     queued:    'bg-purple-400',
@@ -98,11 +98,11 @@ const PLATFORM_DOTS = {
 
 function PlanIcon({ variant }) {
   const colours = {
-    local:   '#94A3B8',
-    starter: '#94A3B8',
-    growth:  '#E07B30',
-    agency:  '#F5C842',
-    pro:     '#F5C842',
+    local:   '#8A93AB',
+    starter: '#8A93AB',
+    growth:  '#2340F5',
+    agency:  '#FFD23F',
+    pro:     '#FFD23F',
   }
   const colour = colours[variant]
   if (!colour) return null
@@ -142,7 +142,7 @@ export default function Badge({
     <span
       className={[
         'inline-flex items-center',
-        'font-display font-semibold',
+        'font-body font-semibold',
         'leading-none whitespace-nowrap',
         variantClass,
         sizeClass,
@@ -234,7 +234,7 @@ export function PlatformBadge({ platform, label, ...props }) {
 export function TrialBadge({ daysLeft, ...props }) {
   const isExpiring = daysLeft <= 3
   return (
-    <Badge variant={isExpiring ? 'error' : 'amber'} dot {...props}>
+    <Badge variant={isExpiring ? 'error' : 'warning'} dot {...props}>
       {daysLeft === 0 ? 'Trial expired' : `${daysLeft}d trial`}
     </Badge>
   )

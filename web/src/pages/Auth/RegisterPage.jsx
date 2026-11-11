@@ -55,7 +55,7 @@ function PasswordStrength({ password = '' }) {
             key={i}
             className={`h-1 flex-1 rounded-full transition-all duration-300 ${
               i <= score
-                ? score === 1 ? 'bg-red-400' : score === 2 ? 'bg-amber-400' : 'bg-green-500'
+                ? score === 1 ? 'bg-danger' : score === 2 ? 'bg-warn' : 'bg-success'
                 : 'bg-slate-200'
             }`}
           />
@@ -63,7 +63,7 @@ function PasswordStrength({ password = '' }) {
       </div>
       <div className="flex gap-3 flex-wrap">
         {checks.map((c) => (
-          <span key={c.label} className={`text-xs flex items-center gap-1 ${c.pass ? 'text-green-600' : 'text-slate-400'}`}>
+          <span key={c.label} className={`text-xs flex items-center gap-1 ${c.pass ? 'text-green-600' : 'text-slate-500'}`}>
             <Check className={`w-3 h-3 ${c.pass ? 'opacity-100' : 'opacity-30'}`} />
             {c.label}
           </span>
@@ -96,7 +96,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cream-200 honeycomb-bg flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-cloud flex flex-col items-center justify-center px-4 py-12">
       <Seo
         title="Start Your Free Trial | postd.uk"
         description="Create a postd.uk account with Google and let it write and publish your social media posts to Google Business Profile, Facebook, LinkedIn and X."
@@ -109,11 +109,11 @@ export default function RegisterPage() {
         <div className="text-center mb-8">
           <Logo size="lg" className="justify-center" />
           <div className="mt-6">
-            <div className="inline-flex items-center gap-2 bg-green-50 text-green-700 text-xs font-bold px-4 py-2 rounded-full border border-green-200 mb-4">
+            <div className="inline-flex items-center gap-2 bg-success-soft text-success-text text-xs font-semibold px-4 py-2 rounded-full mb-4">
               <Check className="w-3.5 h-3.5" />
-              14-day free trial — no card required
+              14-day free trial, no card required
             </div>
-            <h1 className="font-display font-bold text-2xl text-navy-800 mb-2">
+            <h1 className="font-display font-extrabold text-[1.75rem] tracking-tight text-navy-900 mb-2">
               Create your account
             </h1>
             <p className="text-slate-500 text-sm">
@@ -122,7 +122,7 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl p-7 sm:p-8 border border-cream-300" style={{ boxShadow: '0 8px 32px rgb(30 45 74 / 0.08)' }}>
+        <div className="card-marketing p-6 sm:p-8">
 
           {error && (
             <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-6">
@@ -135,14 +135,13 @@ export default function RegisterPage() {
           <button
             type="button"
             onClick={loginWithGoogle}
-            className="w-full flex items-center justify-center gap-3 bg-white border-2 border-slate-200 text-slate-700 font-semibold py-4 px-6 rounded-xl hover:border-blue-300 hover:bg-blue-50/30 active:scale-[0.98] transition-all duration-200 mb-3"
-            style={{ boxShadow: '0 2px 8px rgb(0 0 0 / 0.07)' }}
+            className="min-h-[44px] font-display w-full flex items-center justify-center gap-3 bg-white border-[1.5px] border-line-strong text-navy-900 font-semibold py-4 px-6 rounded-full hover:border-cobalt-300 hover:bg-cobalt-50 active:scale-[0.98] transition-all duration-200 mb-3"
           >
             <GoogleIcon />
             <span>Sign up with Google</span>
           </button>
 
-          <p className="text-center text-xs text-slate-400 mb-4">
+          <p className="text-center text-xs text-slate-500 mb-4">
             Your Google Business Profile will be connected automatically
           </p>
 
@@ -151,7 +150,7 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={() => setShowEmailForm(true)}
-              className="w-full flex items-center justify-center gap-2 text-sm text-slate-400 hover:text-slate-600 transition-colors py-2"
+              className="w-full flex items-center justify-center gap-2 min-h-[44px] text-sm font-medium text-slate-500 hover:text-navy-900 transition-colors py-2"
             >
               <ChevronDown className="w-4 h-4" />
               Sign up with email instead
@@ -160,9 +159,9 @@ export default function RegisterPage() {
             <>
               {/* Divider */}
               <div className="flex items-center gap-3 mb-5">
-                <div className="flex-1 h-px bg-slate-100" />
-                <span className="text-xs text-slate-400 font-medium">or use email</span>
-                <div className="flex-1 h-px bg-slate-100" />
+                <div className="flex-1 h-px bg-line" />
+                <span className="text-xs text-slate-500 font-medium">or use email</span>
+                <div className="flex-1 h-px bg-line" />
               </div>
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
@@ -218,7 +217,7 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 inline-flex items-center justify-center rounded-full text-slate-500 hover:text-slate-600 transition-colors"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -247,7 +246,7 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setShowConfirm(!showConfirm)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 inline-flex items-center justify-center rounded-full text-slate-500 hover:text-slate-600 transition-colors"
                   aria-label={showConfirm ? 'Hide' : 'Show'}
                 >
                   {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -279,7 +278,7 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setShowCode(true)}
-                  className="text-sm font-semibold text-amber-600 underline min-h-11"
+                  className="text-sm font-semibold text-cobalt-700 underline min-h-11"
                 >
                   Have an access code?
                 </button>
@@ -291,16 +290,16 @@ export default function RegisterPage() {
               <label className="flex items-start gap-3 cursor-pointer group">
                 <input
                   type="checkbox"
-                  className="mt-0.5 w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500 flex-shrink-0 cursor-pointer"
+                  className="mt-0.5 w-4 h-4 rounded border-slate-300 text-cobalt-600 focus:ring-cobalt-600 flex-shrink-0 cursor-pointer"
                   {...register('terms_accepted')}
                 />
                 <span className="text-sm text-slate-500 leading-relaxed">
                   I agree to the{' '}
-                  <Link to="/terms" target="_blank" className="underline text-slate-600 hover:text-amber-600 transition-colors">
+                  <Link to="/terms" target="_blank" className="underline text-slate-600 hover:text-cobalt-700 transition-colors">
                     Terms of Service
                   </Link>
                   {' '}and{' '}
-                  <Link to="/privacy" target="_blank" className="underline text-slate-600 hover:text-amber-600 transition-colors">
+                  <Link to="/privacy" target="_blank" className="underline text-slate-600 hover:text-cobalt-700 transition-colors">
                     Privacy Policy
                   </Link>
                 </span>
@@ -316,8 +315,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2.5 bg-amber-500 text-white font-bold py-4 px-6 rounded-xl hover:bg-amber-700 active:scale-[0.98] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed mt-2"
-              style={{ boxShadow: '0 4px 16px rgb(224 123 48 / 0.3)' }}
+              className="min-h-[44px] font-display w-full flex items-center justify-center gap-2.5 bg-cobalt-600 text-white font-semibold py-4 px-6 rounded-full hover:bg-cobalt-700 active:scale-[0.98] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed mt-2"
             >
               {isLoading ? (
                 <>
@@ -334,7 +332,7 @@ export default function RegisterPage() {
           </form>
 
           {/* No card required note */}
-          <div className="flex items-center justify-center gap-2 mt-4 text-xs text-slate-400">
+          <div className="flex items-center justify-center gap-2 mt-4 text-xs text-slate-500">
             <Shield className="w-3.5 h-3.5" />
             No credit card required. Upgrade when you&apos;re ready.
           </div>
@@ -343,7 +341,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Legal */}
-        <p className="text-center text-xs text-slate-400 mt-4 px-4 leading-relaxed">
+        <p className="text-center text-xs text-slate-500 mt-4 px-4 leading-relaxed">
           By creating an account you agree to our{' '}
           <Link to="/terms" className="underline hover:text-slate-600 transition-colors">Terms of Service</Link>
           {' '}and{' '}
@@ -354,7 +352,7 @@ export default function RegisterPage() {
         {/* Login link */}
         <p className="text-center text-sm text-slate-500 mt-5">
           Already have an account?{' '}
-          <Link to="/login" className="font-semibold text-amber-600 hover:text-amber-700 transition-colors">
+          <Link to="/login" className="font-semibold text-cobalt-700 hover:text-cobalt-700 transition-colors">
             Log in
           </Link>
         </p>

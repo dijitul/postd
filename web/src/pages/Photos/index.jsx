@@ -9,9 +9,9 @@ const QUERY_KEY = ['images']
 
 // Where a photo came from, worded for the owner rather than for us.
 const SOURCES = {
-  website: { label: 'Website',     Icon: Globe,    cls: 'bg-white/95 text-navy-800' },
-  google:  { label: 'Google',      Icon: MapPin,   cls: 'bg-white/95 text-navy-800' },
-  upload:  { label: 'Your upload', Icon: Camera,   cls: 'bg-white/95 text-navy-800' },
+  website: { label: 'Website',     Icon: Globe,    cls: 'bg-white/95 text-navy-900' },
+  google:  { label: 'Google',      Icon: MapPin,   cls: 'bg-white/95 text-navy-900' },
+  upload:  { label: 'Your upload', Icon: Camera,   cls: 'bg-white/95 text-navy-900' },
   ai:      { label: 'AI',          Icon: Sparkles, cls: 'bg-purple-600/95 text-white' },
 }
 
@@ -65,8 +65,8 @@ function PhotoCard({ image, onToggle, onDelete, busy }) {
   const SourceIcon = source.Icon
 
   return (
-    <li className="m-0 bg-white rounded-2xl border border-cream-300 overflow-hidden flex flex-col" style={{ boxShadow: '0 2px 8px rgb(30 45 74 / 0.06)' }}>
-      <div className="relative aspect-square bg-cream-300">
+    <li className="m-0 bg-white rounded-2xl border border-line overflow-hidden flex flex-col">
+      <div className="relative aspect-square bg-line">
         {!broken ? (
           <img
             src={image.thumbnail_url}
@@ -77,7 +77,7 @@ function PhotoCard({ image, onToggle, onDelete, busy }) {
             className={`w-full h-full object-cover transition-all duration-200 ${image.is_enabled ? '' : 'opacity-40 grayscale'}`}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-slate-400">
+          <div className="w-full h-full flex items-center justify-center text-slate-500">
             <Images className="w-8 h-8" aria-hidden="true" />
           </div>
         )}
@@ -86,7 +86,7 @@ function PhotoCard({ image, onToggle, onDelete, busy }) {
           {source.label}
         </span>
         {!image.is_enabled && (
-          <span className="absolute bottom-2 left-2 px-2 py-1 rounded-lg text-2xs font-bold bg-navy-800/90 text-white">
+          <span className="absolute bottom-2 left-2 px-2 py-1 rounded-lg text-2xs font-bold bg-navy-900/90 text-white">
             Switched off
           </span>
         )}
@@ -98,7 +98,7 @@ function PhotoCard({ image, onToggle, onDelete, busy }) {
             href={image.page_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-navy-700 hover:text-amber-600 transition-colors min-w-0"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-navy-700 hover:text-cobalt-700 transition-colors min-w-0"
             title={image.page_url}
           >
             <span className="truncate">{pageLabel(image.page_url)}</span>
@@ -113,7 +113,7 @@ function PhotoCard({ image, onToggle, onDelete, busy }) {
           </p>
         )}
         {!image.is_enabled && image.vetting_note && VETTING_NOTES[image.vetting_note] && (
-          <p className="text-2xs font-semibold text-amber-700">{VETTING_NOTES[image.vetting_note]}</p>
+          <p className="text-2xs font-semibold text-cobalt-700">{VETTING_NOTES[image.vetting_note]}</p>
         )}
         {image.source !== 'ai' && !image.vetted && image.is_enabled && (
           <p className="text-2xs text-slate-500">Being checked, used on posts once it has been</p>
@@ -146,10 +146,10 @@ function PhotoCard({ image, onToggle, onDelete, busy }) {
                 aria-pressed={image.is_enabled}
                 onClick={() => onToggle(image)}
                 disabled={busy}
-                className={`flex-1 min-h-11 px-2 inline-flex items-center justify-center gap-1.5 text-xs leading-tight font-bold rounded-xl border transition-colors disabled:opacity-50 ${
+                className={`font-display flex-1 min-h-11 px-2 inline-flex items-center justify-center gap-1.5 text-xs leading-tight font-semibold rounded-full border transition-colors disabled:opacity-50 ${
                   image.is_enabled
                     ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
-                    : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                    : 'bg-white text-slate-500 border-slate-200 hover:bg-cloud'
                 }`}
               >
                 {image.is_enabled
@@ -162,7 +162,7 @@ function PhotoCard({ image, onToggle, onDelete, busy }) {
                 disabled={busy}
                 aria-label="Delete this photo"
                 title="Delete"
-                className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl text-slate-400 border border-slate-200 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-colors disabled:opacity-50"
+                className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl text-slate-500 border border-slate-200 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-colors disabled:opacity-50"
               >
                 <Trash2 className="w-4 h-4" aria-hidden="true" />
               </button>
@@ -192,7 +192,7 @@ function UploadArea({ onFiles, uploading }) {
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
       className={`rounded-2xl border-2 border-dashed p-5 sm:p-6 text-center transition-colors ${
-        dragging ? 'border-amber-500 bg-amber-50' : 'border-cream-300 bg-white'
+        dragging ? 'border-cobalt-600 bg-cobalt-50' : 'border-line bg-white'
       }`}
     >
       <input
@@ -210,7 +210,7 @@ function UploadArea({ onFiles, uploading }) {
       />
       <label
         htmlFor="photo-upload"
-        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 min-h-12 px-5 rounded-xl bg-navy-800 text-white text-sm font-bold hover:bg-navy-700 active:scale-[0.98] transition-all cursor-pointer"
+        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 min-h-12 px-5 rounded-full bg-cobalt-600 text-white text-sm font-display font-semibold hover:bg-cobalt-700 active:scale-[0.98] transition-all cursor-pointer"
       >
         {uploading
           ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />
@@ -319,8 +319,8 @@ export default function PhotosPage() {
       {/* Header */}
       <div className="mb-5">
         <div className="flex items-center gap-3 mb-2">
-          <Images className="w-5 h-5 text-amber-500" aria-hidden="true" />
-          <h1 className="font-display font-black text-2xl text-navy-800">Photos</h1>
+          <Images className="w-5 h-5 text-cobalt-600" aria-hidden="true" />
+          <h1 className="font-display font-extrabold text-2xl text-navy-900">Photos</h1>
         </div>
         <p className="text-slate-600 text-sm leading-relaxed max-w-2xl">
           postd uses your own photos first. Untick anything you don't want used, for example stock photos you only have a licence to use on your website. If there's no suitable photo, postd can create one.
@@ -330,12 +330,12 @@ export default function PhotosPage() {
       {/* Actions */}
       <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-stretch mb-5">
         <UploadArea onFiles={uploadFiles} uploading={uploading} />
-        <div className="flex flex-col justify-center gap-2 bg-white rounded-2xl border border-cream-300 p-5 sm:max-w-xs">
+        <div className="flex flex-col justify-center gap-2 bg-white rounded-2xl border border-line p-5 sm:max-w-xs">
           <button
             type="button"
             onClick={() => refresh.mutate()}
             disabled={refresh.isPending || !!refreshBlockedUntil}
-            className="w-full inline-flex items-center justify-center gap-2 min-h-12 px-4 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 text-sm font-bold hover:bg-amber-100 active:scale-[0.98] transition-all disabled:opacity-50"
+            className="w-full inline-flex items-center justify-center gap-2 min-h-12 px-4 rounded-full bg-cobalt-50 text-cobalt-700 border border-cobalt-200 text-sm font-bold hover:bg-cobalt-100 active:scale-[0.98] transition-all disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 flex-shrink-0 ${refresh.isPending ? 'animate-spin' : ''}`} aria-hidden="true" />
             Check my website and Google for new photos
@@ -359,7 +359,7 @@ export default function PhotosPage() {
               className={`flex items-start gap-2 rounded-xl px-3 py-2.5 text-xs border ${
                 u.status === 'error' ? 'bg-red-50 border-red-200 text-red-700'
                   : u.status === 'done' ? 'bg-green-50 border-green-200 text-green-700'
-                  : 'bg-white border-cream-300 text-slate-600'
+                  : 'bg-white border-line text-slate-600'
               }`}
             >
               {u.status === 'uploading'
@@ -381,7 +381,7 @@ export default function PhotosPage() {
         <div
           role="status"
           className={`mb-4 flex items-start gap-2 rounded-xl px-4 py-3 text-sm border ${
-            notice.tone === 'error' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-navy-50 border-navy-100 text-navy-800'
+            notice.tone === 'error' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-navy-50 border-navy-100 text-navy-900'
           }`}
         >
           <p className="flex-1">{notice.text}</p>
@@ -395,7 +395,7 @@ export default function PhotosPage() {
       {query.isLoading ? (
         <ul className="list-none pl-0 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3" aria-hidden="true">
           {[...Array(8)].map((_, i) => (
-            <li key={i} className="m-0 aspect-[3/4] rounded-2xl bg-cream-300 animate-pulse" />
+            <li key={i} className="m-0 aspect-[3/4] rounded-2xl bg-line animate-pulse" />
           ))}
         </ul>
       ) : query.isError ? (
@@ -403,9 +403,9 @@ export default function PhotosPage() {
           Could not load your photos. Please refresh the page to try again.
         </div>
       ) : images.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-cream-300 px-6 py-10 text-center">
+        <div className="bg-white rounded-2xl border border-line px-6 py-10 text-center">
           <Images className="w-10 h-10 text-slate-300 mx-auto mb-3" aria-hidden="true" />
-          <h2 className="font-display font-bold text-lg text-navy-800 mb-1">No photos yet</h2>
+          <h2 className="font-display font-bold text-lg text-navy-900 mb-1">No photos yet</h2>
           <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
             Photos from your website{library.has_google ? ' and Google Business Profile' : ''} appear here after the next website check, which happens every night.
             You can also upload your own now, or use the button above to check straight away.
@@ -433,7 +433,7 @@ export default function PhotosPage() {
                 type="button"
                 onClick={() => query.fetchNextPage()}
                 disabled={query.isFetchingNextPage}
-                className="w-full sm:w-auto min-h-12 px-6 rounded-xl bg-white border border-cream-300 text-sm font-bold text-navy-800 hover:bg-cream-300 transition-colors disabled:opacity-50"
+                className="font-display w-full sm:w-auto min-h-12 px-6 rounded-full bg-white border border-line text-sm font-semibold text-navy-900 hover:bg-cloud transition-colors disabled:opacity-50"
               >
                 {query.isFetchingNextPage ? 'Loading...' : 'Show more photos'}
               </button>

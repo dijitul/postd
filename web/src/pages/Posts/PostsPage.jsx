@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import {
   Check, X, Edit2, ChevronDown, ChevronUp, CheckCircle2,
-  RefreshCw, RotateCcw, AlertCircle, FileText, ExternalLink, ImageOff
+  RefreshCw, RotateCcw, AlertCircle, FileText, ExternalLink, ImageOff, Sparkles
 } from 'lucide-react'
 import PlatformIcon from '../../components/ui/PlatformIcon.jsx'
 import { postsApi, POSTS_CHANGED_EVENT } from '../../lib/api.js'
@@ -19,13 +19,13 @@ const TABS = [
 ]
 
 const STATUS_LABELS = {
-  pending:     { label: 'Needs review', cls: 'bg-amber-100 text-amber-700' },
-  approved:    { label: 'Approved',     cls: 'bg-blue-100 text-blue-700' },
-  scheduled:   { label: 'Scheduled',    cls: 'bg-navy-100 text-navy-700' },
-  dispatching: { label: 'Publishing',   cls: 'bg-navy-100 text-navy-700' },
-  posted:      { label: 'Published',    cls: 'bg-green-100 text-green-700' },
-  rejected:    { label: 'Rejected',     cls: 'bg-slate-100 text-slate-600' },
-  failed:      { label: 'Failed',       cls: 'bg-red-100 text-red-700' },
+  pending:     { label: 'Needs review', cls: 'bg-warn-soft text-warn-text' },
+  approved:    { label: 'Approved',     cls: 'bg-cobalt-50 text-cobalt-700' },
+  scheduled:   { label: 'Scheduled',    cls: 'bg-cobalt-50 text-cobalt-700' },
+  dispatching: { label: 'Publishing',   cls: 'bg-cobalt-100 text-cobalt-800' },
+  posted:      { label: 'Published',    cls: 'bg-success-soft text-success-text' },
+  rejected:    { label: 'Rejected',     cls: 'bg-cloud text-slate-500' },
+  failed:      { label: 'Failed',       cls: 'bg-danger-soft text-danger-text' },
 }
 
 const KNOWN_PLATFORMS = ['facebook', 'linkedin', 'x', 'google']
@@ -54,14 +54,14 @@ function EditModal({ post, onSave, onClose, saving }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" role="dialog" aria-modal="true">
-      <div className="absolute inset-0 bg-navy-800/50 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
-      <div className="relative w-full max-w-lg bg-white rounded-3xl p-6 sm:p-7 border border-cream-300 animate-fade-in-up" style={{ boxShadow: '0 24px 48px rgb(30 45 74 / 0.2)' }}>
+      <div className="absolute inset-0 bg-navy-900/50 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+      <div className="relative w-full max-w-lg bg-white rounded-2xl p-6 sm:p-7 border border-line animate-fade-in-up" style={{ boxShadow: '0 12px 32px rgba(14, 26, 63, .14)' }}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <PlatformIcon platform={post.platform} size="sm" container="soft" />
-            <h2 className="font-display font-bold text-lg text-navy-800">Edit post</h2>
+            <h2 className="font-display font-bold text-lg text-navy-900">Edit post</h2>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 transition-colors">
+          <button onClick={onClose} className="w-11 h-11 inline-flex items-center justify-center rounded-full text-slate-500 hover:bg-cloud transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -75,7 +75,7 @@ function EditModal({ post, onSave, onClose, saving }) {
           <button
             onClick={() => onSave(post.id, content)}
             disabled={saving || !content.trim()}
-            className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="min-h-[44px] font-display flex-1 flex items-center justify-center gap-2 bg-cobalt-600 text-white font-semibold py-3 rounded-full hover:bg-cobalt-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving
               ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -86,7 +86,7 @@ function EditModal({ post, onSave, onClose, saving }) {
           <button
             onClick={onClose}
             disabled={saving}
-            className="flex-1 flex items-center justify-center gap-2 border border-slate-200 text-slate-600 font-semibold py-3 rounded-xl hover:bg-slate-50 transition-all disabled:opacity-50"
+            className="min-h-[44px] font-display flex-1 flex items-center justify-center gap-2 border border-slate-200 text-slate-600 font-semibold py-3 rounded-full hover:bg-cloud transition-all disabled:opacity-50"
           >
             Cancel
           </button>
@@ -114,7 +114,7 @@ function PostImage({ post, canRemove, onRemove, actioning }) {
 
   return (
     <div className="mt-3">
-      <div className="relative rounded-xl overflow-hidden bg-cream-300 border border-cream-300">
+      <div className="relative rounded-xl overflow-hidden bg-line border border-line">
         <img
           src={url}
           alt=""
@@ -124,7 +124,7 @@ function PostImage({ post, canRemove, onRemove, actioning }) {
           className="w-full max-h-72 object-cover"
         />
         {label && (
-          <span className="absolute top-2 left-2 px-2 py-1 rounded-lg text-2xs font-bold bg-white/95 text-navy-800 shadow-sm">
+          <span className="absolute top-2 left-2 px-2 py-1 rounded-lg text-2xs font-bold bg-white/95 text-navy-900 shadow-sm">
             {label}
           </span>
         )}
@@ -190,11 +190,10 @@ function PostCard({ post, onApprove, onReject, onEdit, onRetry, onRemoveImage, a
 
   return (
     <div
-      className={`bg-white rounded-2xl border border-cream-300 overflow-hidden transition-all duration-300 ${
+      className={`bg-white rounded-2xl border border-line overflow-hidden transition-all duration-300 ${
         swiping === 'right' ? 'translate-x-24 opacity-0' :
         swiping === 'left'  ? '-translate-x-24 opacity-0' : ''
       }`}
-      style={{ boxShadow: '0 2px 8px rgb(30 45 74 / 0.06)' }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
@@ -210,18 +209,24 @@ function PostCard({ post, onApprove, onReject, onEdit, onRetry, onRemoveImage, a
           <PlatformIcon platform={post.platform} size="sm" container="soft" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-bold text-navy-800">{platformLabel(post.platform)}</span>
-              <span className={`badge text-2xs ${status.cls}`}>{status.label}</span>
+              <span className="text-sm font-bold text-navy-900">{platformLabel(post.platform)}</span>
+              <span className={`badge ${status.cls}`}>{status.label}</span>
+              {post.status === 'pending' && (
+                <span className="chip chip-ai">
+                  <Sparkles className="w-3 h-3" aria-hidden="true" />
+                  Written by postd
+                </span>
+              )}
             </div>
-            {dateStr && <p className="text-xs text-slate-400 mt-0.5">{dateLabel}: {dateStr}</p>}
+            {dateStr && <p className="text-xs text-slate-500 mt-0.5">{dateLabel}: {dateStr}</p>}
           </div>
         </div>
 
-        <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{displayContent}</p>
+        <p className={`text-[15px] text-navy-900 leading-relaxed whitespace-pre-wrap ${post.status === 'pending' ? 'bg-ai-50 rounded-xl px-4 py-3 border-l-[3px] border-ai-600' : ''}`}>{displayContent}</p>
         {isLong && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="flex items-center gap-1 text-xs font-semibold text-amber-600 hover:text-amber-700 mt-2 transition-colors"
+            className="flex items-center gap-1 text-xs font-semibold text-cobalt-700 hover:text-cobalt-700 mt-2 transition-colors"
           >
             {expanded
               ? <><ChevronUp className="w-3.5 h-3.5" /> Show less</>
@@ -238,7 +243,7 @@ function PostCard({ post, onApprove, onReject, onEdit, onRetry, onRemoveImage, a
             href={post.platform_post_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 mt-3 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-cobalt-700 hover:text-cobalt-700 mt-3 transition-colors"
           >
             <ExternalLink className="w-3.5 h-3.5" />
             View on {platformLabel(post.platform)}
@@ -246,12 +251,12 @@ function PostCard({ post, onApprove, onReject, onEdit, onRetry, onRemoveImage, a
         )}
 
         {(canReview || canEdit) && (
-          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-cream-300">
+          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-line">
             {canReview && (
               <button
                 onClick={() => onApprove(post.id)}
                 disabled={actioning}
-                className="flex-1 flex items-center justify-center gap-1.5 bg-green-50 text-green-700 font-bold text-sm py-2.5 rounded-xl hover:bg-green-100 active:scale-[0.97] transition-all border border-green-200 disabled:opacity-50"
+                className="min-h-[44px] font-display flex-1 flex items-center justify-center gap-1.5 bg-green-50 text-green-700 font-semibold text-sm py-2.5 rounded-full hover:bg-green-100 active:scale-[0.97] transition-all border border-green-200 disabled:opacity-50"
               >
                 <Check className="w-4 h-4" />
                 Approve
@@ -261,7 +266,7 @@ function PostCard({ post, onApprove, onReject, onEdit, onRetry, onRemoveImage, a
               <button
                 onClick={() => onEdit(post)}
                 disabled={actioning}
-                className="flex-1 flex items-center justify-center gap-1.5 bg-slate-50 text-slate-600 font-bold text-sm py-2.5 rounded-xl hover:bg-slate-100 active:scale-[0.97] transition-all border border-slate-200 disabled:opacity-50"
+                className="min-h-[44px] font-display flex-1 flex items-center justify-center gap-1.5 bg-slate-50 text-slate-600 font-semibold text-sm py-2.5 rounded-full hover:bg-cloud active:scale-[0.97] transition-all border border-slate-200 disabled:opacity-50"
               >
                 <Edit2 className="w-4 h-4" />
                 Edit
@@ -271,7 +276,7 @@ function PostCard({ post, onApprove, onReject, onEdit, onRetry, onRemoveImage, a
               <button
                 onClick={() => onReject(post.id)}
                 disabled={actioning}
-                className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 text-red-600 font-bold text-sm py-2.5 rounded-xl hover:bg-red-100 active:scale-[0.97] transition-all border border-red-200 disabled:opacity-50"
+                className="min-h-[44px] font-display flex-1 flex items-center justify-center gap-1.5 bg-red-50 text-red-600 font-semibold text-sm py-2.5 rounded-full hover:bg-red-100 active:scale-[0.97] transition-all border border-red-200 disabled:opacity-50"
               >
                 <X className="w-4 h-4" />
                 Reject
@@ -281,7 +286,7 @@ function PostCard({ post, onApprove, onReject, onEdit, onRetry, onRemoveImage, a
         )}
 
         {canRetry && (
-          <div className="mt-4 pt-4 border-t border-cream-300 space-y-3">
+          <div className="mt-4 pt-4 border-t border-line space-y-3">
             {post.failure_reason && (
               <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5">
                 <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -291,10 +296,10 @@ function PostCard({ post, onApprove, onReject, onEdit, onRetry, onRemoveImage, a
             <button
               onClick={() => onRetry(post.id)}
               disabled={actioning}
-              className="w-full flex items-center justify-center gap-1.5 bg-amber-50 text-amber-700 font-bold text-sm py-2.5 rounded-xl hover:bg-amber-100 active:scale-[0.97] transition-all border border-amber-200 disabled:opacity-50"
+              className="min-h-[44px] font-display w-full flex items-center justify-center gap-1.5 bg-cobalt-50 text-cobalt-700 font-semibold text-sm py-2.5 rounded-full hover:bg-cobalt-100 active:scale-[0.97] transition-all border border-cobalt-200 disabled:opacity-50"
             >
               {actioning
-                ? <span className="w-4 h-4 border-2 border-amber-300 border-t-amber-600 rounded-full animate-spin" />
+                ? <span className="w-4 h-4 border-2 border-cobalt-300 border-t-cobalt-700 rounded-full animate-spin" />
                 : <RotateCcw className="w-4 h-4" />
               }
               {actioning ? 'Retrying...' : 'Retry post'}
@@ -311,8 +316,8 @@ function EmptyState({ tab, filtered }) {
   if (filtered) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="w-16 h-16 bg-cream-300 rounded-3xl flex items-center justify-center mb-4">
-          <FileText className="w-8 h-8 text-slate-400" />
+        <div className="w-16 h-16 bg-line rounded-2xl flex items-center justify-center mb-4">
+          <FileText className="w-8 h-8 text-slate-500" />
         </div>
         <p className="text-slate-500 text-sm">No posts match your filters.</p>
       </div>
@@ -329,10 +334,10 @@ function EmptyState({ tab, filtered }) {
 
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
-      <div className="w-20 h-20 bg-amber-50 rounded-3xl flex items-center justify-center mb-5">
-        <CheckCircle2 className="w-10 h-10 text-amber-500" />
+      <div className="w-20 h-20 bg-cobalt-50 rounded-2xl flex items-center justify-center mb-5">
+        <CheckCircle2 className="w-10 h-10 text-cobalt-600" />
       </div>
-      <h3 className="font-display font-bold text-lg text-navy-800 mb-2">{copy.title}</h3>
+      <h3 className="font-display font-bold text-lg text-navy-900 mb-2">{copy.title}</h3>
       <p className="text-slate-500 text-sm max-w-xs leading-relaxed">{copy.body}</p>
     </div>
   )
@@ -341,18 +346,18 @@ function EmptyState({ tab, filtered }) {
 // ── Skeleton loader ────────────────────────────────────────────────────────────
 function SkeletonCard() {
   return (
-    <div className="bg-white rounded-2xl border border-cream-300 p-5" style={{ boxShadow: '0 2px 8px rgb(30 45 74 / 0.06)' }}>
+    <div className="bg-white rounded-2xl border border-line p-5">
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-8 h-8 bg-cream-300 rounded-lg animate-pulse flex-shrink-0" />
+        <div className="w-8 h-8 bg-line rounded-lg animate-pulse flex-shrink-0" />
         <div className="flex-1 space-y-1.5">
-          <div className="h-3 bg-cream-300 rounded animate-pulse w-1/3" />
-          <div className="h-2.5 bg-cream-300 rounded animate-pulse w-1/4" />
+          <div className="h-3 bg-line rounded animate-pulse w-1/3" />
+          <div className="h-2.5 bg-line rounded animate-pulse w-1/4" />
         </div>
       </div>
       <div className="space-y-2">
-        <div className="h-3 bg-cream-300 rounded animate-pulse" />
-        <div className="h-3 bg-cream-300 rounded animate-pulse w-5/6" />
-        <div className="h-3 bg-cream-300 rounded animate-pulse w-3/4" />
+        <div className="h-3 bg-line rounded animate-pulse" />
+        <div className="h-3 bg-line rounded animate-pulse w-5/6" />
+        <div className="h-3 bg-line rounded animate-pulse w-3/4" />
       </div>
     </div>
   )
@@ -522,13 +527,13 @@ export default function PostsPage() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-3">
-            <FileText className="w-5 h-5 text-amber-500" />
-            <h1 className="font-display font-black text-2xl text-navy-800">Posts</h1>
+            <FileText className="w-5 h-5 text-cobalt-600" />
+            <h1 className="font-display font-extrabold text-2xl text-navy-900 tracking-tight">Posts</h1>
           </div>
           <button
             onClick={load}
             disabled={loading}
-            className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors disabled:opacity-40"
+            className="w-11 h-11 inline-flex items-center justify-center rounded-full text-slate-500 hover:bg-cloud hover:text-slate-600 transition-colors disabled:opacity-40"
             title="Refresh"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -545,7 +550,7 @@ export default function PostsPage() {
       )}
 
       {/* Lifecycle tabs */}
-      <div className="flex items-center gap-1 bg-cream-300 p-1 rounded-xl mb-4 overflow-x-auto">
+      <div className="flex items-center gap-1 bg-white border border-line p-1 rounded-full mb-4 overflow-x-auto">
         {TABS.map((t) => {
           const count = countFor(t)
           const isActive = t.key === tab.key
@@ -553,16 +558,17 @@ export default function PostsPage() {
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
-                isActive ? 'bg-white text-navy-800 shadow-sm' : 'text-slate-500 hover:text-navy-700'
+              className={`min-h-[44px] font-display flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
+                isActive ? 'bg-cobalt-600 text-white' : 'text-slate-500 hover:text-white hover:bg-cloud'
               }`}
             >
               {t.label}
               {!loading && count > 0 && t.key !== 'all' && (
                 <span className={`inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-2xs font-bold ${
-                  t.key === 'failed' ? 'bg-red-500 text-white'
-                    : t.key === 'review' ? 'bg-amber-500 text-white'
-                    : 'bg-slate-200 text-slate-600'
+                  isActive ? 'bg-white text-cobalt-700'
+                    : t.key === 'failed' ? 'bg-danger text-white'
+                    : t.key === 'review' ? 'bg-sun-400 text-navy-900'
+                    : 'bg-cloud text-slate-500'
                 }`}>
                   {count}
                 </span>
@@ -579,10 +585,10 @@ export default function PostsPage() {
             <button
               key={p}
               onClick={() => setPlatformFilter(p)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+              className={`font-display flex items-center gap-1.5 min-h-[44px] px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${
                 platformFilter === p
-                  ? 'bg-navy-800 text-white'
-                  : 'bg-white text-slate-600 border border-cream-300 hover:bg-cream-300'
+                  ? 'bg-navy-900 text-white'
+                  : 'bg-white text-navy-900 border border-line hover:bg-cloud'
               }`}
             >
               {p !== 'all' && <PlatformIcon platform={p} size="xs" />}
@@ -594,7 +600,7 @@ export default function PostsPage() {
 
       {/* Swipe hint — mobile, only where swiping does anything */}
       {!loading && tab.key === 'review' && visible.length > 0 && (
-        <div className="sm:hidden mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 flex items-center gap-2 text-xs text-amber-700">
+        <div className="sm:hidden mb-4 bg-cobalt-50 rounded-xl px-4 py-2.5 flex items-center gap-2 text-xs text-cobalt-700">
           <span>Swipe right to approve, left to reject</span>
         </div>
       )}

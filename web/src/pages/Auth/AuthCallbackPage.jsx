@@ -29,10 +29,10 @@ export default function AuthCallbackPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-cream-200 honeycomb-bg flex flex-col items-center justify-center">
+    <div className="min-h-screen bg-cloud flex flex-col items-center justify-center">
       <Logo size="lg" className="justify-center mb-8" />
       <div className="flex items-center gap-3 text-slate-500">
-        <span className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+        <span className="w-5 h-5 border-2 border-cobalt-500 border-t-transparent rounded-full animate-spin" />
         <span className="text-sm font-medium">Signing you in...</span>
       </div>
     </div>

@@ -4,6 +4,7 @@ import useAuthStore from './stores/authStore.js'
 import useHydrated from './lib/useHydrated.js'
 import AppLayout from './components/layout/AppLayout.jsx'
 import CookieBanner from './components/ui/CookieBanner.jsx'
+import { LogoMark } from './components/ui/Logo.jsx'
 
 // ── Pages — lazy loaded for better performance ──────────────────────────────
 const MarketingPage   = lazy(() => import('./pages/Marketing/index.jsx'))
@@ -27,16 +28,12 @@ const NotFoundPage    = lazy(() => import('./pages/NotFoundPage.jsx'))
 // ── Loading fallback ─────────────────────────────────────────────────────────
 function PageLoader() {
   return (
-    <div className="min-h-screen bg-cream-200 flex items-center justify-center">
+    <div className="min-h-screen bg-cloud flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-amber-500 flex items-center justify-center animate-pulse">
-          <svg viewBox="0 0 64 64" className="w-8 h-8" fill="none">
-            <rect x="8" y="16" width="32" height="22" rx="6" fill="white" />
-            <path d="M20 38 L17 46 L27 38 Z" fill="white" />
-            <path d="M26 20 L20 30 L24.5 30 L22 37 L28 27 L23.5 27 Z" fill="#E07B30" />
-          </svg>
+        <div className="motion-safe:animate-pulse">
+          <LogoMark size={48} />
         </div>
-        <p className="text-sm font-semibold text-slate-400 font-display">Loading...</p>
+        <p className="text-sm font-semibold text-slate-500 font-display">Loading...</p>
       </div>
     </div>
   )

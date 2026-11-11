@@ -17,21 +17,21 @@ import { forwardRef, useState, useId } from 'react'
 
 const SIZES = {
   sm: {
-    input:     'h-8 px-3 text-xs rounded-lg',
+    input:     'h-11 px-3 text-sm rounded-lg',
     withIconL: 'pl-8',
     withIconR: 'pr-8',
     iconL:     'left-2.5 w-3.5 h-3.5',
     iconR:     'right-2.5 w-3.5 h-3.5',
   },
   md: {
-    input:     'h-10 px-4 text-sm rounded-xl',
+    input:     'h-12 px-4 text-[15px] rounded-lg',
     withIconL: 'pl-10',
     withIconR: 'pr-10',
     iconL:     'left-3 w-4 h-4',
     iconR:     'right-3 w-4 h-4',
   },
   lg: {
-    input:     'h-12 px-4 text-base rounded-xl',
+    input:     'h-14 px-4 text-base rounded-lg',
     withIconL: 'pl-12',
     withIconR: 'pr-12',
     iconL:     'left-3.5 w-5 h-5',
@@ -51,11 +51,11 @@ function getInputClasses({ size, error, disabled, hasIconLeft, hasIconRight }) {
     hasIconLeft ? s.withIconL : '',
     hasIconRight ? s.withIconR : '',
     // Colours & border
-    'bg-white text-navy-800',
+    'bg-white text-navy-900',
     'border-[1.5px]',
     error
       ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200'
-      : 'border-slate-200 hover:border-slate-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-100',
+      : 'border-slate-200 hover:border-slate-300 focus:border-cobalt-600 focus:ring-[3px] focus:ring-cobalt-100',
     // Placeholder
     'placeholder:text-slate-400',
     // Transition
@@ -76,11 +76,11 @@ function InputLabel({ htmlFor, label, required, className = '' }) {
   return (
     <label
       htmlFor={htmlFor}
-      className={`block font-display font-semibold text-sm text-navy-800 mb-1.5 ${className}`}
+      className={`block font-display font-semibold text-sm text-navy-900 mb-1.5 ${className}`}
     >
       {label}
       {required && (
-        <span className="text-amber-500 ml-0.5" aria-hidden="true">*</span>
+        <span className="text-cobalt-600 ml-0.5" aria-hidden="true">*</span>
       )}
     </label>
   )
@@ -117,7 +117,7 @@ function InputIcon({ icon, position, size, error }) {
         'absolute top-1/2 -translate-y-1/2 pointer-events-none',
         'flex items-center justify-center',
         posClass,
-        error ? 'text-red-400' : 'text-slate-400',
+        error ? 'text-red-400' : 'text-slate-500',
       ].join(' ')}
       aria-hidden="true"
     >
@@ -235,7 +235,7 @@ const Input = forwardRef(function Input(
               'right-3',
               (value?.length ?? 0) >= maxLength * 0.9
                 ? 'text-red-400'
-                : 'text-slate-400',
+                : 'text-slate-500',
             ].join(' ')}
             aria-live="polite"
           >
@@ -284,12 +284,12 @@ export const Textarea = forwardRef(function Textarea(
   const hintId = `${id}-hint`
 
   const textareaClasses = [
-    'w-full font-body text-sm text-navy-800',
-    'bg-white px-4 py-3 rounded-xl',
+    'w-full font-body text-sm text-navy-900',
+    'bg-white px-4 py-3 rounded-lg',
     'border-[1.5px]',
     error
       ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200'
-      : 'border-slate-200 hover:border-slate-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-100',
+      : 'border-slate-200 hover:border-slate-300 focus:border-cobalt-600 focus:ring-[3px] focus:ring-cobalt-100',
     'placeholder:text-slate-400',
     'transition-all duration-150 ease-in-out',
     'outline-none resize-y',
@@ -330,7 +330,7 @@ export const Textarea = forwardRef(function Textarea(
               'absolute bottom-3 right-3 text-2xs font-mono tabular-nums pointer-events-none',
               (value?.length ?? 0) >= maxLength * 0.9
                 ? 'text-red-400'
-                : 'text-slate-400',
+                : 'text-slate-500',
             ].join(' ')}
             aria-live="polite"
           >
@@ -394,14 +394,14 @@ export const Select = forwardRef(function Select(
   const s = SIZES[size] ?? SIZES.md
 
   const selectClasses = [
-    'w-full font-body text-navy-800 appearance-none',
+    'w-full font-body text-navy-900 appearance-none',
     s.input,
     s.withIconR,
     'bg-white',
     'border-[1.5px]',
     error
       ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200'
-      : 'border-slate-200 hover:border-slate-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-100',
+      : 'border-slate-200 hover:border-slate-300 focus:border-cobalt-600 focus:ring-[3px] focus:ring-cobalt-100',
     'transition-all duration-150 ease-in-out',
     'outline-none cursor-pointer',
     disabled ? 'opacity-50 cursor-not-allowed bg-slate-50' : '',
@@ -448,7 +448,7 @@ export const Select = forwardRef(function Select(
 
         <span
           className={[
-            'absolute top-1/2 -translate-y-1/2 pointer-events-none text-slate-400',
+            'absolute top-1/2 -translate-y-1/2 pointer-events-none text-slate-500',
             s.iconR,
           ].join(' ')}
           aria-hidden="true"

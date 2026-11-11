@@ -20,11 +20,11 @@ function ProgressBar({ step, total }) {
     <div className="w-full">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-semibold text-slate-500">Step {step} of {total}</span>
-        <span className="text-xs font-bold text-amber-600">{Math.round((step / total) * 100)}%</span>
+        <span className="text-xs font-bold text-cobalt-700">{Math.round((step / total) * 100)}%</span>
       </div>
       <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
         <div
-          className="h-full bg-amber-500 rounded-full transition-all duration-500 ease-out"
+          className="h-full bg-cobalt-600 rounded-full transition-all duration-500 ease-out"
           style={{ width: `${(step / total) * 100}%` }}
         />
       </div>
@@ -67,16 +67,16 @@ function GBPLocationPicker({ locations, onSelect }) {
           key={loc.id}
           type="button"
           onClick={() => onSelect(loc)}
-          className="w-full flex items-center gap-3 p-4 rounded-xl border-2 border-slate-200 bg-white hover:border-amber-400 hover:bg-amber-50/30 active:scale-[0.99] transition-all duration-150 text-left group"
+          className="w-full flex items-center gap-3 p-4 rounded-full border-2 border-slate-200 bg-white hover:border-cobalt-500 hover:bg-cobalt-50/30 active:scale-[0.99] transition-all duration-150 text-left group"
         >
           <div className="w-9 h-9 rounded-lg bg-green-50 border border-green-200 flex items-center justify-center flex-shrink-0">
             <MapPin className="w-4 h-4 text-green-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-navy-800 text-sm truncate">{loc.name}</p>
+            <p className="font-semibold text-navy-900 text-sm truncate">{loc.name}</p>
             {loc.address && <p className="text-xs text-slate-500 truncate mt-0.5">{loc.address}</p>}
           </div>
-          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-amber-500 flex-shrink-0 transition-colors" />
+          <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-cobalt-600 flex-shrink-0 transition-colors" />
         </button>
       ))}
     </div>
@@ -137,24 +137,24 @@ function Step1({ onNext, defaultValues, isSubmitting, submitError }) {
 
         {/* Loading state */}
         {gbpLocations === null && (
-          <div className="flex items-center gap-2 py-3 text-sm text-slate-400">
-            <span className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+          <div className="flex items-center gap-2 py-3 text-sm text-slate-500">
+            <span className="w-4 h-4 border-2 border-cobalt-500 border-t-transparent rounded-full animate-spin" />
             Looking up your Google Business Profile...
           </div>
         )}
 
         {/* Rate-limited — Google quota exhausted, try again shortly */}
         {gbpRateLimited && (
-          <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3.5 mb-2">
-            <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2.5 bg-warn-soft border border-yellow-200 rounded-xl p-3.5 mb-2">
+            <AlertCircle className="w-4 h-4 text-warn flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-xs font-semibold text-amber-800">Google is a bit busy right now</p>
-              <p className="text-xs text-amber-700 mt-0.5">We couldn&apos;t load your business profiles. You can try again in a moment, or type your business name below.</p>
+              <p className="text-xs font-semibold text-navy-900">Google is a bit busy right now</p>
+              <p className="text-xs text-warn-text mt-0.5">We couldn&apos;t load your business profiles. You can try again in a moment, or type your business name below.</p>
             </div>
             <button
               type="button"
               onClick={fetchGbpLocations}
-              className="text-xs font-semibold text-amber-700 hover:text-amber-900 bg-amber-100 hover:bg-amber-200 px-2.5 py-1.5 rounded-lg transition-colors flex-shrink-0"
+              className="min-h-[44px] text-xs font-semibold text-cobalt-700 hover:text-cobalt-900 bg-cobalt-100 hover:bg-cobalt-200 px-2.5 py-1.5 rounded-full transition-colors flex-shrink-0"
             >
               Retry
             </button>
@@ -177,7 +177,7 @@ function Step1({ onNext, defaultValues, isSubmitting, submitError }) {
             <button
               type="button"
               onClick={() => { setSelectedLocation(null); hints.current = {} }}
-              className="ml-auto text-xs text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0"
+              className="ml-auto text-xs text-slate-500 hover:text-slate-600 transition-colors flex-shrink-0"
             >
               Change
             </button>
@@ -216,7 +216,7 @@ function Step1({ onNext, defaultValues, isSubmitting, submitError }) {
               <option key={ind} value={ind}>{ind}</option>
             ))}
           </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
         </div>
         {errors.industry && (
           <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
@@ -234,9 +234,9 @@ function Step1({ onNext, defaultValues, isSubmitting, submitError }) {
               key={t.value}
               type="button"
               onClick={() => setValue('tone', t.value)}
-              className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 text-center transition-all duration-200 ${
+              className={`flex flex-col items-center gap-1.5 p-3 rounded-full border-2 text-center transition-all duration-200 ${
                 selectedTone === t.value
-                  ? 'border-amber-500 bg-amber-50 text-amber-700'
+                  ? 'border-cobalt-600 bg-cobalt-50 text-cobalt-700'
                   : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
               }`}
             >
@@ -257,8 +257,7 @@ function Step1({ onNext, defaultValues, isSubmitting, submitError }) {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3.5 rounded-xl hover:bg-amber-700 active:scale-[0.98] transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
-        style={{ boxShadow: '0 4px 16px rgb(224 123 48 / 0.3)' }}
+        className="min-h-[44px] font-display w-full flex items-center justify-center gap-2 bg-cobalt-600 text-white font-semibold py-3.5 rounded-full hover:bg-cobalt-700 active:scale-[0.98] transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
       >
         {isSubmitting ? (
           <><Loader2 className="w-4 h-4 animate-spin" /> Setting up your business...</>
@@ -305,7 +304,7 @@ function Step2({ onNext, onSkip, defaultValues }) {
           <button
             type="button"
             onClick={handlePaste}
-            className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors"
+            className="min-h-[44px] absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-1.5 text-xs font-semibold text-cobalt-700 hover:text-cobalt-700 bg-cobalt-50 hover:bg-cobalt-100 px-3 py-1.5 rounded-full transition-colors"
           >
             <Clipboard className="w-3.5 h-3.5" />
             Paste
@@ -317,16 +316,16 @@ function Step2({ onNext, onSkip, defaultValues }) {
           </p>
         )}
         <p className="mt-2.5 text-xs text-slate-500 leading-relaxed">
-          We&apos;ll scan your website to learn about your services, your USPs, your opening hours, and your team — all the raw material we need to write brilliant posts.
+          We&apos;ll scan your website to learn about your services, your USPs, your opening hours, and your team: all the raw material we need to write brilliant posts.
         </p>
       </div>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+      <div className="bg-cobalt-50 border border-cobalt-200 rounded-xl p-4">
         <div className="flex items-start gap-3">
-          <Globe className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+          <Globe className="w-4 h-4 text-cobalt-700 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-xs font-semibold text-amber-800 mb-1">What we look for</p>
-            <ul className="text-xs text-amber-700 space-y-0.5">
+            <p className="text-xs font-semibold text-cobalt-800 mb-1">What we look for</p>
+            <ul className="text-xs text-cobalt-700 space-y-0.5">
               <li>Services and products you offer</li>
               <li>Your unique selling points</li>
               <li>Opening hours and location</li>
@@ -337,10 +336,10 @@ function Step2({ onNext, onSkip, defaultValues }) {
       </div>
 
       <div className="flex flex-col gap-3">
-        <button type="submit" className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3.5 rounded-xl hover:bg-amber-700 active:scale-[0.98] transition-all duration-200" style={{ boxShadow: '0 4px 16px rgb(224 123 48 / 0.3)' }}>
+        <button type="submit" className="min-h-[44px] font-display w-full flex items-center justify-center gap-2 bg-cobalt-600 text-white font-semibold py-3.5 rounded-full hover:bg-cobalt-700 active:scale-[0.98] transition-all duration-200">
           Continue <ArrowRight className="w-4 h-4" />
         </button>
-        <button type="button" onClick={onSkip} className="w-full text-sm text-slate-400 hover:text-slate-600 py-2 transition-colors">
+        <button type="button" onClick={onSkip} className="w-full text-sm text-slate-500 hover:text-slate-600 py-2 transition-colors">
           Skip for now
         </button>
       </div>
@@ -376,7 +375,7 @@ function Step3({ onNext, onSkip, defaultValues }) {
         {reviewDefault && (
           <div className="flex items-center gap-2 mb-2 p-2.5 bg-green-50 border border-green-200 rounded-xl">
             <Check className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
-            <p className="text-xs text-green-700">We found your review link from Google — feel free to confirm or change it.</p>
+            <p className="text-xs text-green-700">We found your review link from Google. Feel free to confirm or change it.</p>
           </div>
         )}
         <div className="relative">
@@ -390,7 +389,7 @@ function Step3({ onNext, onSkip, defaultValues }) {
           <button
             type="button"
             onClick={handlePaste}
-            className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors"
+            className="min-h-[44px] absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-1.5 text-xs font-semibold text-cobalt-700 hover:text-cobalt-700 bg-cobalt-50 hover:bg-cobalt-100 px-3 py-1.5 rounded-full transition-colors"
           >
             <Clipboard className="w-3.5 h-3.5" />
             Paste
@@ -407,25 +406,25 @@ function Step3({ onNext, onSkip, defaultValues }) {
       </div>
 
       {/* How to find this accordion */}
-      <div className="border border-amber-200 bg-amber-50 rounded-xl overflow-hidden">
+      <div className="border border-cobalt-200 bg-cobalt-50 rounded-xl overflow-hidden">
         <button
           type="button"
           onClick={() => setShowHelp(!showHelp)}
-          className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-amber-800 hover:bg-amber-100 transition-colors"
+          className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-cobalt-800 hover:bg-cobalt-100 transition-colors"
         >
           <span>📍 How do I find this link?</span>
-          <ChevronDown className={`w-4 h-4 text-amber-500 transition-transform duration-200 ${showHelp ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-4 h-4 text-cobalt-600 transition-transform duration-200 ${showHelp ? 'rotate-180' : ''}`} />
         </button>
         {showHelp && (
-          <div className="px-4 pb-5 bg-amber-50 border-t border-amber-200">
-            <ol className="text-sm text-amber-900 space-y-3 mt-4 leading-relaxed">
-              <li className="flex gap-2"><span className="font-bold text-amber-600 flex-shrink-0">1.</span><span>On your phone or computer, open <strong><a href="https://maps.google.com" target="_blank" rel="noopener noreferrer" className="underline">Google Maps</a></strong></span></li>
-              <li className="flex gap-2"><span className="font-bold text-amber-600 flex-shrink-0">2.</span><span>Search for <strong>your business name</strong> — click on your listing when it appears</span></li>
-              <li className="flex gap-2"><span className="font-bold text-amber-600 flex-shrink-0">3.</span><span>Scroll down until you see the <strong>Reviews</strong> section</span></li>
-              <li className="flex gap-2"><span className="font-bold text-amber-600 flex-shrink-0">4.</span><span>Click the button that says <strong>&quot;Write a review&quot;</strong></span></li>
-              <li className="flex gap-2"><span className="font-bold text-amber-600 flex-shrink-0">5.</span><span><strong>Copy the web address</strong> from the top of your browser and paste it into the box above</span></li>
+          <div className="px-4 pb-5 bg-cobalt-50 border-t border-cobalt-200">
+            <ol className="text-sm text-cobalt-900 space-y-3 mt-4 leading-relaxed">
+              <li className="flex gap-2"><span className="font-bold text-cobalt-700 flex-shrink-0">1.</span><span>On your phone or computer, open <strong><a href="https://maps.google.com" target="_blank" rel="noopener noreferrer" className="underline">Google Maps</a></strong></span></li>
+              <li className="flex gap-2"><span className="font-bold text-cobalt-700 flex-shrink-0">2.</span><span>Search for <strong>your business name</strong>, then click on your listing when it appears</span></li>
+              <li className="flex gap-2"><span className="font-bold text-cobalt-700 flex-shrink-0">3.</span><span>Scroll down until you see the <strong>Reviews</strong> section</span></li>
+              <li className="flex gap-2"><span className="font-bold text-cobalt-700 flex-shrink-0">4.</span><span>Click the button that says <strong>&quot;Write a review&quot;</strong></span></li>
+              <li className="flex gap-2"><span className="font-bold text-cobalt-700 flex-shrink-0">5.</span><span><strong>Copy the web address</strong> from the top of your browser and paste it into the box above</span></li>
             </ol>
-            <p className="mt-4 text-xs text-amber-700 bg-amber-100 rounded-lg px-3 py-2">
+            <p className="mt-4 text-xs text-cobalt-700 bg-cobalt-100 rounded-lg px-3 py-2">
               The link will look something like: <span className="font-mono">https://g.page/r/ABC123.../review</span>
             </p>
           </div>
@@ -433,10 +432,10 @@ function Step3({ onNext, onSkip, defaultValues }) {
       </div>
 
       <div className="flex flex-col gap-3">
-        <button type="submit" className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3.5 rounded-xl hover:bg-amber-700 active:scale-[0.98] transition-all duration-200" style={{ boxShadow: '0 4px 16px rgb(224 123 48 / 0.3)' }}>
+        <button type="submit" className="min-h-[44px] font-display w-full flex items-center justify-center gap-2 bg-cobalt-600 text-white font-semibold py-3.5 rounded-full hover:bg-cobalt-700 active:scale-[0.98] transition-all duration-200">
           Continue <ArrowRight className="w-4 h-4" />
         </button>
-        <button type="button" onClick={onSkip} className="w-full text-sm text-slate-400 hover:text-slate-600 py-2 transition-colors">
+        <button type="button" onClick={onSkip} className="w-full text-sm text-slate-500 hover:text-slate-600 py-2 transition-colors">
           Skip for now
         </button>
       </div>
@@ -507,9 +506,9 @@ function Step4({ onNext, onSkip, gbpAlreadyConnected = false }) {
               <PlatformIcon platform={platform.id} size="md" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-navy-800">{platform.label}</span>
+                  <span className="text-sm font-semibold text-navy-900">{platform.label}</span>
                   {locked && (
-                    <span className="text-xs text-slate-400 font-medium">Upgrade to unlock</span>
+                    <span className="text-xs text-slate-500 font-medium">Upgrade to unlock</span>
                   )}
                 </div>
                 {isConnected && (
@@ -519,9 +518,9 @@ function Step4({ onNext, onSkip, gbpAlreadyConnected = false }) {
                 )}
               </div>
               {isComingSoon ? (
-                <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-3 py-1.5 rounded-lg">Coming soon</span>
+                <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg">Coming soon</span>
               ) : locked ? (
-                <button className="text-xs font-semibold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200">
+                <button className="min-h-[44px] inline-flex items-center justify-center text-xs font-semibold text-cobalt-700 bg-cobalt-50 px-3 py-1.5 rounded-full border border-cobalt-200">
                   Upgrade
                 </button>
               ) : isGbpAutoConnected ? (
@@ -532,10 +531,10 @@ function Step4({ onNext, onSkip, gbpAlreadyConnected = false }) {
                 <button
                   onClick={() => handleConnect(platform.id)}
                   disabled={isConnecting}
-                  className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl transition-all duration-200 disabled:opacity-60 ${
+                  className={`min-h-[44px] font-display flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-full transition-all duration-200 disabled:opacity-60 ${
                     isConnected
                       ? 'bg-green-100 text-green-700 hover:bg-red-50 hover:text-red-600'
-                      : 'bg-navy-800 text-white hover:bg-navy-700'
+                      : 'bg-cobalt-600 text-white hover:bg-cobalt-700'
                   }`}
                 >
                   {isConnecting ? (
@@ -551,21 +550,20 @@ function Step4({ onNext, onSkip, gbpAlreadyConnected = false }) {
       </div>
 
       {!hasAnyConnection && (
-        <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3.5">
-          <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-amber-700">We recommend connecting at least one platform to get the most out of your trial.</p>
+        <div className="flex items-start gap-2.5 bg-cobalt-50 border border-cobalt-200 rounded-xl p-3.5">
+          <AlertCircle className="w-4 h-4 text-cobalt-700 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-cobalt-700">We recommend connecting at least one platform to get the most out of your trial.</p>
         </div>
       )}
 
       <div className="flex flex-col gap-3">
         <button
           onClick={onNext}
-          className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3.5 rounded-xl hover:bg-amber-700 active:scale-[0.98] transition-all duration-200"
-          style={{ boxShadow: '0 4px 16px rgb(224 123 48 / 0.3)' }}
+          className="min-h-[44px] font-display w-full flex items-center justify-center gap-2 bg-cobalt-600 text-white font-semibold py-3.5 rounded-full hover:bg-cobalt-700 active:scale-[0.98] transition-all duration-200"
         >
           Continue <ArrowRight className="w-4 h-4" />
         </button>
-        <button type="button" onClick={onSkip} className="w-full text-sm text-slate-400 hover:text-slate-600 py-2 transition-colors">
+        <button type="button" onClick={onSkip} className="w-full text-sm text-slate-500 hover:text-slate-600 py-2 transition-colors">
           I&apos;ll connect platforms later
         </button>
       </div>
@@ -593,14 +591,13 @@ function Step5({ businessName, onGoToDashboard, isCompleting }) {
     <div className="text-center space-y-6 py-4">
       {/* Honeycomb celebration */}
       <div className="relative w-24 h-24 mx-auto">
-        <div className="w-24 h-24 rounded-3xl bg-amber-500 flex items-center justify-center mx-auto animate-bounce-subtle"
-          style={{ boxShadow: '0 12px 32px rgb(224 123 48 / 0.4)' }}>
+        <div className="w-24 h-24 rounded-2xl bg-cobalt-600 flex items-center justify-center mx-auto animate-bounce-subtle">
           <Sparkles className="w-12 h-12 text-white" />
         </div>
         {[0, 72, 144, 216, 288].map((deg, i) => (
           <div
             key={deg}
-            className="absolute w-3 h-3 rounded-full bg-honey-400"
+            className="absolute w-3 h-3 rounded-full bg-sun-400"
             style={{
               top: '50%',
               left: '50%',
@@ -613,7 +610,7 @@ function Step5({ businessName, onGoToDashboard, isCompleting }) {
       </div>
 
       <div>
-        <h2 className="font-display font-black text-2xl text-navy-800 mb-2">
+        <h2 className="font-display font-extrabold text-2xl text-navy-900 mb-2">
           You&apos;re all set, {businessName || 'there'}!
         </h2>
         <p className="text-slate-600 text-sm leading-relaxed max-w-xs mx-auto">
@@ -626,12 +623,12 @@ function Step5({ businessName, onGoToDashboard, isCompleting }) {
         <div className="space-y-3">
           <div className="h-2 bg-slate-100 rounded-full overflow-hidden max-w-xs mx-auto">
             <div
-              className="h-full bg-amber-500 rounded-full transition-all duration-300"
+              className="h-full bg-cobalt-600 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
           <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
-            <span className="w-3 h-3 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+            <span className="w-3 h-3 border-2 border-cobalt-600/30 border-t-cobalt-600 rounded-full animate-spin" />
             {progress < 40 ? 'Scanning your website...' : progress < 70 ? 'Reading your reviews...' : 'Crafting your first posts...'}
           </div>
         </div>
@@ -646,8 +643,7 @@ function Step5({ businessName, onGoToDashboard, isCompleting }) {
         <button
           onClick={onGoToDashboard}
           disabled={isCompleting}
-          className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3.5 rounded-xl hover:bg-amber-700 active:scale-[0.98] transition-all duration-200 animate-fade-in-up disabled:opacity-70"
-          style={{ boxShadow: '0 4px 16px rgb(224 123 48 / 0.3)' }}
+          className="min-h-[44px] font-display w-full flex items-center justify-center gap-2 bg-cobalt-600 text-white font-semibold py-3.5 rounded-full hover:bg-cobalt-700 active:scale-[0.98] transition-all duration-200 animate-fade-in-up disabled:opacity-70"
         >
           {isCompleting ? (
             <><Loader2 className="w-4 h-4 animate-spin" /> Finishing up...</>
@@ -662,7 +658,7 @@ function Step5({ businessName, onGoToDashboard, isCompleting }) {
 
 // ── Step config ───────────────────────────────────────────────────────────────
 const STEPS = [
-  { icon: Building2, label: 'Business basics', title: 'Tell us about your business', subtitle: 'Just the basics — we do the rest.' },
+  { icon: Building2, label: 'Business basics', title: 'Tell us about your business', subtitle: 'Just the basics. We do the rest.' },
   { icon: Globe, label: 'Website', title: 'Your website', subtitle: 'We\'ll learn everything we need from it.' },
   { icon: Star, label: 'Google Reviews', title: 'Google Reviews', subtitle: 'New 5-star reviews become instant posts.' },
   { icon: Share2, label: 'Platforms', title: 'Connect your platforms', subtitle: 'One tap per platform. That\'s it.' },
@@ -801,7 +797,7 @@ export default function OnboardingPage() {
   const currentStep = STEPS[step - 1]
 
   return (
-    <div className="min-h-screen bg-cream-200 flex flex-col items-center justify-center px-4 py-8 sm:py-12">
+    <div className="min-h-screen bg-cloud flex flex-col items-center justify-center px-4 py-8 sm:py-12">
       <div className="w-full max-w-lg">
 
         {/* Logo */}
@@ -810,7 +806,7 @@ export default function OnboardingPage() {
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-3xl p-7 sm:p-8 border border-cream-300" style={{ boxShadow: '0 8px 32px rgb(30 45 74 / 0.08)' }}>
+        <div className="card-marketing p-6 sm:p-8">
 
           {/* Progress */}
           <div className="mb-8">
@@ -824,17 +820,17 @@ export default function OnboardingPage() {
                 {step > 1 && (
                   <button
                     onClick={handleBack}
-                    className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
+                    className="w-11 h-11 inline-flex items-center justify-center rounded-full text-slate-500 hover:text-slate-600 hover:bg-cloud transition-all"
                     aria-label="Go back"
                   >
                     <ArrowLeft className="w-4 h-4" />
                   </button>
                 )}
-                <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center">
-                  <currentStep.icon className="w-5 h-5 text-amber-600" />
+                <div className="w-10 h-10 bg-cobalt-600/10 rounded-xl flex items-center justify-center">
+                  <currentStep.icon className="w-5 h-5 text-cobalt-700" />
                 </div>
               </div>
-              <h1 className="font-display font-bold text-xl text-navy-800 mb-1">
+              <h1 className="font-display font-bold text-xl text-navy-900 mb-1">
                 {isNewLocation && step === 1 ? 'Add a location' : currentStep.title}
               </h1>
               <p className="text-sm text-slate-500">
@@ -847,20 +843,20 @@ export default function OnboardingPage() {
 
           {/* An extra Agency location has a price: say so and wait for a yes */}
           {step === 1 && extraLocationOffer && (
-            <div className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-4">
-              <p className="text-sm text-amber-900 mb-3">{extraLocationOffer.message}</p>
+            <div className="mb-6 bg-cobalt-50 border border-cobalt-200 rounded-2xl p-4">
+              <p className="text-sm text-cobalt-900 mb-3">{extraLocationOffer.message}</p>
               <div className="flex flex-col sm:flex-row gap-2">
                 <button
                   onClick={confirmExtraLocation}
                   disabled={isSubmitting}
-                  className="inline-flex items-center justify-center gap-2 bg-navy-800 text-white font-semibold text-sm px-4 py-2.5 rounded-xl hover:bg-navy-700 disabled:opacity-60"
+                  className="min-h-[44px] font-display inline-flex items-center justify-center gap-2 bg-cobalt-600 text-white font-semibold text-sm px-4 py-2.5 rounded-full hover:bg-cobalt-700 disabled:opacity-60"
                 >
                   {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
                   Yes, add this location
                 </button>
                 <button
                   onClick={() => navigate('/dashboard')}
-                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100"
+                  className="min-h-[44px] px-4 py-2.5 rounded-full text-sm font-semibold text-slate-600 hover:bg-cloud"
                 >
                   Not now
                 </button>
@@ -914,9 +910,9 @@ export default function OnboardingPage() {
               key={i}
               className={`rounded-full transition-all duration-300 ${
                 i + 1 === step
-                  ? 'w-6 h-2 bg-amber-500'
+                  ? 'w-6 h-2 bg-cobalt-600'
                   : i + 1 < step
-                  ? 'w-2 h-2 bg-amber-300'
+                  ? 'w-2 h-2 bg-cobalt-300'
                   : 'w-2 h-2 bg-slate-200'
               }`}
             />

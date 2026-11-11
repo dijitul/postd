@@ -40,7 +40,7 @@ export default function PostingFrequency({ values, caps, planName, onSaved }) {
     return (
       <p className="text-sm text-slate-600">
         Posting is paused until you choose a plan.{' '}
-        <Link to="/billing" className="font-semibold text-amber-600 underline">See plans</Link>
+        <Link to="/billing" className="font-semibold text-cobalt-700 underline">See plans</Link>
       </p>
     )
   }
@@ -66,7 +66,7 @@ export default function PostingFrequency({ values, caps, planName, onSaved }) {
   return (
     <div className="space-y-4">
       <p className="text-xs text-slate-500 leading-relaxed flex items-start gap-2">
-        <CalendarDays className="w-4 h-4 text-amber-500 flex-shrink-0" />
+        <CalendarDays className="w-4 h-4 text-cobalt-600 flex-shrink-0" />
         How many posts each platform gets in a week. Changes apply from the next week we write.
       </p>
 
@@ -79,11 +79,11 @@ export default function PostingFrequency({ values, caps, planName, onSaved }) {
         return (
           <div key={row.field} className="flex items-center gap-3">
             <PlatformIcon platform={row.icon} size="sm" />
-            <label htmlFor={row.field} className="flex-1 min-w-0 text-sm font-semibold text-navy-800 truncate">
+            <label htmlFor={row.field} className="flex-1 min-w-0 text-sm font-semibold text-navy-900 truncate">
               {row.label}
             </label>
             {cap === 0 ? (
-              <Link to="/billing" className="text-xs font-semibold text-amber-600 underline whitespace-nowrap">
+              <Link to="/billing" className="text-xs font-semibold text-cobalt-700 underline whitespace-nowrap">
                 Not on {planName}
               </Link>
             ) : (
@@ -92,7 +92,7 @@ export default function PostingFrequency({ values, caps, planName, onSaved }) {
                 value={current}
                 disabled={saving === row.field}
                 onChange={(e) => handleChange(row, Number(e.target.value))}
-                className="text-sm font-semibold text-navy-800 bg-white border border-cream-400 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:opacity-50"
+                className="text-sm font-semibold text-navy-900 bg-white border border-line-strong rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-cobalt-500 disabled:opacity-50"
               >
                 {optionsFor(row.platform).map((n) => (
                   <option key={n} value={n} disabled={n > cap}>
@@ -111,7 +111,7 @@ export default function PostingFrequency({ values, caps, planName, onSaved }) {
       {anyLocked && (
         <p className="text-xs text-slate-500">
           {planName} includes up to {Math.max(...Object.values(caps))} posts a week on each platform.{' '}
-          <Link to="/billing" className="font-semibold text-amber-600 underline">See what other plans include</Link>
+          <Link to="/billing" className="font-semibold text-cobalt-700 underline">See what other plans include</Link>
         </p>
       )}
 

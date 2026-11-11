@@ -177,7 +177,7 @@ export default function BusinessSearch({ onSelect, onNameChange, defaultValue = 
   return (
     <div ref={containerRef} className="relative">
       <div className="relative">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
         <input
           type="text"
           value={query}
@@ -191,13 +191,13 @@ export default function BusinessSearch({ onSelect, onNameChange, defaultValue = 
         />
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
           {(loading || loadingDetails) && (
-            <Loader2 className="w-4 h-4 text-amber-500 animate-spin" />
+            <Loader2 className="w-4 h-4 text-cobalt-600 animate-spin" />
           )}
           {query && !loading && !loadingDetails && (
             <button
               type="button"
               onClick={handleClear}
-              className="p-0.5 text-slate-400 hover:text-slate-600 transition-colors"
+              className="p-0.5 text-slate-500 hover:text-slate-600 transition-colors"
               aria-label="Clear"
             >
               <X className="w-4 h-4" />
@@ -209,41 +209,41 @@ export default function BusinessSearch({ onSelect, onNameChange, defaultValue = 
       {/* Dropdown */}
       {open && predictions.length > 0 && (
         <div className="absolute z-50 top-full left-0 right-0 mt-1.5 bg-white rounded-2xl border border-slate-200 overflow-hidden animate-fade-in"
-          style={{ boxShadow: '0 8px 24px rgb(30 45 74 / 0.12)' }}>
+          style={{ boxShadow: '0 12px 32px rgba(14, 26, 63, .14)' }}>
           {predictions.map((prediction) => (
             <button
               key={prediction.place_id}
               type="button"
               onClick={() => handleSelect(prediction)}
-              className="w-full flex items-start gap-3 px-4 py-3 hover:bg-cream-200 transition-colors text-left border-b border-slate-100 last:border-0"
+              className="w-full flex items-start gap-3 px-4 py-3 hover:bg-cloud transition-colors text-left border-b border-slate-100 last:border-0"
             >
-              <MapPin className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+              <MapPin className="w-4 h-4 text-cobalt-600 flex-shrink-0 mt-0.5" />
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-navy-800 leading-snug">
+                <p className="text-sm font-semibold text-navy-900 leading-snug">
                   {prediction.structured_formatting.main_text}
                 </p>
                 {locationText(prediction) && (
-                  <p className="text-xs text-slate-400 mt-0.5">{locationText(prediction)}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{locationText(prediction)}</p>
                 )}
               </div>
             </button>
           ))}
           <div className="flex items-center justify-end px-4 py-2 bg-slate-50 border-t border-slate-100">
-            <span className="text-2xs text-slate-400">Powered by Google</span>
+            <span className="text-2xs text-slate-500">Powered by Google</span>
           </div>
         </div>
       )}
 
       {/* No Maps key fallback hint */}
       {!mapsReady && !API_KEY && (
-        <p className="mt-1.5 text-xs text-slate-400">Type your business name exactly as it appears on Google</p>
+        <p className="mt-1.5 text-xs text-slate-500">Type your business name exactly as it appears on Google</p>
       )}
 
       {/* Plain text tip when maps loaded but nothing typed yet */}
       {mapsReady && !query && (
-        <p className="mt-1.5 text-xs text-slate-400 flex items-center gap-1">
+        <p className="mt-1.5 text-xs text-slate-500 flex items-center gap-1">
           <Building2 className="w-3 h-3" />
-          Start typing — we&apos;ll find you on Google
+          Start typing and we&apos;ll find you on Google
         </p>
       )}
     </div>

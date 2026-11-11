@@ -36,16 +36,16 @@ function lockReason(def, entitlements, connectedIds) {
 
 function StatusBadge({ status }) {
   const map = {
-    connected:    { label: 'Connected',        cls: 'bg-green-100 text-green-700',   Icon: CheckCircle2 },
-    expired:      { label: 'Token expired',    cls: 'bg-amber-100 text-amber-700',   Icon: RefreshCw    },
-    disconnected: { label: 'Not connected',    cls: 'bg-slate-100 text-slate-500',   Icon: XCircle      },
-    locked:       { label: 'Upgrade to unlock',cls: 'bg-purple-100 text-purple-700', Icon: Lock         },
-    paused:       { label: 'Paused on your plan', cls: 'bg-amber-100 text-amber-700', Icon: PauseCircle  },
-    coming_soon:  { label: 'Coming soon',      cls: 'bg-slate-100 text-slate-500',   Icon: Lock         },
+    connected:    { label: 'Connected',        cls: 'bg-success-soft text-success-text', Icon: CheckCircle2 },
+    expired:      { label: 'Token expired',    cls: 'bg-warn-soft text-warn-text',       Icon: RefreshCw    },
+    disconnected: { label: 'Not connected',    cls: 'bg-cloud text-slate-500',           Icon: XCircle      },
+    locked:       { label: 'Upgrade to unlock',cls: 'bg-sun-100 text-navy-900',          Icon: Lock         },
+    paused:       { label: 'Paused on your plan', cls: 'bg-warn-soft text-warn-text',    Icon: PauseCircle  },
+    coming_soon:  { label: 'Coming soon',      cls: 'bg-cloud text-slate-500',           Icon: Lock         },
   }
   const { label, cls, Icon } = map[status] ?? map.disconnected
   return (
-    <span className={`badge text-xs ${cls}`}>
+    <span className={`badge ${cls}`}>
       <Icon className="w-3 h-3" />
       {label}
     </span>
@@ -146,9 +146,8 @@ function PlatformCard({ def, connection, lockedBecause, onDisconnect, onReconnec
   return (
     <div
       className={`bg-white rounded-2xl p-5 sm:p-6 border transition-all duration-200 ${
-        isLocked || isComingSoon ? 'border-slate-200 opacity-70' : 'border-cream-300 hover:border-cream-400'
+        isLocked || isComingSoon ? 'border-slate-200 opacity-70' : 'border-line hover:border-line-strong'
       }`}
-      style={{ boxShadow: isLocked || isComingSoon ? 'none' : '0 2px 8px rgb(30 45 74 / 0.06)' }}
     >
       {/* Header */}
       <div className="flex items-start gap-4 mb-4">
@@ -162,7 +161,7 @@ function PlatformCard({ def, connection, lockedBecause, onDisconnect, onReconnec
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <h3 className="font-display font-bold text-base text-navy-800">{def.label}</h3>
+            <h3 className="font-display font-bold text-base text-navy-900">{def.label}</h3>
           </div>
           <StatusBadge status={status} />
         </div>
@@ -171,7 +170,7 @@ function PlatformCard({ def, connection, lockedBecause, onDisconnect, onReconnec
       {/* Connected account. With more than one page/profile available the user
           picks the posting target here, rather than us guessing for them. */}
       {connectedAccount && !isLocked && (
-        <div className="bg-cream-200 rounded-xl px-3 py-2 mb-4">
+        <div className="bg-cloud rounded-xl px-3 py-2 mb-4">
           {accounts.length > 1 ? (
             <>
               <label
@@ -185,19 +184,19 @@ function PlatformCard({ def, connection, lockedBecause, onDisconnect, onReconnec
                 value={connectedAccount.id}
                 onChange={handleAccountChange}
                 disabled={savingAccount}
-                className="w-full text-sm font-semibold text-navy-800 bg-white border border-cream-400 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:opacity-50"
+                className="w-full text-sm font-semibold text-navy-900 bg-white border border-line-strong rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-cobalt-500 disabled:opacity-50"
               >
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
               </select>
-              {savingAccount && <p className="text-xs text-slate-400 mt-1">Saving...</p>}
+              {savingAccount && <p className="text-xs text-slate-500 mt-1">Saving...</p>}
               {accountError && <p className="text-xs text-red-600 mt-1">{accountError}</p>}
             </>
           ) : (
             <>
               <p className="text-xs text-slate-500 mb-0.5">Connected account</p>
-              <p className="text-sm font-semibold text-navy-800">{connectedAccount.name}</p>
+              <p className="text-sm font-semibold text-navy-900">{connectedAccount.name}</p>
             </>
           )}
         </div>
@@ -208,7 +207,7 @@ function PlatformCard({ def, connection, lockedBecause, onDisconnect, onReconnec
         <p className="text-xs text-slate-500 mb-4">{lockedBecause}</p>
       )}
       {isPaused && (
-        <p className="text-xs text-amber-700 mb-4">
+        <p className="text-xs text-cobalt-700 mb-4">
           Still connected, but your plan posts to fewer platforms. Upgrade to post here too, or disconnect another platform to swap.
         </p>
       )}
@@ -221,20 +220,20 @@ function PlatformCard({ def, connection, lockedBecause, onDisconnect, onReconnec
 
       {/* Last used */}
       {connection?.last_used_at && !isLocked && (
-        <p className="text-xs text-slate-400 mb-4">
+        <p className="text-xs text-slate-500 mb-4">
           Last used: {new Date(connection.last_used_at).toLocaleDateString('en-GB')}
         </p>
       )}
 
       {/* Action button */}
       {isComingSoon ? (
-        <div className="w-full flex items-center justify-center gap-2 bg-slate-50 text-slate-400 font-semibold text-sm py-2.5 rounded-xl border border-slate-200 cursor-not-allowed">
+        <div className="w-full flex items-center justify-center gap-2 min-h-[44px] bg-cloud text-slate-500 font-display font-semibold text-sm py-2.5 rounded-full border border-line cursor-not-allowed">
           Coming soon
         </div>
       ) : isLocked ? (
         <Link
           to="/billing"
-          className="w-full flex items-center justify-center gap-2 bg-purple-50 text-purple-700 font-semibold text-sm py-2.5 rounded-xl border border-purple-200 hover:bg-purple-100 transition-all"
+          className="min-h-[44px] font-display w-full flex items-center justify-center gap-2 bg-sun-100 text-navy-900 font-semibold text-sm py-2.5 rounded-full border border-sun-300 hover:bg-sun-200 transition-all"
         >
           <Lock className="w-4 h-4" /> See plans
         </Link>
@@ -242,7 +241,7 @@ function PlatformCard({ def, connection, lockedBecause, onDisconnect, onReconnec
         <button
           onClick={handleDisconnect}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 bg-slate-50 text-slate-600 font-semibold text-sm py-2.5 rounded-xl border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all disabled:opacity-50"
+          className="min-h-[44px] font-display w-full flex items-center justify-center gap-2 bg-slate-50 text-slate-600 font-semibold text-sm py-2.5 rounded-full border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all disabled:opacity-50"
         >
           {loading ? <span className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" /> : <XCircle className="w-4 h-4" />}
           {loading ? 'Disconnecting...' : 'Disconnect'}
@@ -251,16 +250,16 @@ function PlatformCard({ def, connection, lockedBecause, onDisconnect, onReconnec
         <button
           onClick={handleReconnect}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 bg-amber-50 text-amber-700 font-semibold text-sm py-2.5 rounded-xl border border-amber-200 hover:bg-amber-100 transition-all disabled:opacity-50"
+          className="min-h-[44px] font-display w-full flex items-center justify-center gap-2 bg-cobalt-50 text-cobalt-700 font-semibold text-sm py-2.5 rounded-full border border-cobalt-200 hover:bg-cobalt-100 transition-all disabled:opacity-50"
         >
-          {loading ? <span className="w-4 h-4 border-2 border-amber-300 border-t-amber-600 rounded-full animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+          {loading ? <span className="w-4 h-4 border-2 border-cobalt-300 border-t-cobalt-700 rounded-full animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           {loading ? 'Reconnecting...' : 'Reconnect'}
         </button>
       ) : (
         <button
           onClick={handleConnect}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 bg-navy-800 text-white font-semibold text-sm py-2.5 rounded-xl hover:bg-navy-700 active:scale-[0.98] transition-all disabled:opacity-50"
+          className="min-h-[44px] font-display w-full flex items-center justify-center gap-2 bg-cobalt-600 text-white font-semibold text-sm py-2.5 rounded-full hover:bg-cobalt-700 active:scale-[0.98] transition-all disabled:opacity-50"
         >
           {loading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Plus className="w-4 h-4" />}
           {loading ? 'Connecting...' : 'Connect'}
@@ -337,7 +336,7 @@ export default function PlatformsPage() {
     return (
       <div className="max-w-4xl mx-auto space-y-4">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="bg-white rounded-2xl h-32 border border-cream-300 animate-pulse" />
+          <div key={i} className="bg-white rounded-2xl h-32 border border-line animate-pulse" />
         ))}
       </div>
     )
@@ -349,9 +348,9 @@ export default function PlatformsPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <Share2 className="w-5 h-5 text-amber-500" />
+          <Share2 className="w-5 h-5 text-cobalt-600" />
           <div>
-            <h1 className="font-display font-black text-2xl text-navy-800">Platforms</h1>
+            <h1 className="font-display font-extrabold text-2xl text-navy-900">Platforms</h1>
             <p className="text-slate-500 text-sm mt-0.5">{connectedCount} of {PLATFORM_DEFS.length} platforms connected</p>
           </div>
         </div>
@@ -391,11 +390,11 @@ export default function PlatformsPage() {
 
       {/* Expired token alert */}
       {connections.some((c) => c.is_expired) && (
-        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
-          <RefreshCw className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 bg-warn-soft border border-yellow-200 rounded-2xl p-4">
+          <RefreshCw className="w-5 h-5 text-warn flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-bold text-amber-800">One or more platforms need reconnecting</p>
-            <p className="text-xs text-amber-600 mt-0.5">Your access token has expired. Reconnect to resume posting.</p>
+            <p className="text-sm font-bold text-navy-900">One or more platforms need reconnecting</p>
+            <p className="text-xs text-warn-text mt-0.5">Your access token has expired. Reconnect to resume posting.</p>
           </div>
         </div>
       )}

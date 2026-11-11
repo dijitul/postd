@@ -46,7 +46,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cream-200 honeycomb-bg flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-cloud flex flex-col items-center justify-center px-4 py-12">
       <Seo
         title="Log in | postd.uk"
         description="Log in to postd.uk to review, approve and schedule the social media posts written for your business."
@@ -60,7 +60,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Logo size="lg" className="justify-center" />
-          <h1 className="font-display font-bold text-2xl text-navy-800 mt-6 mb-2">
+          <h1 className="font-display font-extrabold text-[1.75rem] tracking-tight text-navy-900 mt-6 mb-2">
             Welcome back
           </h1>
           <p className="text-slate-500 text-sm">
@@ -68,7 +68,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="bg-white rounded-3xl p-7 sm:p-8 border border-cream-300" style={{ boxShadow: '0 8px 32px rgb(30 45 74 / 0.08)' }}>
+        <div className="card-marketing p-6 sm:p-8">
 
           {/* OAuth error */}
           {oauthError && (
@@ -90,8 +90,7 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={loginWithGoogle}
-            className="w-full flex items-center justify-center gap-3 bg-white border-2 border-slate-200 text-slate-700 font-semibold py-3.5 px-6 rounded-xl hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98] transition-all duration-200 mb-4"
-            style={{ boxShadow: '0 2px 8px rgb(0 0 0 / 0.06)' }}
+            className="min-h-[44px] font-display w-full flex items-center justify-center gap-3 bg-white border-[1.5px] border-line-strong text-navy-900 font-semibold py-3.5 px-6 rounded-full hover:border-line-strong hover:bg-cloud active:scale-[0.98] transition-all duration-200 mb-4"
           >
             <GoogleIcon />
             Continue with Google
@@ -99,9 +98,9 @@ export default function LoginPage() {
 
           {/* Divider */}
           <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 h-px bg-slate-100" />
-            <span className="text-xs text-slate-400 font-medium">or sign in with email</span>
-            <div className="flex-1 h-px bg-slate-100" />
+            <div className="flex-1 h-px bg-line" />
+            <span className="text-xs text-slate-500 font-medium">or sign in with email</span>
+            <div className="flex-1 h-px bg-line" />
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
@@ -129,7 +128,7 @@ export default function LoginPage() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label htmlFor="password" className="label mb-0">Password</label>
-                <Link to="/forgot-password" className="text-xs text-amber-600 hover:text-amber-700 font-medium transition-colors">
+                <Link to="/forgot-password" className="text-xs text-cobalt-700 hover:text-cobalt-700 font-medium transition-colors">
                   Forgot password?
                 </Link>
               </div>
@@ -145,7 +144,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 inline-flex items-center justify-center rounded-full text-slate-500 hover:text-slate-600 transition-colors"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -163,8 +162,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2.5 bg-amber-500 text-white font-bold py-3.5 px-6 rounded-xl hover:bg-amber-700 active:scale-[0.98] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed mt-2"
-              style={{ boxShadow: '0 4px 16px rgb(224 123 48 / 0.3)' }}
+              className="min-h-[44px] font-display w-full flex items-center justify-center gap-2.5 bg-cobalt-600 text-white font-semibold py-3.5 px-6 rounded-full hover:bg-cobalt-700 active:scale-[0.98] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed mt-2"
             >
               {isLoading ? (
                 <>
@@ -184,14 +182,14 @@ export default function LoginPage() {
         {/* Register link */}
         <p className="text-center text-sm text-slate-500 mt-6">
           Don&apos;t have an account?{' '}
-          <Link to="/register" className="font-semibold text-amber-600 hover:text-amber-700 transition-colors">
+          <Link to="/register" className="font-semibold text-cobalt-700 hover:text-cobalt-700 transition-colors">
             Start a free trial
           </Link>
         </p>
 
         {/* Back home */}
         <div className="text-center mt-4">
-          <Link to="/" className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
+          <Link to="/" className="text-xs text-slate-500 hover:text-slate-600 transition-colors">
             Back to postd.uk
           </Link>
         </div>

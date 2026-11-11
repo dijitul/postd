@@ -75,21 +75,21 @@ export default function LocationSwitcher() {
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex items-center gap-2 max-w-[10rem] sm:max-w-[16rem] px-3 py-2 rounded-xl text-sm font-semibold text-navy-800 hover:bg-cream-300 transition-all"
+        className="min-h-[44px] flex items-center gap-2 max-w-[10rem] sm:max-w-[16rem] px-3 py-2 rounded-full text-sm font-semibold text-navy-900 hover:bg-cloud transition-all"
       >
-        <Building2 className="w-4 h-4 text-amber-500 flex-shrink-0" />
+        <Building2 className="w-4 h-4 text-cobalt-600 flex-shrink-0" />
         <span className="truncate">{currentName}</span>
-        <ChevronDown className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-slate-500 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
-        <div role="menu" className="absolute right-0 lg:left-0 lg:right-auto mt-2 w-72 max-w-[calc(100vw-2rem)] bg-white rounded-2xl border border-cream-300 shadow-xl p-2 z-50">
+        <div role="menu" className="absolute right-0 lg:left-0 lg:right-auto mt-2 w-72 max-w-[calc(100vw-2rem)] bg-white rounded-2xl border border-line shadow-popover p-2 z-50">
           <p className="px-3 pt-1 pb-2 text-xs font-bold text-slate-500 uppercase tracking-wide">
             Locations{data ? ` (${data.businesses.length} of ${data.location_limit})` : ''}
           </p>
 
           {loading && (
-            <div className="px-3 py-3 text-sm text-slate-400 flex items-center gap-2">
+            <div className="px-3 py-3 text-sm text-slate-500 flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" /> Loading...
             </div>
           )}
@@ -100,31 +100,31 @@ export default function LocationSwitcher() {
               role="menuitem"
               onClick={() => (b.is_current ? setOpen(false) : handleSwitch(b.id))}
               disabled={switchingTo != null}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-cream-200 transition-all disabled:opacity-60"
+              className="min-h-[44px] w-full flex items-center gap-3 px-3 py-2.5 rounded-full text-left hover:bg-cloud transition-all disabled:opacity-60"
             >
               <span className="flex-1 min-w-0">
-                <span className="block text-sm font-semibold text-navy-800 truncate">{b.name}</span>
+                <span className="block text-sm font-semibold text-navy-900 truncate">{b.name}</span>
                 <span className="block text-xs text-slate-500 truncate">
                   {b.onboarding_complete ? (b.city || 'Set up') : 'Setup not finished'}
                 </span>
               </span>
               {switchingTo === b.id
-                ? <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
-                : b.is_current && <Check className="w-4 h-4 text-amber-500" />}
+                ? <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+                : b.is_current && <Check className="w-4 h-4 text-cobalt-600" />}
             </button>
           ))}
 
           {error && <p role="alert" className="px-3 py-2 text-xs text-red-600">{error}</p>}
 
           {data && (
-            <div className="border-t border-cream-300 mt-2 pt-2">
+            <div className="border-t border-line mt-2 pt-2">
               {needsUpgrade ? (
                 <div className="px-3 py-2">
                   <p className="text-xs text-slate-600 mb-2 flex items-start gap-1.5">
-                    <Lock className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-slate-400" />
+                    <Lock className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-slate-500" />
                     {addBlocked.message}
                   </p>
-                  <Link to="/billing" onClick={() => setOpen(false)} className="text-xs font-semibold text-amber-600 underline">
+                  <Link to="/billing" onClick={() => setOpen(false)} className="text-xs font-semibold text-cobalt-700 underline">
                     See plans
                   </Link>
                 </div>
@@ -132,9 +132,9 @@ export default function LocationSwitcher() {
                 <button
                   role="menuitem"
                   onClick={() => { setOpen(false); navigate('/onboarding?new=1') }}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-navy-800 hover:bg-cream-200 transition-all"
+                  className="min-h-[44px] w-full flex items-center gap-2 px-3 py-2.5 rounded-full text-sm font-semibold text-navy-900 hover:bg-cloud transition-all"
                 >
-                  <Plus className="w-4 h-4 text-amber-500" />
+                  <Plus className="w-4 h-4 text-cobalt-600" />
                   Add a location
                 </button>
               )}

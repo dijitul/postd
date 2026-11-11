@@ -52,7 +52,7 @@ function TableOfContents({ toc, variant }) {
     <li key={item.id} className={item.level === 3 ? 'pl-4' : ''}>
       <a
         href={`#${item.id}`}
-        className="block py-1.5 text-sm text-slate-600 hover:text-amber-700 transition-colors leading-snug"
+        className="block py-1.5 text-sm text-slate-600 hover:text-cobalt-700 transition-colors leading-snug"
       >
         {item.text}
       </a>
@@ -62,13 +62,13 @@ function TableOfContents({ toc, variant }) {
   if (variant === 'inline') {
     // Phones and tablets: collapsed by default above the article
     return (
-      <details className="lg:hidden group mb-8 bg-white rounded-2xl border border-cream-300">
-        <summary className="flex items-center justify-between gap-3 px-5 min-h-[52px] cursor-pointer list-none font-display font-bold text-navy-800 [&::-webkit-details-marker]:hidden">
+      <details className="lg:hidden group mb-8 bg-white rounded-2xl border border-line">
+        <summary className="flex items-center justify-between gap-3 px-5 min-h-[52px] cursor-pointer list-none font-display font-bold text-navy-900 [&::-webkit-details-marker]:hidden">
           <span className="flex items-center gap-2">
-            <ListOrdered className="w-4 h-4 text-amber-500" aria-hidden="true" />
+            <ListOrdered className="w-4 h-4 text-cobalt-600" aria-hidden="true" />
             On this page
           </span>
-          <ChevronDown className="w-5 h-5 text-slate-400 transition-transform group-open:rotate-180" aria-hidden="true" />
+          <ChevronDown className="w-5 h-5 text-slate-500 transition-transform group-open:rotate-180" aria-hidden="true" />
         </summary>
         <nav aria-label="On this page" className="px-5 pb-4">
           <ol className="pl-0 [&>li]:mb-0">{items}</ol>
@@ -80,8 +80,8 @@ function TableOfContents({ toc, variant }) {
   // Desktop: sticky in the sidebar
   return (
     <nav aria-label="On this page">
-      <p className="font-display font-bold text-sm text-navy-800 mb-2">On this page</p>
-      <ol className="border-l border-cream-300 pl-4 [&>li]:mb-0">{items}</ol>
+      <p className="font-display font-bold text-sm text-navy-900 mb-2">On this page</p>
+      <ol className="border-l border-line pl-4 [&>li]:mb-0">{items}</ol>
     </nav>
   )
 }
@@ -128,7 +128,7 @@ export default function GuidePage() {
   }
 
   return (
-    <div className="min-h-screen bg-cream-200 flex flex-col">
+    <div className="min-h-screen bg-cloud flex flex-col">
       <Seo
         title={guide.seoTitle || `${guide.title} | postd.uk`}
         description={guide.description}
@@ -142,17 +142,17 @@ export default function GuidePage() {
 
       <main className="flex-1">
         {guide.scheduled && (
-          <div className="bg-honey-400 text-navy-900 text-sm font-semibold text-center px-4 py-2">
+          <div className="bg-sun-400 text-navy-900 text-sm font-semibold text-center px-4 py-2">
             Preview only: scheduled for {formatDate(guide.date)} and not live yet.
           </div>
         )}
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="container-brand py-8 sm:py-12">
           <nav aria-label="Breadcrumb" className="text-sm text-slate-500 mb-6">
             <ol className="flex flex-wrap items-center gap-1.5 pl-0 [&>li]:mb-0">
-              <li><Link to="/" className="hover:text-amber-700 transition-colors">Home</Link></li>
+              <li><Link to="/" className="hover:text-cobalt-700 transition-colors">Home</Link></li>
               <li aria-hidden="true">/</li>
-              <li><Link to="/guides" className="hover:text-amber-700 transition-colors">Guides</Link></li>
+              <li><Link to="/guides" className="hover:text-cobalt-700 transition-colors">Guides</Link></li>
               <li aria-hidden="true">/</li>
               <li aria-current="page" className="text-navy-700 font-medium line-clamp-1">{guide.title}</li>
             </ol>
@@ -163,12 +163,12 @@ export default function GuidePage() {
               <header className="mb-8">
                 <a
                   href={`/guides#${guide.pillar}`}
-                  className="inline-block text-amber-700 text-xs font-bold uppercase tracking-widest mb-4 hover:text-amber-800"
+                  className="eyebrow mb-4 hover:text-cobalt-700"
                 >
                   {guide.pillarLabel}
                 </a>
                 <h1
-                  className="font-display font-black text-navy-800 mb-5 text-balance"
+                  className="font-display font-extrabold text-navy-900 mb-5 text-balance tracking-tightest"
                   style={{ fontSize: 'clamp(2rem, 4.5vw, 3rem)', lineHeight: '1.1' }}
                 >
                   {guide.title}
@@ -204,15 +204,15 @@ export default function GuidePage() {
 
               {guide.faq.length > 0 && (
                 <section aria-labelledby="guide-faq" className="mt-12">
-                  <h2 id="guide-faq" className="font-display font-black text-2xl sm:text-3xl text-navy-800 mb-5">
+                  <h2 id="guide-faq" className="font-display font-extrabold text-2xl sm:text-3xl text-navy-900 mb-5">
                     Frequently asked questions
                   </h2>
                   <div className="space-y-3">
                     {guide.faq.map((item) => (
-                      <details key={item.q} className="group bg-white rounded-2xl border border-cream-300">
+                      <details key={item.q} className="group bg-white rounded-2xl border border-line">
                         <summary className="flex items-center justify-between gap-4 cursor-pointer list-none px-5 py-4 min-h-[56px] [&::-webkit-details-marker]:hidden">
-                          <h3 className="font-display font-bold text-base sm:text-lg text-navy-800">{item.q}</h3>
-                          <ChevronDown className="w-5 h-5 text-amber-500 flex-shrink-0 transition-transform duration-200 group-open:rotate-180" aria-hidden="true" />
+                          <h3 className="font-display font-bold text-base sm:text-lg text-navy-900">{item.q}</h3>
+                          <ChevronDown className="w-5 h-5 text-cobalt-600 flex-shrink-0 transition-transform duration-200 group-open:rotate-180" aria-hidden="true" />
                         </summary>
                         <p
                           className="px-5 pb-5 -mt-1 text-slate-600 leading-relaxed guide-faq-answer"
@@ -224,15 +224,15 @@ export default function GuidePage() {
                 </section>
               )}
 
-              <div className="mt-12 flex items-start gap-4 bg-white rounded-2xl border border-cream-300 p-5 sm:p-6">
-                <div className="w-12 h-12 rounded-2xl bg-navy-800 text-white font-display font-black text-lg flex items-center justify-center flex-shrink-0" aria-hidden="true">
+              <div className="mt-12 flex items-start gap-4 bg-white rounded-2xl border border-line p-5 sm:p-6">
+                <div className="w-12 h-12 rounded-full bg-navy-900 text-white font-display font-extrabold text-lg flex items-center justify-center flex-shrink-0" aria-hidden="true">
                   {authorName.charAt(0)}
                 </div>
                 <div>
-                  <p className="font-display font-bold text-navy-800">Written by {authorName}, {authorOrg}</p>
+                  <p className="font-display font-bold text-navy-900">Written by {authorName}, {authorOrg}</p>
                   <p className="text-sm text-slate-600 mt-1 leading-relaxed">
                     {authorName} runs{' '}
-                    <a href="https://dijitul.uk" className="text-amber-700 hover:text-amber-800 underline underline-offset-2">dijitul</a>,
+                    <a href="https://dijitul.uk" className="text-cobalt-700 hover:text-cobalt-800 underline underline-offset-2">dijitul</a>,
                     the Mansfield digital agency that builds and runs postd.uk.
                   </p>
                 </div>
@@ -246,14 +246,14 @@ export default function GuidePage() {
             <aside className="hidden lg:block lg:col-span-4">
               <div className="sticky top-24 space-y-8">
                 {hasToc && <TableOfContents toc={guide.toc} />}
-                <div className="bg-white rounded-2xl border border-cream-300 p-5">
-                  <p className="font-display font-bold text-navy-800 mb-2">Let postd.uk post for you</p>
+                <div className="bg-white rounded-2xl border border-line p-5">
+                  <p className="font-display font-bold text-navy-900 mb-2">Let postd.uk post for you</p>
                   <p className="text-sm text-slate-600 mb-4">
                     Posts written from your website and reviews, published to all four platforms.
                   </p>
                   <Link
                     to={`/register?utm_source=postd.uk&utm_medium=guide-sidebar&utm_campaign=${encodeURIComponent(guide.slug)}`}
-                    className="inline-flex items-center gap-2 bg-amber-500 text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-amber-700 transition-colors"
+                    className="min-h-[44px] font-display inline-flex items-center gap-2 bg-cobalt-600 text-white text-sm font-semibold px-4 py-2.5 rounded-full hover:bg-cobalt-700 transition-colors"
                   >
                     Start free trial
                     <ArrowRight className="w-4 h-4" aria-hidden="true" />
@@ -265,7 +265,7 @@ export default function GuidePage() {
 
           {related.length > 0 && (
             <section aria-labelledby="read-next" className="mt-16">
-              <h2 id="read-next" className="font-display font-black text-2xl text-navy-800 mb-5">
+              <h2 id="read-next" className="font-display font-extrabold text-2xl text-navy-900 mb-5">
                 Read next
               </h2>
               <p className="text-slate-600 -mt-3 mb-5">More on {guide.pillarLabel}.</p>
@@ -274,9 +274,9 @@ export default function GuidePage() {
                   <li key={item.slug}>
                     <Link
                       to={`/guides/${item.slug}`}
-                      className="group flex flex-col h-full bg-white rounded-2xl p-5 border border-cream-300 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+                      className="group flex flex-col h-full bg-white rounded-2xl p-5 border border-line hover:shadow-marketing transition-shadow duration-200"
                     >
-                      <span className="font-display font-bold text-navy-800 group-hover:text-amber-700 transition-colors mb-2">
+                      <span className="font-display font-bold text-navy-900 group-hover:text-cobalt-700 transition-colors mb-2">
                         {item.title}
                       </span>
                       <span className="text-sm text-slate-600 flex-1">{item.description}</span>

@@ -38,7 +38,7 @@ const COLUMNS = [
 ]
 
 const linkClass =
-  'block py-2.5 md:py-1.5 text-sm text-white/60 hover:text-white transition-colors'
+  'flex items-center min-h-[44px] md:min-h-0 py-2 md:py-1.5 text-[15px] md:text-sm text-white/75 hover:text-white transition-colors'
 
 function FooterLink({ link }) {
   if (link.to) {
@@ -66,7 +66,7 @@ function FooterColumn({ title, links }) {
 
   return (
     <div className="border-b border-white/10 md:border-0">
-      <h2 className="font-display font-bold text-sm text-white">
+      <h2 className="font-display font-semibold text-sm text-white tracking-tight">
         <button
           type="button"
           className="md:hidden w-full flex items-center justify-between py-4 min-h-[48px] text-left"
@@ -76,7 +76,7 @@ function FooterColumn({ title, links }) {
         >
           {title}
           <ChevronDown
-            className={`w-5 h-5 text-white/50 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+            className={`w-5 h-5 text-white/70 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
             aria-hidden="true"
           />
         </button>
@@ -97,22 +97,22 @@ export default function SiteFooter() {
   const year = new Date().getFullYear()
 
   return (
-    <footer className="bg-navy-950 text-white pb-[env(safe-area-inset-bottom)]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8">
+    <footer className="bg-navy-900 text-white border-t border-white/10 pb-[env(safe-area-inset-bottom)]">
+      <div className="container-brand pt-12 md:pt-16 pb-8">
         <div className="md:grid md:grid-cols-12 md:gap-8">
 
           {/* Brand block: always first, never collapsed */}
           <div className="md:col-span-4 mb-8 md:mb-0">
             <Logo variant="reversed" size="sm" />
-            <p className="mt-4 text-sm text-white/60 leading-relaxed max-w-xs">
+            <p className="mt-4 text-sm text-white/75 leading-relaxed max-w-xs">
               Automated social media posting for UK small businesses. Written from your website and
               Google reviews, published to Google Business Profile, Facebook, LinkedIn and X.
             </p>
             <a
               href={`mailto:${CONTACT_EMAIL}`}
-              className="mt-5 inline-flex items-center gap-3 min-h-[48px] px-4 rounded-xl bg-white/5 border border-white/10 text-white font-semibold text-base hover:bg-white/10 transition-colors"
+              className="mt-6 inline-flex items-center gap-3 min-h-[52px] px-5 rounded-full bg-white/10 text-white font-display font-semibold text-base hover:bg-white/15 hover:text-white transition-colors break-all"
             >
-              <Mail className="w-5 h-5 text-amber-400" aria-hidden="true" />
+              <Mail className="w-5 h-5 text-sun-400 flex-shrink-0" aria-hidden="true" />
               {CONTACT_EMAIL}
             </a>
           </div>
@@ -124,11 +124,11 @@ export default function SiteFooter() {
           </nav>
         </div>
 
-        <div className="mt-8 md:mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between text-xs text-white/60">
+        <div className="mt-8 md:mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between text-xs text-white/75">
           <p>&copy; {year} postd.uk</p>
           <p>
-            Made by{' '}
-            <a href="https://dijitul.uk" className="text-white/60 hover:text-white transition-colors underline-offset-2 hover:underline">
+            Built by{' '}
+            <a href="https://dijitul.uk" className="inline-flex items-center min-h-[44px] text-cobalt-300 hover:text-white transition-colors underline underline-offset-2">
               dijitul
             </a>{' '}
             in Mansfield, UK

@@ -216,8 +216,8 @@ export default function PlatformIcon({
   // Filled uses platform colour as bg; soft uses tint
   const containerStyle = {
     ...dims,
-    ...(container === 'filled' && { backgroundColor: PLATFORM_COLOURS[key] ?? '#94A3B8' }),
-    ...(container === 'soft'   && { backgroundColor: PLATFORM_TINTS[key] ?? '#F1F5F9' }),
+    ...(container === 'filled' && { backgroundColor: PLATFORM_COLOURS[key] ?? '#8A93AB' }),
+    ...(container === 'soft'   && { backgroundColor: PLATFORM_TINTS[key] ?? '#F3F5FB' }),
   }
 
   const iconColour = container === 'filled' ? '#FFFFFF' : colour
@@ -248,7 +248,7 @@ export default function PlatformIcon({
         {iconEl}
       </span>
       {showLabel && (
-        <span className="text-sm font-semibold text-navy-800 leading-none">
+        <span className="text-sm font-semibold text-navy-900 leading-none">
           {PLATFORM_NAMES[key] ?? platform}
         </span>
       )}

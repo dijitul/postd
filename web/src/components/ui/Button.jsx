@@ -1,7 +1,7 @@
 /**
  * Button — postd.uk UI Component
  *
- * Variants: primary (amber), secondary (navy), ghost, danger
+ * Relay: pill buttons. Variants: primary (cobalt), secondary (white with line ring), ghost (cobalt text), danger
  * Sizes: sm, md, lg
  * States: default, hover, active, disabled, loading
  */
@@ -46,32 +46,31 @@ function Spinner({ size = 'md', className = '' }) {
 
 const VARIANTS = {
   /**
-   * Primary — Deep Amber. Use for the single most important action per screen.
+   * Primary: cobalt. Use for the single most important action per screen.
    * Appears in: CTAs, form submits, "Connect platform", "Upgrade".
    */
   primary: [
     // Base
-    'bg-amber-500 text-white border border-amber-500',
+    'bg-cobalt-600 text-white border border-cobalt-600',
     // Hover — slightly darker
-    'hover:bg-amber-700 hover:border-amber-700',
+    'hover:bg-cobalt-700 hover:border-cobalt-700',
     // Active — pressed state
-    'active:bg-amber-800 active:border-amber-800 active:scale-[0.98]',
+    'active:bg-cobalt-800 active:border-cobalt-800 active:scale-[0.98]',
     // Focus
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt-600 focus-visible:ring-offset-2',
     // Shadow
-    'shadow-sm hover:shadow-amber-lg',
+    'hover:shadow-cobalt-lg',
   ].join(' '),
 
   /**
-   * Secondary — Rich Navy. Use for secondary actions alongside a primary.
+   * Secondary: white with a line ring. Use for secondary actions alongside a primary.
    * Appears in: "Cancel", "Back", "View details".
    */
   secondary: [
-    'bg-navy-800 text-white border border-navy-800',
-    'hover:bg-navy-700 hover:border-navy-700',
-    'active:bg-navy-900 active:border-navy-900 active:scale-[0.98]',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-800 focus-visible:ring-offset-2',
-    'shadow-sm hover:shadow-navy-lg',
+    'bg-white text-navy-900 border-0 ring-[1.5px] ring-inset ring-line',
+    'hover:bg-cloud hover:ring-line-strong',
+    'active:scale-[0.98]',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt-600 focus-visible:ring-offset-2',
   ].join(' '),
 
   /**
@@ -79,20 +78,20 @@ const VARIANTS = {
    * Appears in: "Edit", "Copy", "Skip for now".
    */
   ghost: [
-    'bg-transparent text-navy-800 border border-slate-200',
-    'hover:bg-slate-50 hover:border-slate-300 hover:text-navy-700',
-    'active:bg-slate-100 active:scale-[0.98]',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2',
+    'bg-transparent text-cobalt-600 border border-transparent',
+    'hover:bg-cobalt-50 hover:text-cobalt-700',
+    'active:bg-cobalt-100 active:scale-[0.98]',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt-600 focus-visible:ring-offset-2',
   ].join(' '),
 
   /**
-   * Ghost amber — transparent amber. Use for inline actions with amber context.
+   * Ghost cobalt (kept as 'ghost-amber' so existing callers work).
    */
   'ghost-amber': [
-    'bg-transparent text-amber-500 border border-amber-200',
-    'hover:bg-amber-50 hover:border-amber-300',
-    'active:bg-amber-100 active:scale-[0.98]',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2',
+    'bg-transparent text-cobalt-600 border border-cobalt-200',
+    'hover:bg-cobalt-50 hover:border-cobalt-300',
+    'active:bg-cobalt-100 active:scale-[0.98]',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt-600 focus-visible:ring-offset-2',
   ].join(' '),
 
   /**
@@ -108,13 +107,13 @@ const VARIANTS = {
   ].join(' '),
 
   /**
-   * Honey — premium/upgrade contexts. Use for plan upgrade prompts.
+   * Sun: premium and upgrade contexts (kept as 'honey'). Use for plan upgrade prompts.
    */
   honey: [
-    'bg-honey-400 text-navy-800 border border-honey-400',
-    'hover:bg-honey-500 hover:border-honey-500',
-    'active:bg-honey-600 active:scale-[0.98]',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-honey-400 focus-visible:ring-offset-2',
+    'bg-sun-400 text-navy-900 border border-sun-400',
+    'hover:bg-sun-500 hover:border-sun-500',
+    'active:bg-sun-600 active:scale-[0.98]',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-400 focus-visible:ring-offset-2',
     'shadow-sm font-bold',
   ].join(' '),
 }

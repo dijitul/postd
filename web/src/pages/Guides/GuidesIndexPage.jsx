@@ -28,18 +28,18 @@ function GuideCard({ guide }) {
     <li>
       <Link
         to={`/guides/${guide.slug}`}
-        className="group flex flex-col h-full bg-white rounded-2xl p-5 sm:p-6 border border-cream-300 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200"
+        className="group flex flex-col h-full bg-white rounded-2xl p-5 sm:p-6 border border-line hover:shadow-marketing transition-shadow duration-200"
       >
         {TYPE_LABELS[guide.type] && (
-          <span className="self-start text-2xs font-black uppercase tracking-wide text-amber-700 bg-amber-500/10 px-2.5 py-1 rounded-full mb-3">
+          <span className="self-start text-2xs font-extrabold uppercase tracking-wide text-cobalt-700 bg-cobalt-50 px-2.5 py-1 rounded-full mb-3">
             {TYPE_LABELS[guide.type]}
           </span>
         )}
-        <h3 className="font-display font-bold text-lg text-navy-800 mb-2 group-hover:text-amber-700 transition-colors text-balance">
+        <h3 className="font-display font-bold text-lg text-navy-900 mb-2 group-hover:text-cobalt-700 transition-colors text-balance">
           {guide.title}
         </h3>
         <p className="text-sm text-slate-600 leading-relaxed mb-4 flex-1">{guide.description}</p>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-500">
           <time dateTime={guide.updated ?? guide.date}>{formatDate(guide.updated ?? guide.date)}</time>
           {' · '}
           {guide.readingMinutes} min read
@@ -92,7 +92,7 @@ export default function GuidesIndexPage() {
   )
 
   return (
-    <div className="min-h-screen bg-cream-200 flex flex-col">
+    <div className="min-h-screen bg-cloud flex flex-col">
       <Seo
         title="Social Media Guides for UK Small Businesses | postd.uk"
         description="Practical guides to Google Business Profile posts, automated social media and what to post as a UK local business, written by the team behind postd.uk."
@@ -102,19 +102,19 @@ export default function GuidesIndexPage() {
       <SiteHeader />
 
       <main className="flex-1">
-        <section className="honeycomb-bg border-b border-cream-300">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <section className="bg-white border-b border-line">
+          <div className="container-brand py-12 sm:py-16">
             <nav aria-label="Breadcrumb" className="text-sm text-slate-500 mb-6">
               <ol className="flex flex-wrap items-center gap-1.5 pl-0 [&>li]:mb-0">
-                <li><Link to="/" className="hover:text-amber-700 transition-colors">Home</Link></li>
+                <li><Link to="/" className="hover:text-cobalt-700 transition-colors">Home</Link></li>
                 <li aria-hidden="true">/</li>
                 <li aria-current="page" className="text-navy-700 font-medium">Guides</li>
               </ol>
             </nav>
-            <h1 className="font-display font-black text-navy-800 mb-4 text-balance" style={{ fontSize: 'clamp(2rem, 5vw, 3.25rem)', lineHeight: '1.1' }}>
+            <h1 className="display mb-4 text-balance">
               Social media guides for UK small businesses
             </h1>
-            <p className="text-lg text-slate-600 max-w-2xl text-pretty">
+            <p className="lead max-w-2xl text-pretty">
               Straight answers on Google Business Profile, automated posting and what to post as a local
               business. Written in Mansfield by the team that builds postd.uk.
             </p>
@@ -125,7 +125,7 @@ export default function GuidesIndexPage() {
                   <a
                     key={group.key}
                     href={`#${group.key}`}
-                    className="inline-flex items-center min-h-[44px] px-4 rounded-full bg-white border border-cream-300 text-sm font-semibold text-navy-700 hover:border-amber-500 hover:text-amber-700 transition-colors"
+                    className="font-display inline-flex items-center min-h-[44px] px-4 rounded-full bg-cloud text-sm font-semibold text-navy-900 hover:bg-cobalt-50 hover:text-cobalt-700 transition-colors"
                   >
                     {group.label}
                   </a>
@@ -135,10 +135,10 @@ export default function GuidesIndexPage() {
           </div>
         </section>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-16">
+        <div className="container-brand py-12 sm:py-16 space-y-16">
           {groups.length === 0 && (
-            <div className="bg-white rounded-3xl border border-cream-300 p-8 text-center">
-              <BookOpen className="w-8 h-8 text-amber-500 mx-auto mb-4" aria-hidden="true" />
+            <div className="bg-white rounded-2xl border border-line p-8 text-center">
+              <BookOpen className="w-8 h-8 text-cobalt-600 mx-auto mb-4" aria-hidden="true" />
               <p className="text-slate-600">The first guides are on their way. Check back soon.</p>
             </div>
           )}
@@ -146,7 +146,7 @@ export default function GuidesIndexPage() {
           {groups.map((group) => (
             <section key={group.key} id={group.key} aria-labelledby={`${group.key}-heading`} className="scroll-mt-24">
               <div className="mb-6 max-w-2xl">
-                <h2 id={`${group.key}-heading`} className="font-display font-black text-2xl sm:text-3xl text-navy-800 mb-2">
+                <h2 id={`${group.key}-heading`} className="font-display font-extrabold text-2xl sm:text-3xl tracking-tight text-navy-900 mb-2">
                   {group.label}
                 </h2>
                 <p className="text-slate-600">{PILLAR_INTROS[group.key]}</p>
@@ -163,7 +163,7 @@ export default function GuidesIndexPage() {
 
           <p className="text-sm text-slate-500">
             Want the short version?{' '}
-            <a href="/#faq" className="font-semibold text-amber-700 hover:text-amber-800 inline-flex items-center gap-1">
+            <a href="/#faq" className="font-semibold text-cobalt-700 hover:text-cobalt-800 inline-flex items-center gap-1">
               Read the postd.uk questions and answers <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
             </a>
           </p>

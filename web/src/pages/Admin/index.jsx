@@ -174,16 +174,16 @@ export default function AdminPage() {
   )
 
   return (
-    <div className="min-h-screen bg-navy-950 text-white">
+    <div className="min-h-screen bg-cloud text-navy-900">
 
-      <header className="sticky top-0 z-30 bg-navy-950/95 backdrop-blur border-b border-white/10 px-4 sm:px-6 py-3">
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-line px-4 sm:px-6 py-3">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <Logo size="sm" variant="reversed" asLink={false} />
-            <div className="h-6 w-px bg-white/15 hidden sm:block" />
+            <Logo size="sm" asLink={false} />
+            <div className="h-6 w-px bg-line hidden sm:block" />
             <div className="hidden sm:flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-amber-400" />
-              <span className="text-sm font-semibold text-white/80">dijitul admin</span>
+              <ShieldCheck className="w-4 h-4 text-cobalt-600" />
+              <span className="text-sm font-semibold text-navy-900">dijitul admin</span>
             </div>
           </div>
 
@@ -191,14 +191,14 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={() => setAutoRefresh((v) => !v)}
-              className="flex items-center gap-1.5 text-2xs font-semibold text-white/40 hover:text-white/70 transition-colors"
+              className="flex items-center gap-1.5 text-2xs font-semibold text-slate-500 hover:text-navy-900 transition-colors"
               title={autoRefresh ? 'Live updates on' : 'Live updates paused'}
             >
-              <span className={`w-1.5 h-1.5 rounded-full ${autoRefresh ? 'bg-green-500 animate-pulse' : 'bg-white/30'}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${autoRefresh ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`} />
               {autoRefresh ? 'Live' : 'Paused'}
             </button>
 
-            <span className="text-2xs text-white/25 hidden md:inline">
+            <span className="text-2xs text-slate-500 hidden md:inline">
               {lastUpdated ? `Updated ${timeAgo(lastUpdated)}` : ''}
             </span>
 
@@ -206,13 +206,13 @@ export default function AdminPage() {
               type="button"
               onClick={refreshNow}
               disabled={refreshing}
-              className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-navy-900 transition-colors"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Refresh</span>
             </button>
 
-            <Link to="/dashboard" className="text-xs text-white/40 hover:text-white/70 transition-colors">
+            <Link to="/dashboard" className="text-xs text-slate-500 hover:text-navy-900 transition-colors">
               Exit
             </Link>
           </div>
@@ -223,25 +223,25 @@ export default function AdminPage() {
 
         {/* Failures are surfaced rather than swallowed into an empty dashboard */}
         {errors.length > 0 && (
-          <div className="rounded-2xl border border-red-500/25 bg-red-500/10 p-4">
+          <div className="rounded-2xl border border-red-200 bg-danger-soft p-4">
             <div className="flex items-center gap-2 mb-1.5">
-              <AlertTriangle className="w-4 h-4 text-red-400" />
-              <span className="text-sm font-bold text-red-300">Some data could not be loaded</span>
+              <AlertTriangle className="w-4 h-4 text-danger" />
+              <span className="text-sm font-bold text-danger-text">Some data could not be loaded</span>
             </div>
-            <ul className="text-xs text-red-300/70 space-y-0.5">
+            <ul className="text-xs text-danger-text space-y-0.5">
               {errors.map((e) => <li key={e}>{e}</li>)}
             </ul>
           </div>
         )}
 
         {healthDown.length > 0 && (
-          <div className="rounded-2xl border border-red-500/25 bg-red-500/10 p-4 flex items-start gap-3">
-            <XCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+          <div className="rounded-2xl border border-red-200 bg-danger-soft p-4 flex items-start gap-3">
+            <XCircle className="w-4 h-4 text-danger mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-bold text-red-300">
+              <p className="text-sm font-bold text-danger-text">
                 {healthDown.length} service{healthDown.length > 1 ? 's' : ''} down
               </p>
-              <p className="text-xs text-red-300/70">
+              <p className="text-xs text-danger-text">
                 {healthDown.map((s) => `${s.name} (${s.message})`).join(' · ')}
               </p>
             </div>
@@ -249,14 +249,14 @@ export default function AdminPage() {
         )}
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex gap-1 bg-white/[0.06] p-1 rounded-xl overflow-x-auto">
+          <div className="flex gap-1 bg-cloud p-1 rounded-xl overflow-x-auto">
             {TABS.map((t) => (
               <button
                 key={t.id}
                 type="button"
                 onClick={() => setTab(t.id)}
-                className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
-                  tab === t.id ? 'bg-amber-500 text-white' : 'text-white/50 hover:text-white/80'
+                className={`min-h-[44px] font-display flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
+                  tab === t.id ? 'bg-cobalt-600 text-white' : 'text-slate-500 hover:text-white'
                 }`}
               >
                 <t.icon className="w-3.5 h-3.5" />
@@ -266,14 +266,14 @@ export default function AdminPage() {
           </div>
 
           {tab === 'overview' && (
-            <div className="flex gap-1 bg-white/[0.06] p-1 rounded-xl">
+            <div className="flex gap-1 bg-cloud p-1 rounded-xl">
               {[7, 30, 90].map((d) => (
                 <button
                   key={d}
                   type="button"
                   onClick={() => setPeriod(d)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    period === d ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/70'
+                  className={`min-h-[44px] inline-flex items-center justify-center font-display px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                    period === d ? 'bg-white text-navy-900 shadow-sm' : 'text-slate-500 hover:text-navy-900'
                   }`}
                 >
                   {d}d
@@ -356,28 +356,28 @@ export default function AdminPage() {
             <Panel title="Token usage and cost" subtitle="All time, across every account">
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                  <p className="text-2xs font-bold uppercase tracking-wide text-white/30 mb-1">Total spend</p>
-                  <p className="font-display font-black text-2xl text-white">{usd(ai?.cost_usd_all_time)}</p>
-                  <p className="text-2xs text-white/35 mt-0.5">about {gbp(ai?.cost_gbp_all_time, { decimals: 2 })}</p>
+                  <p className="text-2xs font-bold uppercase tracking-wide text-slate-500 mb-1">Total spend</p>
+                  <p className="font-display font-extrabold text-2xl text-navy-900">{usd(ai?.cost_usd_all_time)}</p>
+                  <p className="text-2xs text-slate-500 mt-0.5">about {gbp(ai?.cost_gbp_all_time, { decimals: 2 })}</p>
                 </div>
                 <div>
-                  <p className="text-2xs font-bold uppercase tracking-wide text-white/30 mb-1">Total tokens</p>
-                  <p className="font-display font-black text-2xl text-white">{compactTokens(ai?.tokens_all_time)}</p>
-                  <p className="text-2xs text-white/35 mt-0.5">
+                  <p className="text-2xs font-bold uppercase tracking-wide text-slate-500 mb-1">Total tokens</p>
+                  <p className="font-display font-extrabold text-2xl text-navy-900">{compactTokens(ai?.tokens_all_time)}</p>
+                  <p className="text-2xs text-slate-500 mt-0.5">
                     {compactTokens(ai?.prompt_tokens_all_time)} in · {compactTokens(ai?.completion_tokens_all_time)} out
                   </p>
                 </div>
                 <div>
-                  <p className="text-2xs font-bold uppercase tracking-wide text-white/30 mb-1">Cost per 1k tokens</p>
-                  <p className="font-display font-black text-2xl text-white">
+                  <p className="text-2xs font-bold uppercase tracking-wide text-slate-500 mb-1">Cost per 1k tokens</p>
+                  <p className="font-display font-extrabold text-2xl text-navy-900">
                     {usd(ai?.cost_per_1k_tokens_usd, { decimals: 4 })}
                   </p>
-                  <p className="text-2xs text-white/35 mt-0.5">{num(ai?.operations_all_time)} operations</p>
+                  <p className="text-2xs text-slate-500 mt-0.5">{num(ai?.operations_all_time)} operations</p>
                 </div>
                 <div>
-                  <p className="text-2xs font-bold uppercase tracking-wide text-white/30 mb-1">Spend in {period}d</p>
-                  <p className="font-display font-black text-2xl text-white">{usd(ai?.cost_usd_period)}</p>
-                  <p className="text-2xs text-white/35 mt-0.5">{compactTokens(ai?.tokens_period)} tokens</p>
+                  <p className="text-2xs font-bold uppercase tracking-wide text-slate-500 mb-1">Spend in {period}d</p>
+                  <p className="font-display font-extrabold text-2xl text-navy-900">{usd(ai?.cost_usd_period)}</p>
+                  <p className="text-2xs text-slate-500 mt-0.5">{compactTokens(ai?.tokens_period)} tokens</p>
                 </div>
               </div>
             </Panel>
@@ -388,7 +388,7 @@ export default function AdminPage() {
                 title={`Last ${period} days`}
                 subtitle="Daily totals"
                 action={
-                  <div className="flex gap-1 bg-white/[0.06] p-0.5 rounded-lg">
+                  <div className="flex gap-1 bg-cloud p-0.5 rounded-lg">
                     {[
                       { id: 'posted', label: 'Published' },
                       { id: 'signups', label: 'Signups' },
@@ -398,8 +398,8 @@ export default function AdminPage() {
                         key={m.id}
                         type="button"
                         onClick={() => setChartMetric(m.id)}
-                        className={`px-2.5 py-1 rounded text-2xs font-bold transition-colors ${
-                          chartMetric === m.id ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/70'
+                        className={`font-display px-2.5 py-1 rounded text-2xs font-semibold transition-colors ${
+                          chartMetric === m.id ? 'bg-white text-navy-900 shadow-sm' : 'text-slate-500 hover:text-navy-900'
                         }`}
                       >
                         {m.label}
@@ -411,7 +411,7 @@ export default function AdminPage() {
                 <BarChart
                   data={overview?.series}
                   metric={chartMetric}
-                  colour={chartMetric === 'failed' ? '#EF4444' : chartMetric === 'signups' ? '#F5C842' : '#E07B30'}
+                  colour={chartMetric === 'failed' ? '#D92D20' : chartMetric === 'signups' ? '#12A150' : '#2340F5'}
                 />
               </Panel>
 
@@ -421,17 +421,17 @@ export default function AdminPage() {
                     {rev.by_plan.map((p) => (
                       <li key={p.plan}>
                         <div className="flex items-baseline justify-between mb-1.5">
-                          <span className="text-sm font-semibold text-white capitalize">{p.name}</span>
-                          <span className="text-sm font-display font-black text-white">{gbp(p.mrr)}</span>
+                          <span className="text-sm font-semibold text-navy-900 capitalize">{p.name}</span>
+                          <span className="text-sm font-display font-extrabold text-navy-900">{gbp(p.mrr)}</span>
                         </div>
                         <ShareBar value={p.mrr_pence} total={rev.mrr_pence} />
-                        <p className="text-2xs text-white/35 mt-1">
+                        <p className="text-2xs text-slate-500 mt-1">
                           {p.customers} customer{p.customers === 1 ? '' : 's'} at {gbp(p.price)}/mo
                         </p>
                       </li>
                     ))}
                     {rev.unpriced_subscriptions > 0 && (
-                      <li className="text-2xs text-amber-400/70 pt-1 border-t border-white/10">
+                      <li className="text-2xs text-warn-text pt-1 border-t border-line">
                         {rev.unpriced_subscriptions} subscription(s) on a price ID not in the plan config, so excluded from MRR.
                       </li>
                     )}
@@ -449,8 +449,8 @@ export default function AdminPage() {
                     {conns.by_platform.map((p) => (
                       <li key={p.platform} className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2 min-w-0">
-                          <Link2 className="w-3.5 h-3.5 text-white/25 shrink-0" />
-                          <span className="text-sm text-white/80 truncate">{platformLabel(p.platform)}</span>
+                          <Link2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="text-sm text-navy-900 truncate">{platformLabel(p.platform)}</span>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           <Pill tone="green">{p.active} active</Pill>
@@ -472,16 +472,16 @@ export default function AdminPage() {
                     {content.by_platform.map((p) => (
                       <li key={p.platform}>
                         <div className="flex items-baseline justify-between mb-1.5">
-                          <span className="text-sm text-white/80">{platformLabel(p.platform)}</span>
-                          <span className="text-xs text-white/40">
+                          <span className="text-sm text-navy-900">{platformLabel(p.platform)}</span>
+                          <span className="text-xs text-slate-500">
                             {num(p.posted)} published
-                            {p.failed > 0 && <span className="text-red-400"> · {num(p.failed)} failed</span>}
+                            {p.failed > 0 && <span className="text-danger"> · {num(p.failed)} failed</span>}
                           </span>
                         </div>
                         <ShareBar
                           value={p.posted}
                           total={p.total}
-                          colour={p.failed > p.posted ? 'bg-red-500' : 'bg-amber-500'}
+                          colour={p.failed > p.posted ? 'bg-red-500' : 'bg-cobalt-600'}
                         />
                       </li>
                     ))}
@@ -502,20 +502,20 @@ export default function AdminPage() {
               ) : atRisk.at_risk?.length === 0 ? (
                 <EmptyState icon={CheckCircle} title="Nothing at risk right now." hint="Trials, activity and connections all look healthy." />
               ) : (
-                <ul className="divide-y divide-white/5">
+                <ul className="divide-y divide-line">
                   {atRisk.at_risk.map((r, i) => (
                     <li key={`${r.customer_id}-${r.reason}-${i}`}>
                       <button
                         type="button"
                         onClick={() => r.customer_id && setSelectedCustomer(r.customer_id)}
-                        className="w-full text-left px-5 py-3 flex items-center justify-between gap-4 hover:bg-white/[0.04] transition-colors"
+                        className="w-full text-left px-5 py-3 flex items-center justify-between gap-4 hover:bg-cloud transition-colors"
                       >
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold text-white truncate">{r.name}</p>
-                          <p className="text-xs text-white/40 truncate">{r.email}</p>
+                          <p className="text-sm font-semibold text-navy-900 truncate">{r.name}</p>
+                          <p className="text-xs text-slate-500 truncate">{r.email}</p>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                          <span className="text-xs text-white/50 hidden sm:inline">{r.detail}</span>
+                          <span className="text-xs text-slate-500 hidden sm:inline">{r.detail}</span>
                           <Pill tone={r.risk === 'high' ? 'red' : 'amber'}>
                             {r.risk === 'high' ? 'High risk' : 'Watch'}
                           </Pill>
@@ -534,17 +534,17 @@ export default function AdminPage() {
           <div className="space-y-4">
             <div className="flex flex-wrap gap-3">
               <div className="relative flex-1 min-w-[240px]">
-                <Search className="w-4 h-4 text-white/30 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="search"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by name, email or business"
-                  className="w-full rounded-xl bg-white/[0.06] border border-white/10 pl-9 pr-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-amber-500 focus:outline-none"
+                  className="w-full rounded-xl bg-white border-[1.5px] border-line pl-9 pr-3 py-2.5 text-sm text-navy-900 placeholder:text-slate-400 focus:border-cobalt-600 focus:ring-[3px] focus:ring-cobalt-100 focus:outline-none"
                 />
               </div>
 
-              <div className="flex gap-1 bg-white/[0.06] p-1 rounded-xl overflow-x-auto">
+              <div className="flex gap-1 bg-cloud p-1 rounded-xl overflow-x-auto">
                 {[
                   { id: '', label: 'All' },
                   { id: 'subscribed', label: 'Paying' },
@@ -557,8 +557,8 @@ export default function AdminPage() {
                     key={f.id}
                     type="button"
                     onClick={() => { setStatusFilter(f.id); setPage(1) }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                      statusFilter === f.id ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/70'
+                    className={`min-h-[44px] inline-flex items-center justify-center font-display px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                      statusFilter === f.id ? 'bg-white text-navy-900 shadow-sm' : 'text-slate-500 hover:text-navy-900'
                     }`}
                   >
                     {f.label}
@@ -576,9 +576,9 @@ export default function AdminPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[820px]">
                     <thead>
-                      <tr className="border-b border-white/10">
+                      <tr className="border-b border-line">
                         {['Customer', 'Status', 'Plan', 'MRR', 'Posts', 'Platforms', 'Last seen'].map((h) => (
-                          <th key={h} className="text-left px-4 py-3 text-2xs font-bold text-white/35 uppercase tracking-wide">
+                          <th key={h} className="text-left px-4 py-3 text-2xs font-bold text-slate-500 uppercase tracking-wide">
                             {h}
                           </th>
                         ))}
@@ -589,23 +589,23 @@ export default function AdminPage() {
                         <tr
                           key={c.id}
                           onClick={() => setSelectedCustomer(c.id)}
-                          className="border-b border-white/5 last:border-0 hover:bg-white/[0.04] transition-colors cursor-pointer"
+                          className="border-b border-line last:border-0 hover:bg-cloud transition-colors cursor-pointer"
                         >
                           <td className="px-4 py-3">
-                            <p className="text-sm font-semibold text-white">
+                            <p className="text-sm font-semibold text-navy-900">
                               {c.business?.name ?? c.name}
                             </p>
-                            <p className="text-2xs text-white/40">{c.email}</p>
+                            <p className="text-2xs text-slate-500">{c.email}</p>
                           </td>
                           <td className="px-4 py-3"><StatusPill status={c.status} /></td>
-                          <td className="px-4 py-3 text-sm text-white/60 capitalize">{c.plan_label}</td>
-                          <td className="px-4 py-3 text-sm font-semibold text-white/80">
-                            {c.mrr > 0 ? gbp(c.mrr) : <span className="text-white/25">—</span>}
+                          <td className="px-4 py-3 text-sm text-slate-500 capitalize">{c.plan_label}</td>
+                          <td className="px-4 py-3 text-sm font-semibold text-navy-900">
+                            {c.mrr > 0 ? gbp(c.mrr) : <span className="text-slate-500">—</span>}
                           </td>
-                          <td className="px-4 py-3 text-sm text-white/60">
+                          <td className="px-4 py-3 text-sm text-slate-500">
                             {num(c.business?.posts_count ?? 0)}
                             {c.business?.pending_posts_count > 0 && (
-                              <span className="text-amber-400 text-2xs ml-1.5">
+                              <span className="text-cobalt-600 text-2xs ml-1.5">
                                 · {c.business.pending_posts_count} pending
                               </span>
                             )}
@@ -616,10 +616,10 @@ export default function AdminPage() {
                                 ? c.business.platforms.map((p) => (
                                     <Pill key={p} tone="slate">{platformLabel(p)}</Pill>
                                   ))
-                                : <span className="text-white/25 text-xs">None</span>}
+                                : <span className="text-slate-500 text-xs">None</span>}
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-xs text-white/40">
+                          <td className="px-4 py-3 text-xs text-slate-500">
                             {c.last_seen_at ? timeAgo(c.last_seen_at) : 'Never'}
                           </td>
                         </tr>
@@ -632,7 +632,7 @@ export default function AdminPage() {
 
             {customerMeta && customerMeta.last_page > 1 && (
               <div className="flex items-center justify-between">
-                <p className="text-xs text-white/40">
+                <p className="text-xs text-slate-500">
                   Page {customerMeta.current_page} of {customerMeta.last_page} · {num(customerMeta.total)} customers
                 </p>
                 <div className="flex gap-2">
@@ -640,7 +640,7 @@ export default function AdminPage() {
                     type="button"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={customerMeta.current_page <= 1}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/[0.06] text-xs font-semibold text-white/70 disabled:opacity-30 hover:bg-white/10 transition-colors"
+                    className="min-h-[44px] flex items-center gap-1 px-3 py-1.5 rounded-full bg-cloud text-xs font-semibold text-slate-500 disabled:opacity-30 hover:bg-cloud transition-colors"
                   >
                     <ChevronLeft className="w-3.5 h-3.5" /> Previous
                   </button>
@@ -648,7 +648,7 @@ export default function AdminPage() {
                     type="button"
                     onClick={() => setPage((p) => p + 1)}
                     disabled={customerMeta.current_page >= customerMeta.last_page}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/[0.06] text-xs font-semibold text-white/70 disabled:opacity-30 hover:bg-white/10 transition-colors"
+                    className="min-h-[44px] flex items-center gap-1 px-3 py-1.5 rounded-full bg-cloud text-xs font-semibold text-slate-500 disabled:opacity-30 hover:bg-cloud transition-colors"
                   >
                     Next <ChevronRight className="w-3.5 h-3.5" />
                   </button>
@@ -666,26 +666,26 @@ export default function AdminPage() {
             ) : activity.length === 0 ? (
               <EmptyState icon={Activity} title="Nothing has happened in the last 14 days." />
             ) : (
-              <ul className="divide-y divide-white/5">
+              <ul className="divide-y divide-line">
                 {activity.map((e, i) => (
                   <li key={`${e.type}-${e.at}-${i}`}>
                     <button
                       type="button"
                       onClick={() => e.customer_id && setSelectedCustomer(e.customer_id)}
                       disabled={!e.customer_id}
-                      className="w-full text-left px-5 py-3 flex items-start gap-3 hover:bg-white/[0.04] transition-colors disabled:hover:bg-transparent"
+                      className="w-full text-left px-5 py-3 flex items-start gap-3 hover:bg-cloud transition-colors disabled:hover:bg-transparent"
                     >
                       <span className={`w-1.5 h-1.5 rounded-full mt-2 shrink-0 ${
                         e.severity === 'error' ? 'bg-red-500'
                           : e.severity === 'success' ? 'bg-green-500'
-                          : e.severity === 'warning' ? 'bg-amber-500'
+                          : e.severity === 'warning' ? 'bg-cobalt-600'
                           : 'bg-blue-400'
                       }`} />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm text-white/90">{e.title}</p>
-                        <p className="text-xs text-white/40 truncate">{e.detail}</p>
+                        <p className="text-sm text-navy-900">{e.title}</p>
+                        <p className="text-xs text-slate-500 truncate">{e.detail}</p>
                       </div>
-                      <span className="text-2xs text-white/30 shrink-0 mt-0.5" title={formatDateTime(e.at)}>
+                      <span className="text-2xs text-slate-500 shrink-0 mt-0.5" title={formatDateTime(e.at)}>
                         {timeAgo(e.at)}
                       </span>
                     </button>
@@ -705,16 +705,16 @@ export default function AdminPage() {
               ) : (
                 <ul className="space-y-2">
                   {health.services.map((s) => (
-                    <li key={s.name} className="flex items-center justify-between gap-3 rounded-xl bg-white/[0.03] px-4 py-3">
+                    <li key={s.name} className="flex items-center justify-between gap-3 rounded-xl bg-white px-4 py-3">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <span className={`w-2 h-2 rounded-full shrink-0 ${s.healthy ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-                        <span className="text-sm font-semibold text-white truncate">{s.name}</span>
+                        <span className="text-sm font-semibold text-navy-900 truncate">{s.name}</span>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
-                        <span className={`text-xs ${s.healthy ? 'text-green-400' : 'text-red-400'}`}>
+                        <span className={`text-xs ${s.healthy ? 'text-success-text' : 'text-danger'}`}>
                           {s.message}
                         </span>
-                        <span className="text-2xs text-white/25 tabular-nums">{s.latency_ms}ms</span>
+                        <span className="text-2xs text-slate-500 tabular-nums">{s.latency_ms}ms</span>
                       </div>
                     </li>
                   ))}
@@ -759,14 +759,14 @@ export default function AdminPage() {
               ) : health.recent_failed_jobs?.length === 0 ? (
                 <EmptyState icon={CheckCircle} title="No failed jobs." />
               ) : (
-                <ul className="divide-y divide-white/5">
+                <ul className="divide-y divide-line">
                   {health.recent_failed_jobs.map((j) => (
                     <li key={j.id} className="px-5 py-3">
                       <div className="flex items-center justify-between gap-3 mb-1">
                         <Pill tone="slate">{j.queue}</Pill>
-                        <span className="text-2xs text-white/30">{timeAgo(j.failed_at)}</span>
+                        <span className="text-2xs text-slate-500">{timeAgo(j.failed_at)}</span>
                       </div>
-                      <p className="text-xs text-red-300/80 font-mono break-all">{j.error}</p>
+                      <p className="text-xs text-danger-text/80 font-mono break-all">{j.error}</p>
                     </li>
                   ))}
                 </ul>
@@ -779,12 +779,12 @@ export default function AdminPage() {
               ) : health.recent_logs?.length === 0 ? (
                 <EmptyState icon={Activity} title="No health checks recorded yet." />
               ) : (
-                <ul className="divide-y divide-white/5">
+                <ul className="divide-y divide-line">
                   {health.recent_logs.map((log) => (
                     <li key={log.id} className="px-5 py-3 flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-sm text-white/80">{log.check_type}</p>
-                        <p className="text-xs text-white/40 truncate">
+                        <p className="text-sm text-navy-900">{log.check_type}</p>
+                        <p className="text-xs text-slate-500 truncate">
                           {[log.business_name, log.platform && platformLabel(log.platform), log.message]
                             .filter(Boolean).join(' · ')}
                         </p>
@@ -793,7 +793,7 @@ export default function AdminPage() {
                         <Pill tone={log.status === 'ok' ? 'green' : log.status === 'warning' ? 'amber' : 'red'}>
                           {log.status}
                         </Pill>
-                        <span className="text-2xs text-white/30">{timeAgo(log.checked_at)}</span>
+                        <span className="text-2xs text-slate-500">{timeAgo(log.checked_at)}</span>
                       </div>
                     </li>
                   ))}
@@ -807,17 +807,17 @@ export default function AdminPage() {
         {tab === 'costs' && (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs text-white/40">
+              <p className="text-xs text-slate-500">
                 {costs ? `Showing ${formatDate(costs.period.from)} to ${formatDate(costs.period.to)}` : 'Loading spend…'}
               </p>
-              <div className="flex gap-1 bg-white/[0.06] p-1 rounded-xl">
+              <div className="flex gap-1 bg-cloud p-1 rounded-xl">
                 {COST_RANGES.map((r) => (
                   <button
                     key={r.id}
                     type="button"
                     onClick={() => setCostRange(r.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                      costRange === r.id ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/70'
+                    className={`min-h-[44px] inline-flex items-center justify-center font-display px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                      costRange === r.id ? 'bg-white text-navy-900 shadow-sm' : 'text-slate-500 hover:text-navy-900'
                     }`}
                   >
                     {r.label}
@@ -865,7 +865,7 @@ export default function AdminPage() {
                 {!costs ? (
                   <SkeletonRows rows={3} />
                 ) : (
-                  <BarChart data={costs.daily} metric="cost_usd" colour="#F5C842" />
+                  <BarChart data={costs.daily} metric="cost_usd" colour="#6B4EFF" />
                 )}
               </Panel>
 
@@ -876,8 +876,8 @@ export default function AdminPage() {
                   <div className="space-y-4">
                     <div>
                       <div className="flex items-baseline justify-between mb-1.5">
-                        <span className="text-sm text-white/80">Prompt tokens</span>
-                        <span className="text-sm font-display font-black text-white">
+                        <span className="text-sm text-navy-900">Prompt tokens</span>
+                        <span className="text-sm font-display font-extrabold text-navy-900">
                           {compactTokens(costs.all_time?.prompt_tokens)}
                         </span>
                       </div>
@@ -885,27 +885,27 @@ export default function AdminPage() {
                     </div>
                     <div>
                       <div className="flex items-baseline justify-between mb-1.5">
-                        <span className="text-sm text-white/80">Completion tokens</span>
-                        <span className="text-sm font-display font-black text-white">
+                        <span className="text-sm text-navy-900">Completion tokens</span>
+                        <span className="text-sm font-display font-extrabold text-navy-900">
                           {compactTokens(costs.all_time?.completion_tokens)}
                         </span>
                       </div>
                       <ShareBar
                         value={costs.all_time?.completion_tokens}
                         total={costs.all_time?.tokens}
-                        colour="bg-honey-400"
+                        colour="bg-sun-400"
                       />
                     </div>
-                    <div className="pt-3 border-t border-white/10 space-y-1">
+                    <div className="pt-3 border-t border-line space-y-1">
                       <div className="flex justify-between text-xs">
-                        <span className="text-white/40">Cost per 1k tokens</span>
-                        <span className="text-white/80 tabular-nums">
+                        <span className="text-slate-500">Cost per 1k tokens</span>
+                        <span className="text-navy-900 tabular-nums">
                           {usd(costs.all_time?.cost_per_1k_tokens_usd, { decimals: 4 })}
                         </span>
                       </div>
                       <div className="flex justify-between text-xs">
-                        <span className="text-white/40">Tracking since</span>
-                        <span className="text-white/80">{formatDate(costs.all_time?.since)}</span>
+                        <span className="text-slate-500">Tracking since</span>
+                        <span className="text-navy-900">{formatDate(costs.all_time?.since)}</span>
                       </div>
                     </div>
                   </div>
@@ -922,23 +922,23 @@ export default function AdminPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[640px]">
                     <thead>
-                      <tr className="border-b border-white/10">
+                      <tr className="border-b border-line">
                         {['Operation', 'Model', 'Cost', 'Tokens', 'In / out', 'Calls'].map((h) => (
-                          <th key={h} className="text-left px-4 py-3 text-2xs font-bold text-white/35 uppercase tracking-wide">{h}</th>
+                          <th key={h} className="text-left px-4 py-3 text-2xs font-bold text-slate-500 uppercase tracking-wide">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {costs.by_operation.map((op, i) => (
-                        <tr key={`${op.operation}-${op.model}-${i}`} className="border-b border-white/5 last:border-0">
-                          <td className="px-4 py-3 text-sm text-white/90">{op.operation}</td>
-                          <td className="px-4 py-3 text-xs text-white/45 font-mono">{op.model}</td>
-                          <td className="px-4 py-3 text-sm font-semibold text-white">{usd(op.cost_usd, { decimals: 3 })}</td>
-                          <td className="px-4 py-3 text-sm text-white/60">{compactTokens(op.tokens)}</td>
-                          <td className="px-4 py-3 text-xs text-white/40">
+                        <tr key={`${op.operation}-${op.model}-${i}`} className="border-b border-line last:border-0">
+                          <td className="px-4 py-3 text-sm text-navy-900">{op.operation}</td>
+                          <td className="px-4 py-3 text-xs text-slate-500 font-mono">{op.model}</td>
+                          <td className="px-4 py-3 text-sm font-semibold text-navy-900">{usd(op.cost_usd, { decimals: 3 })}</td>
+                          <td className="px-4 py-3 text-sm text-slate-500">{compactTokens(op.tokens)}</td>
+                          <td className="px-4 py-3 text-xs text-slate-500">
                             {compactTokens(op.prompt_tokens)} / {compactTokens(op.completion_tokens)}
                           </td>
-                          <td className="px-4 py-3 text-sm text-white/50">{num(op.operations)}</td>
+                          <td className="px-4 py-3 text-sm text-slate-500">{num(op.operations)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -956,9 +956,9 @@ export default function AdminPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[560px]">
                     <thead>
-                      <tr className="border-b border-white/10">
+                      <tr className="border-b border-line">
                         {['Business', 'Cost', 'Tokens', 'Operations', 'Last used'].map((h) => (
-                          <th key={h} className="text-left px-4 py-3 text-2xs font-bold text-white/35 uppercase tracking-wide">{h}</th>
+                          <th key={h} className="text-left px-4 py-3 text-2xs font-bold text-slate-500 uppercase tracking-wide">{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -967,13 +967,13 @@ export default function AdminPage() {
                         <tr
                           key={row.business_id}
                           onClick={() => row.customer_id && setSelectedCustomer(row.customer_id)}
-                          className="border-b border-white/5 last:border-0 hover:bg-white/[0.04] transition-colors cursor-pointer"
+                          className="border-b border-line last:border-0 hover:bg-cloud transition-colors cursor-pointer"
                         >
-                          <td className="px-4 py-3 text-sm font-semibold text-white">{row.business_name}</td>
-                          <td className="px-4 py-3 text-sm text-white/80">{usd(row.total_cost_usd, { decimals: 3 })}</td>
-                          <td className="px-4 py-3 text-sm text-white/50">{compactTokens(row.total_tokens)}</td>
-                          <td className="px-4 py-3 text-sm text-white/50">{num(row.operations)}</td>
-                          <td className="px-4 py-3 text-xs text-white/40">{timeAgo(row.last_operation)}</td>
+                          <td className="px-4 py-3 text-sm font-semibold text-navy-900">{row.business_name}</td>
+                          <td className="px-4 py-3 text-sm text-navy-900">{usd(row.total_cost_usd, { decimals: 3 })}</td>
+                          <td className="px-4 py-3 text-sm text-slate-500">{compactTokens(row.total_tokens)}</td>
+                          <td className="px-4 py-3 text-sm text-slate-500">{num(row.operations)}</td>
+                          <td className="px-4 py-3 text-xs text-slate-500">{timeAgo(row.last_operation)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -984,8 +984,8 @@ export default function AdminPage() {
           </div>
         )}
 
-        <footer className="border-t border-white/10 pt-6 text-center">
-          <p className="text-2xs text-white/20">
+        <footer className="border-t border-line pt-6 text-center">
+          <p className="text-2xs text-slate-500">
             postd.uk admin, dijitul internal use only. Built in Mansfield, UK.
             {overview?.generated_at && ` Data as at ${formatDate(overview.generated_at)}.`}
           </p>

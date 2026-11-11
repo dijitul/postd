@@ -42,10 +42,10 @@ const businessSchema = z.object({
 
 function SectionCard({ title, icon: Icon, children }) {
   return (
-    <div className="bg-white rounded-2xl border border-cream-300 overflow-hidden" style={{ boxShadow: '0 2px 8px rgb(30 45 74 / 0.05)' }}>
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-cream-300 bg-cream-200/40">
-        <Icon className="w-4 h-4 text-amber-500" />
-        <h2 className="font-display font-bold text-base text-navy-800">{title}</h2>
+    <div className="bg-white rounded-2xl border border-line overflow-hidden">
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-line bg-cloud/40">
+        <Icon className="w-4 h-4 text-cobalt-600" />
+        <h2 className="font-display font-bold text-base text-navy-900">{title}</h2>
       </div>
       <div className="p-5 sm:p-6">{children}</div>
     </div>
@@ -56,14 +56,14 @@ function Toggle({ value, onChange, label, desc, disabled = false }) {
   return (
     <div className="flex items-start justify-between gap-4">
       <div>
-        <p className="text-sm font-semibold text-navy-800 mb-0.5">{label}</p>
+        <p className="text-sm font-semibold text-navy-900 mb-0.5">{label}</p>
         {desc && <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>}
       </div>
       <button
         type="button"
         onClick={() => onChange(!value)}
         disabled={disabled}
-        className={`relative w-12 h-6 rounded-full flex-shrink-0 transition-all duration-200 ${value ? 'bg-amber-500' : 'bg-slate-300'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className={`relative w-12 h-6 rounded-full flex-shrink-0 transition-all duration-200 ${value ? 'bg-cobalt-600' : 'bg-slate-300'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         aria-pressed={value}
         role="switch"
       >
@@ -115,22 +115,22 @@ function PlatformRow({ def, connection, onReconnect }) {
   }
 
   return (
-    <div className="flex items-center gap-3 py-3 border-b border-cream-300 last:border-0">
+    <div className="flex items-center gap-3 py-3 border-b border-line last:border-0">
       <PlatformIcon platform={def.id} size="sm" container="soft" className="flex-shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-navy-800">{def.label}</p>
+        <p className="text-sm font-semibold text-navy-900">{def.label}</p>
         {isConnected && (
           <p className="text-xs text-green-600 flex items-center gap-1 mt-0.5">
             <CheckCircle2 className="w-3 h-3" /> Connected
           </p>
         )}
         {isExpired && (
-          <p className="text-xs text-amber-600 flex items-center gap-1 mt-0.5">
+          <p className="text-xs text-cobalt-700 flex items-center gap-1 mt-0.5">
             <RefreshCw className="w-3 h-3" /> Token expired
           </p>
         )}
         {!connection && (
-          <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+          <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
             <XCircle className="w-3 h-3" /> Not connected
           </p>
         )}
@@ -140,10 +140,10 @@ function PlatformRow({ def, connection, onReconnect }) {
         <button
           onClick={handleReconnect}
           disabled={reconnecting}
-          className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-all disabled:opacity-50"
+          className="min-h-[44px] flex items-center gap-1.5 text-xs font-semibold text-cobalt-700 bg-cobalt-50 border border-cobalt-200 px-3 py-1.5 rounded-full hover:bg-cobalt-100 transition-all disabled:opacity-50"
         >
           {reconnecting
-            ? <span className="w-3.5 h-3.5 border-2 border-amber-300 border-t-amber-600 rounded-full animate-spin" />
+            ? <span className="w-3.5 h-3.5 border-2 border-cobalt-300 border-t-cobalt-700 rounded-full animate-spin" />
             : <RefreshCw className="w-3.5 h-3.5" />
           }
           Reconnect
@@ -151,7 +151,7 @@ function PlatformRow({ def, connection, onReconnect }) {
       ) : isConnected ? (
         <Link
           to="/platforms"
-          className="text-xs font-semibold text-slate-500 hover:text-amber-600 transition-colors"
+          className="text-xs font-semibold text-slate-500 hover:text-cobalt-700 transition-colors"
         >
           Manage
         </Link>
@@ -159,7 +159,7 @@ function PlatformRow({ def, connection, onReconnect }) {
         <button
           onClick={handleConnect}
           disabled={reconnecting}
-          className="flex items-center gap-1.5 text-xs font-semibold text-white bg-navy-800 px-3 py-1.5 rounded-lg hover:bg-navy-700 transition-all disabled:opacity-50"
+          className="min-h-[44px] font-display flex items-center gap-1.5 text-xs font-semibold text-white bg-navy-900 px-3 py-1.5 rounded-full hover:bg-navy-700 transition-all disabled:opacity-50"
         >
           {reconnecting
             ? <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -292,7 +292,7 @@ export default function SettingsPage() {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="bg-white rounded-2xl h-48 border border-cream-300 animate-pulse" />
+          <div key={i} className="bg-white rounded-2xl h-48 border border-line animate-pulse" />
         ))}
       </div>
     )
@@ -303,8 +303,8 @@ export default function SettingsPage() {
 
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Settings className="w-5 h-5 text-amber-500" />
-        <h1 className="font-display font-black text-2xl text-navy-800">Settings</h1>
+        <Settings className="w-5 h-5 text-cobalt-600" />
+        <h1 className="font-display font-extrabold text-2xl text-navy-900">Settings</h1>
       </div>
 
       {/* Business details */}
@@ -344,7 +344,7 @@ export default function SettingsPage() {
                   <option key={ind} value={ind}>{ind}</option>
                 ))}
               </select>
-              <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none rotate-90" />
+              <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none rotate-90" />
             </div>
             {errors.industry && (
               <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
@@ -361,7 +361,7 @@ export default function SettingsPage() {
               className="input"
               {...register('city')}
             />
-            <p className="mt-1.5 text-xs text-slate-400">
+            <p className="mt-1.5 text-xs text-slate-500">
               Where you are based. Posts mention your area, and without this they either
               skip it or guess.
             </p>
@@ -385,7 +385,7 @@ export default function SettingsPage() {
               className="input"
               {...register('google_reviews_url')}
             />
-            <p className="mt-1.5 text-xs text-slate-400">The link customers use to leave you a Google review</p>
+            <p className="mt-1.5 text-xs text-slate-500">The link customers use to leave you a Google review</p>
           </div>
 
           <div>
@@ -396,9 +396,9 @@ export default function SettingsPage() {
                   key={t}
                   type="button"
                   onClick={() => setValue('tone', t)}
-                  className={`py-2.5 px-3 rounded-xl border-2 text-sm font-semibold transition-all duration-200 ${
+                  className={`min-h-[44px] font-display py-2.5 px-3 rounded-full border-2 text-sm font-semibold transition-all duration-200 ${
                     selectedTone === t
-                      ? 'border-amber-500 bg-amber-50 text-amber-700'
+                      ? 'border-cobalt-600 bg-cobalt-50 text-cobalt-700'
                       : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
                   }`}
                 >
@@ -412,7 +412,7 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={bizSaving}
-              className="flex items-center gap-2 bg-amber-500 text-white font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-amber-700 active:scale-[0.97] transition-all disabled:opacity-60"
+              className="min-h-[44px] font-display flex items-center gap-2 bg-cobalt-600 text-white font-semibold text-sm px-5 py-2.5 rounded-full hover:bg-cobalt-700 active:scale-[0.97] transition-all disabled:opacity-60"
             >
               {bizSaving ? (
                 <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving...</>
@@ -436,10 +436,10 @@ export default function SettingsPage() {
             />
           ))}
         </div>
-        <div className="mt-4 pt-4 border-t border-cream-300">
+        <div className="mt-4 pt-4 border-t border-line">
           <Link
             to="/platforms"
-            className="text-sm font-semibold text-amber-600 hover:text-amber-700 transition-colors"
+            className="text-sm font-semibold text-cobalt-700 hover:text-cobalt-700 transition-colors"
           >
             Manage all platforms →
           </Link>
@@ -466,9 +466,9 @@ export default function SettingsPage() {
             </div>
           )}
           {autoApprove && (
-            <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3.5">
-              <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-700">
+            <div className="flex items-start gap-2.5 bg-warn-soft border border-yellow-200 rounded-xl p-3.5">
+              <AlertCircle className="w-4 h-4 text-warn flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-warn-text">
                 Posts will go live without review. You can still edit or delete them from the Posts page.
               </p>
             </div>
@@ -517,12 +517,12 @@ export default function SettingsPage() {
           ].map(({ label, badge }) => (
             <button
               key={label}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-cream-200 transition-colors group"
+              className="min-h-[44px] w-full flex items-center justify-between px-4 py-3 rounded-full hover:bg-cloud transition-colors group"
             >
-              <span className="text-sm font-semibold text-navy-800">{label}</span>
+              <span className="text-sm font-semibold text-navy-900">{label}</span>
               <div className="flex items-center gap-2">
                 {badge && <span className="badge bg-slate-100 text-slate-500">{badge}</span>}
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-amber-500 transition-colors" />
+                <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-cobalt-600 transition-colors" />
               </div>
             </button>
           ))}

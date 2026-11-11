@@ -18,7 +18,7 @@ const VARIANTS = {
     'bg-white',
     'border border-slate-200',
     'shadow-card',
-    'rounded-xl',
+    'rounded-2xl',
   ].join(' '),
 
   /**
@@ -40,7 +40,7 @@ const VARIANTS = {
     'bg-white',
     'border border-slate-200',
     'shadow-card',
-    'rounded-xl',
+    'rounded-2xl',
     'cursor-pointer',
     'transition-all duration-200 ease-in-out',
     'hover:shadow-card-hover hover:border-slate-300 hover:-translate-y-0.5',
@@ -48,14 +48,14 @@ const VARIANTS = {
   ].join(' '),
 
   /**
-   * Cream — cream background, slightly warmer feel.
+   * Cloud: tinted background.
    * Use for: onboarding steps, sidebar widgets, info panels.
    */
   cream: [
-    'bg-cream-200',
-    'border border-cream-400',
+    'bg-cloud',
+    'border border-line-strong',
     'shadow-xs',
-    'rounded-xl',
+    'rounded-2xl',
   ].join(' '),
 
   /**
@@ -63,33 +63,33 @@ const VARIANTS = {
    * Use for: stats highlights, feature callouts.
    */
   navy: [
-    'bg-navy-800',
+    'bg-navy-900',
     'border border-navy-700',
     'shadow-navy-lg',
-    'rounded-xl',
+    'rounded-2xl',
     'text-white',
   ].join(' '),
 
   /**
-   * Amber — amber-tinted, used for CTA callouts or upgrade nudges.
+   * Cobalt-tinted, used for CTA callouts or upgrade nudges.
    * Use for: trial expiry banners, feature upsell cards.
    */
   amber: [
-    'bg-gradient-amber-soft',
-    'border border-amber-200',
-    'shadow-amber',
-    'rounded-xl',
+    'bg-cobalt-50',
+    'border border-cobalt-200',
+    'shadow-cobalt',
+    'rounded-2xl',
   ].join(' '),
 
   /**
-   * Honey — premium plan feature card.
+   * Sun-bordered premium plan feature card.
    * Use for: "Pro" plan feature highlights, upgrade prompts.
    */
   honey: [
     'bg-white',
-    'border-2 border-honey-400',
-    'shadow-honey',
-    'rounded-xl',
+    'border-2 border-sun-400',
+    'shadow-cobalt',
+    'rounded-2xl',
     'relative overflow-hidden',
   ].join(' '),
 }
@@ -111,7 +111,7 @@ function CardHeader({ title, subtitle, action, className = '' }) {
     <div className={`flex items-start justify-between gap-4 mb-4 ${className}`}>
       <div className="min-w-0">
         {title && (
-          <h3 className="font-display font-bold text-navy-800 text-base leading-snug truncate">
+          <h3 className="font-display font-bold text-navy-900 text-base leading-snug truncate">
             {title}
           </h3>
         )}
@@ -170,7 +170,7 @@ function HoneyRibbon({ label = 'Most popular' }) {
       <div
         className={[
           'absolute top-4 right-[-24px]',
-          'bg-honey-400 text-navy-800',
+          'bg-sun-400 text-navy-900',
           'text-2xs font-display font-bold uppercase tracking-wider',
           'px-8 py-1',
           'rotate-45',

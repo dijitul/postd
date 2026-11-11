@@ -57,9 +57,9 @@ function planFeatures(plan, extraLocation) {
 function UsageBar({ used, limit }) {
   const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 100
   return (
-    <div className="h-2 rounded-full bg-cream-300 overflow-hidden" aria-hidden="true">
+    <div className="h-2 rounded-full bg-line overflow-hidden" aria-hidden="true">
       <div
-        className={`h-full rounded-full ${pct >= 100 ? 'bg-amber-600' : 'bg-amber-500'}`}
+        className={`h-full rounded-full ${pct >= 100 ? 'bg-cobalt-700' : 'bg-cobalt-600'}`}
         style={{ width: `${pct}%` }}
       />
     </div>
@@ -70,11 +70,11 @@ function UsageRow({ icon: Icon, label, value, detail, used, limit }) {
   return (
     <div className="py-3">
       <div className="flex items-center justify-between gap-3 mb-1.5">
-        <span className="flex items-center gap-2 text-sm font-semibold text-navy-800">
-          <Icon className="w-4 h-4 text-amber-500 flex-shrink-0" />
+        <span className="flex items-center gap-2 text-sm font-semibold text-navy-900">
+          <Icon className="w-4 h-4 text-cobalt-600 flex-shrink-0" />
           {label}
         </span>
-        <span className="text-sm font-semibold text-navy-800 whitespace-nowrap">{value}</span>
+        <span className="text-sm font-semibold text-navy-900 whitespace-nowrap">{value}</span>
       </div>
       {limit != null && <UsageBar used={used} limit={limit} />}
       {detail && <p className="text-xs text-slate-500 mt-1.5">{detail}</p>}
@@ -98,13 +98,13 @@ function CurrentPlanCard({ data, onUpgrade }) {
       : null
 
   return (
-    <div className="bg-white rounded-2xl border border-cream-300 p-5 sm:p-6" style={{ boxShadow: '0 2px 8px rgb(30 45 74 / 0.05)' }}>
+    <div className="bg-white rounded-2xl border border-line p-5 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-2">
         <div>
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Your plan</p>
-          <h2 className="font-display font-black text-xl text-navy-800">
+          <h2 className="font-display font-extrabold text-xl text-navy-900">
             {e.active ? (PLAN_NAMES[plan] ?? e.plan_name) : 'No plan'}
-            {onTrial && e.active && <span className="text-sm font-semibold text-amber-600 ml-2">free trial</span>}
+            {onTrial && e.active && <span className="text-sm font-semibold text-cobalt-700 ml-2">free trial</span>}
             {interval === 'annual' && <span className="text-sm font-semibold text-slate-500 ml-2">billed yearly</span>}
           </h2>
           {plan === 'pro' && (
@@ -116,7 +116,7 @@ function CurrentPlanCard({ data, onUpgrade }) {
         {upgrade && e.active && (
           <button
             onClick={() => onUpgrade(upgrade)}
-            className="inline-flex items-center justify-center gap-2 bg-amber-500 text-white font-semibold text-sm px-4 py-2.5 rounded-xl hover:bg-amber-600 transition-all"
+            className="min-h-[44px] font-display inline-flex items-center justify-center gap-2 bg-cobalt-600 text-white font-semibold text-sm px-4 py-2.5 rounded-full hover:bg-cobalt-700 transition-all"
           >
             See {PLAN_NAMES[upgrade]} <ArrowRight className="w-4 h-4" />
           </button>
@@ -124,7 +124,7 @@ function CurrentPlanCard({ data, onUpgrade }) {
       </div>
 
       {e.active ? (
-        <div className="divide-y divide-cream-300">
+        <div className="divide-y divide-line">
           <UsageRow
             icon={ImageIcon}
             label="AI images"
@@ -184,37 +184,36 @@ function PlanCard({ plan, interval, isCurrent, extraLocation, onSelect, busy }) 
   return (
     <div
       id={`plan-${plan.id}`}
-      className={`relative flex flex-col rounded-2xl p-6 border-2 transition-all duration-200 ${
+      className={`relative flex flex-col rounded-2xl p-6 bg-white transition-shadow duration-200 ${
         isCurrent
-          ? 'border-amber-500 bg-amber-50'
+          ? 'ring-2 ring-cobalt-600 bg-cobalt-50'
           : plan.is_popular
-            ? 'border-navy-200 bg-white hover:border-amber-300'
-            : 'border-slate-200 bg-white hover:border-slate-300'
+            ? 'ring-2 ring-cobalt-600 hover:shadow-card-hover'
+            : 'border border-line hover:shadow-card-hover'
       }`}
-      style={{ boxShadow: isCurrent ? '0 0 0 4px rgb(224 123 48 / 0.1)' : '0 2px 8px rgb(30 45 74 / 0.05)' }}
     >
       {plan.is_popular && !isCurrent && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="inline-flex items-center gap-1 bg-navy-800 text-white text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap">
-            <Star className="w-3 h-3" fill="currentColor" />
+          <span className="badge-sun whitespace-nowrap">
+            <Star className="w-3 h-3" fill="currentColor" aria-hidden="true" />
             Most popular
           </span>
         </div>
       )}
       {isCurrent && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="inline-flex items-center gap-1 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap">
-            <Check className="w-3 h-3" />
+          <span className="chip bg-cobalt-600 text-white whitespace-nowrap">
+            <Check className="w-3 h-3" aria-hidden="true" />
             Current plan
           </span>
         </div>
       )}
 
       <div className="mb-5">
-        <h3 className="font-display font-bold text-lg text-navy-800 mb-1">{plan.name}</h3>
+        <h3 className="font-display font-bold text-lg text-navy-900 mb-1">{plan.name}</h3>
         <div className="flex items-baseline gap-1 flex-wrap">
-          <span className="font-display font-black text-3xl text-navy-800">{formatPounds(price)}</span>
-          <span className="text-sm text-slate-400">/{isAnnual ? 'year' : 'month'}{VAT_SUFFIX}</span>
+          <span className="font-display font-extrabold text-3xl text-navy-900">{formatPounds(price)}</span>
+          <span className="text-sm text-slate-500">/{isAnnual ? 'year' : 'month'}{VAT_SUFFIX}</span>
         </div>
         {isAnnual && (
           <p className="text-xs text-slate-500 mt-0.5">Works out at {formatPounds(annualPerMonth(price))}/month</p>
@@ -224,22 +223,22 @@ function PlanCard({ plan, interval, isCurrent, extraLocation, onSelect, busy }) 
 
       <ul className="space-y-2 mb-6 flex-1">
         {planFeatures(plan, extraLocation).map((f) => (
-          <li key={f} className="flex items-start gap-2 text-sm text-slate-600">
-            <Check className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+          <li key={f} className="flex items-start gap-2 text-sm text-navy-900">
+            <Check className="w-4 h-4 text-cobalt-600 flex-shrink-0 mt-0.5" />
             {f}
           </li>
         ))}
       </ul>
 
       {isCurrent ? (
-        <div className="w-full text-center text-sm font-semibold text-amber-700 py-2.5 bg-amber-100 rounded-xl">
+        <div className="w-full min-h-[44px] flex items-center justify-center text-sm font-display font-semibold text-cobalt-700 bg-cobalt-100 rounded-full">
           Your current plan
         </div>
       ) : plan.offered ? (
         <button
           onClick={() => onSelect(plan)}
           disabled={busy}
-          className="w-full flex items-center justify-center gap-2 bg-navy-800 text-white font-semibold text-sm py-2.5 rounded-xl hover:bg-navy-700 active:scale-[0.97] transition-all disabled:opacity-60"
+          className="min-h-[44px] font-display w-full flex items-center justify-center gap-2 bg-cobalt-600 text-white font-semibold text-sm py-2.5 rounded-full hover:bg-cobalt-700 active:scale-[0.97] transition-all disabled:opacity-60"
         >
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
           Choose {plan.name}
@@ -356,8 +355,8 @@ export default function BillingPage() {
     <div className="max-w-4xl mx-auto animate-fade-in-up space-y-8">
 
       <div className="flex items-center gap-3">
-        <CreditCard className="w-5 h-5 text-amber-500" />
-        <h1 className="font-display font-black text-2xl text-navy-800">Billing</h1>
+        <CreditCard className="w-5 h-5 text-cobalt-600" />
+        <h1 className="font-display font-extrabold text-2xl text-navy-900">Billing</h1>
       </div>
 
       {checkoutResult === 'success' && (
@@ -411,10 +410,10 @@ export default function BillingPage() {
       )}
 
       {!comp && data?.is_on_trial && daysLeft > 0 && (
-        <div className="bg-gradient-to-r from-amber-500 to-honey-400 rounded-2xl p-5 text-navy-800">
+        <div className="bg-gradient-to-r from-cobalt-600 to-sun-400 rounded-2xl p-5 text-navy-900">
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Star className="w-5 h-5 text-navy-800" fill="currentColor" />
+              <Star className="w-5 h-5 text-navy-900" fill="currentColor" />
             </div>
             <div>
               <h2 className="font-display font-bold text-lg mb-1">
@@ -430,9 +429,9 @@ export default function BillingPage() {
       )}
 
       {!comp && data && data.current_plan === 'none' && (
-        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
-          <PauseCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-amber-800">
+        <div className="flex items-start gap-3 bg-cobalt-50 border border-cobalt-200 rounded-2xl p-4">
+          <PauseCircle className="w-5 h-5 text-cobalt-700 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-cobalt-800">
             <strong>Your posts are paused.</strong> Choose a plan below to start posting again. Everything you set up
             is still here.
           </p>
@@ -440,11 +439,11 @@ export default function BillingPage() {
       )}
 
       {loadingBilling ? (
-        <div className="bg-white rounded-2xl border border-cream-300 h-48 animate-pulse" />
+        <div className="bg-white rounded-2xl border border-line h-48 animate-pulse" />
       ) : loadError ? (
-        <div className="bg-white rounded-2xl border border-cream-300 p-6 text-sm text-slate-600">
+        <div className="bg-white rounded-2xl border border-line p-6 text-sm text-slate-600">
           We could not load your plan just now.{' '}
-          <button onClick={load} className="font-semibold text-amber-600 underline">Try again</button>
+          <button onClick={load} className="font-semibold text-cobalt-700 underline">Try again</button>
         </div>
       ) : (
         <CurrentPlanCard data={data} onUpgrade={scrollToPlan} />
@@ -454,7 +453,7 @@ export default function BillingPage() {
       {!loadingBilling && !loadError && visiblePlans.length > 0 && (
         <div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-            <h2 className="font-display font-bold text-lg text-navy-800">
+            <h2 className="font-display font-bold text-lg text-navy-900">
               {data?.subscribed ? 'Change plan' : 'Choose your plan'}
             </h2>
             {annualAvailable && <IntervalToggle interval={effectiveInterval} onChange={setBillingInterval} />}
@@ -479,7 +478,7 @@ export default function BillingPage() {
             <ul className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-center gap-x-5 gap-y-1.5">
               {EVERY_PLAN.map((f) => (
                 <li key={f} className="inline-flex items-center gap-2 text-sm text-slate-600">
-                  <Check className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                  <Check className="w-4 h-4 text-cobalt-600 flex-shrink-0" />
                   {f}
                 </li>
               ))}
@@ -490,9 +489,9 @@ export default function BillingPage() {
 
       {/* Confirm a switch for an existing subscriber */}
       {confirming && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-navy-800/40 p-4" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-navy-900/40 p-4" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h3 id="confirm-title" className="font-display font-bold text-lg text-navy-800 mb-2">
+            <h3 id="confirm-title" className="font-display font-bold text-lg text-navy-900 mb-2">
               Switch to {confirming.name}?
             </h3>
             <p className="text-sm text-slate-600 mb-5">
@@ -502,14 +501,14 @@ export default function BillingPage() {
             <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
               <button
                 onClick={() => setConfirming(null)}
-                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100"
+                className="min-h-[44px] px-4 py-2.5 rounded-full text-sm font-semibold text-slate-600 hover:bg-cloud"
               >
                 Keep my plan
               </button>
               <button
                 onClick={() => choosePlan(confirming)}
                 disabled={busyPlan != null}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-navy-800 text-white hover:bg-navy-700 disabled:opacity-60"
+                className="min-h-[44px] font-display inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold bg-cobalt-600 text-white hover:bg-cobalt-700 disabled:opacity-60"
               >
                 {busyPlan && <Loader2 className="w-4 h-4 animate-spin" />}
                 Yes, switch to {confirming.name}
@@ -522,20 +521,20 @@ export default function BillingPage() {
       {/* Invoice history */}
       <div>
         <div className="flex items-center gap-3 mb-4">
-          <FileText className="w-4 h-4 text-slate-400" />
-          <h2 className="font-display font-bold text-lg text-navy-800">Invoice history</h2>
+          <FileText className="w-4 h-4 text-slate-500" />
+          <h2 className="font-display font-bold text-lg text-navy-900">Invoice history</h2>
         </div>
-        <div className="bg-white rounded-2xl border border-cream-300 overflow-x-auto" style={{ boxShadow: '0 2px 8px rgb(30 45 74 / 0.05)' }}>
+        <div className="bg-white rounded-2xl border border-line overflow-x-auto">
           {loadingBilling ? (
-            <div className="text-center py-10 text-slate-400 text-sm flex items-center justify-center gap-2">
+            <div className="text-center py-10 text-slate-500 text-sm flex items-center justify-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" /> Loading invoices...
             </div>
           ) : invoices.length === 0 ? (
-            <div className="text-center py-10 text-slate-400 text-sm">No invoices yet.</div>
+            <div className="text-center py-10 text-slate-500 text-sm">No invoices yet.</div>
           ) : (
             <table className="w-full">
               <thead>
-                <tr className="border-b border-cream-300">
+                <tr className="border-b border-line">
                   <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Invoice</th>
                   <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Date</th>
                   <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Amount</th>
@@ -544,10 +543,10 @@ export default function BillingPage() {
               </thead>
               <tbody>
                 {invoices.map((inv) => (
-                  <tr key={inv.id} className="border-b border-cream-300 last:border-0 hover:bg-cream-200/50 transition-colors">
-                    <td className="px-5 py-3 text-sm font-mono text-navy-800">{inv.id}</td>
+                  <tr key={inv.id} className="border-b border-line last:border-0 hover:bg-cloud/50 transition-colors">
+                    <td className="px-5 py-3 text-sm font-mono text-navy-900">{inv.id}</td>
                     <td className="px-5 py-3 text-sm text-slate-600">{inv.date}</td>
-                    <td className="px-5 py-3 text-sm font-semibold text-navy-800">{inv.total || inv.amount}</td>
+                    <td className="px-5 py-3 text-sm font-semibold text-navy-900">{inv.total || inv.amount}</td>
                     <td className="px-5 py-3">
                       <span className="badge bg-green-100 text-green-700 text-xs">{inv.status || 'Paid'}</span>
                     </td>
@@ -560,11 +559,11 @@ export default function BillingPage() {
       </div>
 
       {/* Payment details and cancelling live in Stripe's portal */}
-      <div className="border border-cream-300 rounded-2xl p-5">
+      <div className="border border-line rounded-2xl p-5">
         <div className="flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" />
+          <AlertTriangle className="w-5 h-5 text-slate-500 flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-display font-bold text-base text-navy-800 mb-1">Payment details and cancelling</h3>
+            <h3 className="font-display font-bold text-base text-navy-900 mb-1">Payment details and cancelling</h3>
             <p className="text-sm text-slate-600 mb-3">
               Update your card, download receipts or cancel in the Stripe billing portal. If you cancel, posting
               pauses at the end of your current billing period and nothing is deleted.
@@ -572,7 +571,7 @@ export default function BillingPage() {
             <button
               onClick={handlePortal}
               disabled={portalLoading}
-              className="text-sm font-semibold text-navy-800 hover:text-amber-600 underline transition-colors disabled:opacity-60"
+              className="text-sm font-semibold text-navy-900 hover:text-cobalt-700 underline transition-colors disabled:opacity-60"
             >
               {portalLoading ? 'Opening portal...' : 'Open the billing portal'}
             </button>

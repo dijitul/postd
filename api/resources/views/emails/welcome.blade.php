@@ -5,34 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Welcome to postd.uk</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
         /* Reset */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { margin: 0; padding: 0; background-color: #F9F5EE; font-family: 'Inter', Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+        body { margin: 0; padding: 0; background-color: #F3F5FB; font-family: 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif; -webkit-font-smoothing: antialiased; }
         table { border-collapse: collapse; mso-table-lspace: 0; mso-table-rspace: 0; }
         img { border: 0; display: block; max-width: 100%; }
         a { text-decoration: none; }
 
-        /* Brand tokens */
-        /* brand-amber: #E07B30 */
-        /* brand-navy: #1E2D4A */
-        /* brand-honey: #F5C842 */
-        /* brand-cream: #F9F5EE */
+        /* Relay tokens: cobalt #2340F5, sun #FFD23F, navy #0E1A3F, cloud #F3F5FB, line #E3E7F1 */
 
         .email-body {
-            background-color: #F9F5EE;
+            background-color: #F3F5FB;
             padding: 40px 20px;
         }
         .email-container {
             max-width: 600px;
             margin: 0 auto;
-            background-color: #F9F5EE;
+            background-color: #F3F5FB;
         }
 
         /* Header */
         .header {
-            background-color: #E07B30;
-            border-radius: 12px 12px 0 0;
+            background-color: #2340F5;
+            border-radius: 18px 18px 0 0;
             padding: 36px 40px 32px;
             text-align: center;
         }
@@ -41,17 +38,17 @@
             margin-bottom: 0;
         }
         .logo-text {
-            font-family: 'Syne', 'Arial Black', Arial, sans-serif;
+            font-family: 'Sora', 'Segoe UI', Arial, sans-serif;
             font-size: 32px;
             font-weight: 800;
             color: #FFFFFF;
-            letter-spacing: -0.5px;
+            letter-spacing: -0.035em;
         }
         .logo-dot {
-            color: #F5C842;
+            color: #FFD23F;
         }
         .header-tagline {
-            font-family: 'Inter', Arial, sans-serif;
+            font-family: 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif;
             font-size: 14px;
             color: rgba(255,255,255,0.82);
             margin-top: 6px;
@@ -66,53 +63,53 @@
 
         /* Celebration strip */
         .celebration {
-            background-color: #FFF8EC;
-            border: 1.5px solid #F5C842;
-            border-radius: 8px;
+            background-color: #FFF4CC;
+            border: 0;
+            border-radius: 12px;
             padding: 16px 20px;
             text-align: center;
             margin-bottom: 32px;
         }
         .celebration-text {
-            font-family: 'Inter', Arial, sans-serif;
+            font-family: 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif;
             font-size: 15px;
-            color: #1E2D4A;
+            color: #0E1A3F;
             font-weight: 500;
         }
         .celebration-highlight {
-            color: #E07B30;
+            color: #0E1A3F;
             font-weight: 700;
         }
 
         /* Heading */
         h1 {
-            font-family: 'Syne', 'Arial Black', Arial, sans-serif;
+            font-family: 'Sora', 'Segoe UI', Arial, sans-serif;
             font-size: 28px;
             font-weight: 800;
-            color: #1E2D4A;
+            color: #0E1A3F;
             line-height: 1.2;
             margin-bottom: 16px;
         }
 
         /* Body text */
         p {
-            font-family: 'Inter', Arial, sans-serif;
+            font-family: 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif;
             font-size: 16px;
-            color: #1E2D4A;
+            color: #0E1A3F;
             line-height: 1.7;
             margin-bottom: 20px;
         }
         p.muted {
-            color: #4A5568;
+            color: #56607A;
             font-size: 15px;
         }
 
         /* Steps section */
         .steps-heading {
-            font-family: 'Syne', 'Arial Black', Arial, sans-serif;
+            font-family: 'Sora', 'Segoe UI', Arial, sans-serif;
             font-size: 18px;
             font-weight: 700;
-            color: #1E2D4A;
+            color: #0E1A3F;
             margin-bottom: 20px;
             margin-top: 8px;
         }
@@ -125,10 +122,10 @@
             flex-shrink: 0;
             width: 36px;
             height: 36px;
-            background-color: #E07B30;
+            background-color: #2340F5;
             border-radius: 50%;
             color: #FFFFFF;
-            font-family: 'Syne', 'Arial Black', Arial, sans-serif;
+            font-family: 'Sora', 'Segoe UI', Arial, sans-serif;
             font-size: 15px;
             font-weight: 800;
             text-align: center;
@@ -138,16 +135,16 @@
         }
         .step-content {}
         .step-title {
-            font-family: 'Inter', Arial, sans-serif;
+            font-family: 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif;
             font-size: 16px;
             font-weight: 700;
-            color: #1E2D4A;
+            color: #0E1A3F;
             margin-bottom: 4px;
         }
         .step-desc {
-            font-family: 'Inter', Arial, sans-serif;
+            font-family: 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif;
             font-size: 15px;
-            color: #4A5568;
+            color: #56607A;
             line-height: 1.6;
             margin-bottom: 0;
         }
@@ -155,7 +152,7 @@
         /* Divider */
         .divider {
             border: none;
-            border-top: 1.5px solid #F0EDE7;
+            border-top: 1.5px solid #E3E7F1;
             margin: 32px 0;
         }
 
@@ -166,66 +163,66 @@
         }
         .cta-button {
             display: inline-block;
-            background-color: #E07B30;
+            background-color: #2340F5;
             color: #FFFFFF !important;
-            font-family: 'Syne', 'Arial Black', Arial, sans-serif;
+            font-family: 'Sora', 'Segoe UI', Arial, sans-serif;
             font-size: 17px;
             font-weight: 700;
             text-decoration: none;
             padding: 16px 40px;
-            border-radius: 8px;
-            letter-spacing: 0.2px;
+            border-radius: 999px;
+            letter-spacing: 0;
             line-height: 1;
         }
         .cta-button:hover {
-            background-color: #B85E1A;
+            background-color: #1A30C4;
         }
         .cta-subtext {
-            font-family: 'Inter', Arial, sans-serif;
+            font-family: 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif;
             font-size: 13px;
-            color: #6B7280;
+            color: #56607A;
             margin-top: 12px;
             margin-bottom: 0;
         }
 
         /* Trial banner */
         .trial-banner {
-            background-color: #F9F5EE;
-            border: 1.5px solid #E07B30;
-            border-radius: 8px;
+            background-color: #F3F5FB;
+            border: 1.5px solid #E3E7F1;
+            border-radius: 12px;
             padding: 18px 24px;
             text-align: center;
             margin-bottom: 32px;
         }
         .trial-banner-title {
-            font-family: 'Syne', 'Arial Black', Arial, sans-serif;
+            font-family: 'Sora', 'Segoe UI', Arial, sans-serif;
             font-size: 15px;
             font-weight: 700;
-            color: #1E2D4A;
+            color: #0E1A3F;
             margin-bottom: 6px;
         }
         .trial-banner-text {
-            font-family: 'Inter', Arial, sans-serif;
+            font-family: 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif;
             font-size: 14px;
-            color: #4A5568;
+            color: #56607A;
             margin-bottom: 0;
             line-height: 1.5;
         }
         .trial-banner-text strong {
-            color: #E07B30;
+            color: #2340F5;
         }
 
         /* Footer */
         .footer {
-            background-color: #1E2D4A;
-            border-radius: 0 0 12px 12px;
+            background-color: #0E1A3F;
+            border-radius: 0 0 18px 18px;
             padding: 28px 40px;
             text-align: center;
         }
         .footer p {
-            font-family: 'Inter', Arial, sans-serif;
+            font-family: 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif;
             font-size: 13px;
-            color: rgba(255,255,255,0.6);
+            color: rgba(255,255,255,0.75);
             line-height: 1.7;
             margin-bottom: 8px;
         }
@@ -233,11 +230,11 @@
             margin-bottom: 0;
         }
         .footer a {
-            color: rgba(255,255,255,0.75);
+            color: #95A5FF;
             text-decoration: underline;
         }
         .footer-logo {
-            font-family: 'Syne', 'Arial Black', Arial, sans-serif;
+            font-family: 'Sora', 'Segoe UI', Arial, sans-serif;
             font-size: 18px;
             font-weight: 800;
             color: #FFFFFF;
@@ -245,7 +242,7 @@
             display: block;
         }
         .footer-logo span {
-            color: #F5C842;
+            color: #FFD23F;
         }
 
         /* Mobile responsiveness */
@@ -266,9 +263,9 @@
         <!-- Header -->
         <div class="header">
             <div class="header-logo">
-                <span class="logo-text">postd<span class="logo-dot">.</span>uk</span>
+                <img src="https://postd.uk/app-icons/icon-96.png" width="36" height="36" alt="" style="display:inline-block;vertical-align:middle;margin-right:10px;border:0;"><span class="logo-text" style="vertical-align:middle;">postd</span>
             </div>
-            <p class="header-tagline">All your posts. One hive.</p>
+            <p class="header-tagline">Post every week without thinking about it.</p>
         </div>
 
         <!-- Body card -->
@@ -276,18 +273,18 @@
 
             <!-- Celebration strip -->
             <div class="celebration">
-                <span class="celebration-text">Welcome to the hive, <span class="celebration-highlight">{{ $businessName }}</span>. Your posts are about to take care of themselves.</span>
+                <span class="celebration-text">Welcome aboard, <span class="celebration-highlight">{{ $businessName }}</span>. Your posts are about to take care of themselves.</span>
             </div>
 
             <!-- Heading -->
             <h1>You're all set. Let's get your first posts flowing.</h1>
 
             <p>
-                It's brilliant to have you on board. We built postd.uk for businesses exactly like yours — ones that know they should be posting consistently but simply don't have the time to do it properly. That's our job now.
+                It's brilliant to have you on board. We built postd.uk for businesses exactly like yours: ones that know they should be posting consistently but simply don't have the time to do it properly. That's our job now.
             </p>
 
             <p>
-                Your 14-day free trial is live and ready. Here's everything you need to do to get your first posts created and scheduled — it takes about five minutes.
+                Your 14-day free trial is live and ready. Here's everything you need to do to get your first posts created and scheduled. It takes about five minutes.
             </p>
 
             <hr class="divider">
@@ -304,7 +301,7 @@
                     <td valign="top">
                         <div class="step-content">
                             <p class="step-title">Connect your social platforms</p>
-                            <p class="step-desc">Head to your dashboard and connect the platforms you want to post on. Each one takes less than a minute with our guided OAuth connection. We support Facebook, Instagram, X, LinkedIn, TikTok, and Google Business Profile — and GBP is included free on every plan.</p>
+                            <p class="step-desc">Head to your dashboard and connect the platforms you want to post on. Each one takes less than a minute with our guided OAuth connection. We post to Google Business Profile, Facebook, LinkedIn and X.</p>
                         </div>
                     </td>
                 </tr>
@@ -321,7 +318,7 @@
                     <td valign="top">
                         <div class="step-content">
                             <p class="step-title">Let us learn about your business</p>
-                            <p class="step-desc">We'll read your website and your Google Reviews automatically — no copying and pasting required. This is how we understand your services, your tone, and what your customers love about you. The more complete your website is, the more tailored your posts will be.</p>
+                            <p class="step-desc">We'll read your website and your Google Reviews automatically, no copying and pasting required. This is how we understand your services, your tone, and what your customers love about you. The more complete your website is, the more tailored your posts will be.</p>
                         </div>
                     </td>
                 </tr>
@@ -349,7 +346,7 @@
             <!-- Trial banner -->
             <div class="trial-banner">
                 <p class="trial-banner-title">Your 14-day free trial has started</p>
-                <p class="trial-banner-text">You're on our <strong>Growth plan</strong> — that's 4 platforms plus Google Business Profile, fully included. <strong>No card required. No charges until you decide to continue.</strong></p>
+                <p class="trial-banner-text">You're on our <strong>Growth plan</strong>: that's 4 platforms plus Google Business Profile, fully included. <strong>No card required. No charges until you decide to continue.</strong></p>
             </div>
 
             <!-- CTA -->
@@ -366,9 +363,9 @@
 
         <!-- Footer -->
         <div class="footer">
-            <span class="footer-logo">postd<span>.</span>uk</span>
+            <span class="footer-logo">postd</span>
             <p>
-                postd.uk is a product of Dijitul Ltd, Mansfield, Nottinghamshire.<br>
+                postd.uk is built by <a href="https://dijitul.uk">dijitul</a>, Mansfield, Nottinghamshire.<br>
                 <a href="{{ $unsubscribeUrl }}">Unsubscribe from emails</a> &middot; <a href="https://postd.uk/privacy">Privacy policy</a>
             </p>
             <p>

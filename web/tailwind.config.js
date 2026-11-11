@@ -1,4 +1,46 @@
 /** @type {import('tailwindcss').Config} */
+/*
+ * Relay: the postd brand (2027). Source of truth: docs/brand-2027/README.md.
+ * The old amber, honey and cream scales are gone. Tailwind's default red,
+ * green, purple, blue, yellow and orange are re-pointed at the Relay semantic
+ * colours so every status chip stays on-brand wherever it is used.
+ */
+const cobalt = {
+  50:  '#EEF1FF', // tinted panels
+  100: '#E0E6FF', // selected rows, soft chips, focus ring
+  200: '#C2CCFF',
+  300: '#95A5FF',
+  400: '#4A63FF', // links and accents on dark backgrounds
+  500: '#3550FA',
+  600: '#2340F5', // primary
+  700: '#1A30C4', // primary hover / pressed
+  800: '#15279B',
+  900: '#101D73',
+  950: '#0A1350',
+}
+
+const success = {
+  50:  '#E6F6EC', 100: '#CDEDD9', 200: '#A3DDB8', 300: '#6CC791', 400: '#34B06A',
+  500: '#12A150', 600: '#0B7F3D', 700: '#096A33', 800: '#075429', 900: '#05401F',
+}
+
+const danger = {
+  50:  '#FDECEA', 100: '#FAD7D3', 200: '#F5B1AA', 300: '#EE8379', 400: '#E4574B',
+  500: '#D92D20', 600: '#C4271B', 700: '#A61F15', 800: '#861910', 900: '#66130C',
+}
+
+const warn = {
+  50:  '#FFFAEF', 100: '#FFF3DC', 200: '#FFE3AD', 300: '#FFCB6B', 400: '#F0A82A',
+  500: '#D98A00', 600: '#B76E00', 700: '#8F5600', 800: '#6E4200', 900: '#4D2E00',
+}
+
+const ai = {
+  50:  '#EFEBFF', 100: '#E2DBFF', 200: '#C8BBFF', 300: '#A797FF', 400: '#8A73FF',
+  500: '#7A5FFF', 600: '#6B4EFF', 700: '#5539DB', 800: '#4129AD', 900: '#2F1E80',
+}
+
+const sans = ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', '"Segoe UI"', 'sans-serif']
+
 export default {
   content: [
     './index.html',
@@ -8,104 +50,75 @@ export default {
   theme: {
     extend: {
 
-      // ─── Brand colour palette ───────────────────────────────────────────────
+      // ─── Relay colour palette ───────────────────────────────────────────────
       colors: {
+        cobalt,
 
-        // Amber — primary CTA, logo accent, active states
-        amber: {
-          50:  '#FEF6EE',
-          100: '#FDE9D5',
-          200: '#FBD0A8',
-          300: '#F8B06C',
-          400: '#F4892E',
-          500: '#E07B30', // brand-amber — canonical
-          600: '#C96620',
-          700: '#B85E1A', // brand-amber-dark — hover states
-          800: '#93481A',
-          900: '#763C19',
-          950: '#3F1D0B',
+        // Sun: one highlighted word, badges, the logo dot. Never text on white.
+        sun: {
+          50:  '#FFFBEB',
+          100: '#FFF4CC', // soft highlight panels
+          200: '#FFE994',
+          300: '#FFDD66',
+          400: '#FFD23F', // highlight
+          500: '#F5C21A',
+          600: '#D9A400',
+          700: '#8F5600', // text-safe dark, AA on white and sun-100
+          800: '#6E4200',
         },
 
-        // Navy — text, headers, navigation
+        // Navy: ink, dark sections, footer
         navy: {
-          50:  '#EEF1F7',
-          100: '#D8DFED',
-          200: '#B5C2DC',
-          300: '#8AA0C5',
-          400: '#617EAD',
-          500: '#4A6195',
-          600: '#3B4F7D',
-          700: '#2E4470', // brand-navy-light — gradients
-          800: '#1E2D4A', // brand-navy — canonical
-          900: '#172239',
-          950: '#0D1520',
+          50:  '#EEF0F7',
+          100: '#DCE0EE',
+          200: '#B9C0D9',
+          300: '#8E98BA',
+          400: '#5F6A91',
+          500: '#3D4870',
+          600: '#313D66',
+          700: '#26335C', // secondary dark surfaces
+          800: '#17234D',
+          900: '#0E1A3F', // ink
+          950: '#08112B',
         },
 
-        // Honey — highlights, badges, premium indicators
-        honey: {
-          50:  '#FEFCE8',
-          100: '#FEF8C3',
-          200: '#FEEE89',
-          300: '#FDE047',
-          400: '#F5C842', // brand-honey — canonical
-          500: '#EAB308',
-          600: '#CA8A04',
-          700: '#A16207',
-          800: '#854D0E',
-          900: '#713F12',
-          950: '#422006',
-        },
-
-        // Cream — backgrounds, card surfaces
-        cream: {
-          50:  '#FFFFFF',
-          100: '#FDFBF8',
-          200: '#F9F5EE', // brand-cream — canonical
-          300: '#F3EBD9',
-          400: '#EBE0C4',
-          500: '#DDD0AC',
-          600: '#C8B88A',
-          700: '#AC9B6A',
-          800: '#8E7E52',
-          900: '#746643',
-          950: '#3D3421',
-        },
-
-        // Slate — neutral system (text, borders, dividers)
+        // Slate: Relay neutrals
         slate: {
-          50:  '#F8FAFC',
-          100: '#F1F5F9',
-          200: '#E2E8F0',
-          300: '#CBD5E1',
-          400: '#94A3B8',
-          500: '#64748B',
-          600: '#475569',
-          700: '#334155',
-          800: '#1E293B',
-          900: '#0F172A',
-          950: '#020617',
+          50:  '#F7F8FC',
+          100: '#F3F5FB',
+          200: '#E3E7F1',
+          300: '#C9CFDF',
+          400: '#8A93AB', // placeholders and disabled only
+          500: '#56607A', // secondary text, 5.9:1 on white
+          600: '#454E68',
+          700: '#343C55',
+          800: '#232A42',
+          900: '#0E1A3F',
+          950: '#08112B',
         },
 
-        // Semantic aliases — use these in components
-        brand: {
-          amber:        '#E07B30',
-          'amber-dark': '#B85E1A',
-          'amber-light':'#F4892E',
-          navy:         '#1E2D4A',
-          'navy-light': '#2E4470',
-          honey:        '#F5C842',
-          cream:        '#F9F5EE',
-          white:        '#FFFFFF',
-        },
+        line:  { DEFAULT: '#E3E7F1', strong: '#C9CFDF' },
+        cloud: { DEFAULT: '#F3F5FB' },
 
-        // Status colours — platform-appropriate
-        status: {
-          success:  '#16A34A',
-          warning:  '#D97706',
-          error:    '#DC2626',
-          info:     '#2563EB',
-          pending:  '#7C3AED',
-        },
+        // AI violet: machine-written content only
+        ai,
+
+        // Semantic
+        success: { DEFAULT: '#12A150', soft: '#E6F6EC', text: '#0B7F3D' },
+        warn:    { DEFAULT: '#B76E00', soft: '#FFF3DC', text: '#8F5600' },
+        danger:  { DEFAULT: '#D92D20', soft: '#FDECEA', text: '#B42318' },
+
+        // Tailwind defaults re-pointed at Relay semantics
+        green: success,
+        emerald: success,
+        red: danger,
+        rose: danger,
+        yellow: warn,
+        orange: warn,
+        purple: ai,
+        violet: ai,
+        blue: cobalt,
+        indigo: cobalt,
 
         // Platform brand colours (for badges / icons)
         platform: {
@@ -119,15 +132,15 @@ export default {
       },
 
       // ─── Typography ─────────────────────────────────────────────────────────
+      // Sora: headings, buttons, numbers that matter. Plus Jakarta Sans: the rest.
       fontFamily: {
-        display: ['Syne', 'system-ui', 'sans-serif'],
-        body:    ['Inter', 'system-ui', 'sans-serif'],
-        mono:    ['JetBrains Mono', 'Fira Code', 'monospace'],
-        sans:    ['Inter', 'system-ui', 'sans-serif'], // Tailwind base override
+        display: ['Sora', 'system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'],
+        body:    sans,
+        sans,
+        mono:    ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
 
       fontSize: {
-        // Fluid / fixed type scale
         '2xs': ['0.625rem',  { lineHeight: '0.875rem' }],  // 10px
         xs:    ['0.75rem',   { lineHeight: '1rem' }],       // 12px
         sm:    ['0.875rem',  { lineHeight: '1.25rem' }],    // 14px
@@ -143,64 +156,54 @@ export default {
         '8xl': ['6rem',      { lineHeight: '1' }],          // 96px
       },
 
-      fontWeight: {
-        thin:       '100',
-        extralight: '200',
-        light:      '300',
-        normal:     '400',
-        medium:     '500',
-        semibold:   '600',
-        bold:       '700',
-        extrabold:  '800',
-        black:      '900',
+      letterSpacing: {
+        tightest: '-0.035em', // Relay headline tracking
       },
 
       // ─── Spacing scale ───────────────────────────────────────────────────────
-      // Extends Tailwind's default. Brand uses an 8pt grid.
       spacing: {
-        '0.5': '0.125rem',  //  2px
-        '1':   '0.25rem',   //  4px
-        '1.5': '0.375rem',  //  6px
-        '2':   '0.5rem',    //  8px
-        '2.5': '0.625rem',  // 10px
-        '3':   '0.75rem',   // 12px
-        '3.5': '0.875rem',  // 14px
-        '4':   '1rem',      // 16px
-        '5':   '1.25rem',   // 20px
-        '6':   '1.5rem',    // 24px
-        '7':   '1.75rem',   // 28px
-        '8':   '2rem',      // 32px
-        '9':   '2.25rem',   // 36px
-        '10':  '2.5rem',    // 40px
-        '11':  '2.75rem',   // 44px
-        '12':  '3rem',      // 48px
-        '14':  '3.5rem',    // 56px
-        '16':  '4rem',      // 64px
-        '18':  '4.5rem',    // 72px
-        '20':  '5rem',      // 80px
-        '24':  '6rem',      // 96px
-        '28':  '7rem',      // 112px
-        '32':  '8rem',      // 128px
-        '36':  '9rem',      // 144px
-        '40':  '10rem',     // 160px
-        '44':  '11rem',     // 176px
-        '48':  '12rem',     // 192px
-        '52':  '13rem',     // 208px
-        '56':  '14rem',     // 224px
-        '60':  '15rem',     // 240px
-        '64':  '16rem',     // 256px
-        '72':  '18rem',     // 288px
-        '80':  '20rem',     // 320px
-        '96':  '24rem',     // 384px
-        // Brand semantic spacing tokens
-        'xs':  '0.25rem',   //  4px — tight gaps
-        'sm':  '0.5rem',    //  8px — small gaps
-        'md':  '1rem',      // 16px — standard gap
-        'lg':  '1.5rem',    // 24px — medium gap
-        'xl':  '2rem',      // 32px — large gap
-        '2xl': '3rem',      // 48px — section gap
-        '3xl': '4rem',      // 64px — hero gap
-        '4xl': '6rem',      // 96px — page section gap
+        '0.5': '0.125rem',
+        '1':   '0.25rem',
+        '1.5': '0.375rem',
+        '2':   '0.5rem',
+        '2.5': '0.625rem',
+        '3':   '0.75rem',
+        '3.5': '0.875rem',
+        '4':   '1rem',
+        '5':   '1.25rem',
+        '6':   '1.5rem',
+        '7':   '1.75rem',
+        '8':   '2rem',
+        '9':   '2.25rem',
+        '10':  '2.5rem',
+        '11':  '2.75rem',
+        '12':  '3rem',
+        '14':  '3.5rem',
+        '16':  '4rem',
+        '18':  '4.5rem',
+        '20':  '5rem',
+        '24':  '6rem',
+        '28':  '7rem',
+        '32':  '8rem',
+        '36':  '9rem',
+        '40':  '10rem',
+        '44':  '11rem',
+        '48':  '12rem',
+        '52':  '13rem',
+        '56':  '14rem',
+        '60':  '15rem',
+        '64':  '16rem',
+        '72':  '18rem',
+        '80':  '20rem',
+        '96':  '24rem',
+        'xs':  '0.25rem',
+        'sm':  '0.5rem',
+        'md':  '1rem',
+        'lg':  '1.5rem',
+        'xl':  '2rem',
+        '2xl': '3rem',
+        '3xl': '4rem',
+        '4xl': '6rem',
       },
 
       // ─── Border radius ───────────────────────────────────────────────────────
@@ -209,80 +212,50 @@ export default {
         sm:     '0.25rem',   //  4px
         DEFAULT:'0.375rem',  //  6px
         md:     '0.5rem',    //  8px
-        lg:     '0.75rem',   // 12px
+        lg:     '0.75rem',   // 12px, inputs
         xl:     '1rem',      // 16px
-        '2xl':  '1.25rem',   // 20px
+        '2xl':  '1.125rem',  // 18px, Relay cards
         '3xl':  '1.5rem',    // 24px
-        '4xl':  '2rem',      // 32px — large cards
-        full:   '9999px',    // pill / circle
+        '4xl':  '2rem',      // 32px
+        full:   '9999px',    // pills
       },
 
       // ─── Box shadows ─────────────────────────────────────────────────────────
       boxShadow: {
-        // Elevation system
-        xs:   '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-        sm:   '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
-        DEFAULT:'0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.08)',
-        md:   '0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.08)',
-        lg:   '0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05)',
-        xl:   '0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.05)',
-        '2xl':'0 25px 50px -12px rgb(0 0 0 / 0.15)',
-        inner:'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)',
+        xs:   '0 1px 2px 0 rgba(14,26,63,.05)',
+        sm:   '0 1px 3px 0 rgba(14,26,63,.08), 0 1px 2px -1px rgba(14,26,63,.06)',
+        DEFAULT:'0 4px 6px -1px rgba(14,26,63,.07), 0 2px 4px -2px rgba(14,26,63,.06)',
+        md:   '0 4px 6px -1px rgba(14,26,63,.07), 0 2px 4px -2px rgba(14,26,63,.06)',
+        lg:   '0 10px 15px -3px rgba(14,26,63,.08), 0 4px 6px -4px rgba(14,26,63,.05)',
+        xl:   '0 20px 25px -5px rgba(14,26,63,.08), 0 8px 10px -6px rgba(14,26,63,.05)',
+        '2xl':'0 25px 50px -12px rgba(14,26,63,.18)',
+        inner:'inset 0 2px 4px 0 rgba(14,26,63,.05)',
         none: 'none',
 
-        // Brand-specific glow shadows
-        'amber':       '0 0 0 3px rgb(224 123 48 / 0.25)',
-        'amber-lg':    '0 8px 24px -4px rgb(224 123 48 / 0.35), 0 0 0 1px rgb(224 123 48 / 0.15)',
-        'amber-glow':  '0 0 20px 4px rgb(224 123 48 / 0.3), 0 4px 16px rgb(224 123 48 / 0.2)',
-        'honey':       '0 0 0 3px rgb(245 200 66 / 0.3)',
-        'honey-glow':  '0 0 20px 4px rgb(245 200 66 / 0.35)',
-        'navy':        '0 0 0 3px rgb(30 45 74 / 0.2)',
-        'navy-lg':     '0 8px 24px -4px rgb(30 45 74 / 0.3)',
-        'card':        '0 2px 8px 0 rgb(30 45 74 / 0.06), 0 1px 3px 0 rgb(30 45 74 / 0.04)',
-        'card-hover':  '0 8px 24px -4px rgb(30 45 74 / 0.1), 0 2px 8px 0 rgb(30 45 74 / 0.06)',
-        'card-active': '0 1px 4px 0 rgb(30 45 74 / 0.08)',
-
-        // Focus ring
-        'focus':       '0 0 0 3px rgb(224 123 48 / 0.35)',
-        'focus-navy':  '0 0 0 3px rgb(46 68 112 / 0.35)',
+        // Relay depth
+        'marketing':   '0 10px 30px rgba(14,26,63,.08)',
+        'lift':        '0 18px 44px rgba(14,26,63,.14)',
+        'popover':     '0 12px 32px rgba(14,26,63,.14)',
+        'cobalt':      '0 0 0 3px #E0E6FF',
+        'cobalt-lg':   '0 10px 24px -6px rgba(35,64,245,.45)',
+        'navy-lg':     '0 10px 30px rgba(14,26,63,.16)',
+        'card':        '0 1px 2px rgba(14,26,63,.04)',
+        'card-hover':  '0 10px 30px rgba(14,26,63,.08)',
+        'card-active': '0 1px 3px rgba(14,26,63,.06)',
+        'focus':       '0 0 0 3px #E0E6FF',
       },
 
       // ─── Transitions & animation ─────────────────────────────────────────────
-      transitionDuration: {
-        0:    '0ms',
-        75:   '75ms',
-        100:  '100ms',
-        150:  '150ms',
-        200:  '200ms',
-        300:  '300ms',
-        500:  '500ms',
-        700:  '700ms',
-        1000: '1000ms',
-      },
-
       transitionTimingFunction: {
         DEFAULT:   'cubic-bezier(0.4, 0, 0.2, 1)',
-        linear:    'linear',
-        in:        'cubic-bezier(0.4, 0, 1, 1)',
-        out:       'cubic-bezier(0, 0, 0.2, 1)',
-        'in-out':  'cubic-bezier(0.4, 0, 0.2, 1)',
-        spring:    'cubic-bezier(0.34, 1.56, 0.64, 1)', // slight overshoot
+        spring:    'cubic-bezier(0.34, 1.56, 0.64, 1)',
         smooth:    'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
       },
 
       keyframes: {
-        // Amber pulse / glow for CTAs and loading states
-        'amber-pulse': {
-          '0%, 100%': {
-            boxShadow: '0 0 0 0 rgb(224 123 48 / 0.4)',
-          },
-          '50%': {
-            boxShadow: '0 0 0 8px rgb(224 123 48 / 0)',
-          },
-        },
-        'honey-shimmer': {
-          '0%':   { backgroundPosition: '-200% center' },
-          '100%': { backgroundPosition: '200% center' },
+        'pulse-ring': {
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(35,64,245,.35)' },
+          '50%':      { boxShadow: '0 0 0 8px rgba(35,64,245,0)' },
         },
         'fade-in': {
           from: { opacity: '0', transform: 'translateY(4px)' },
@@ -312,10 +285,9 @@ export default {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%':       { transform: 'translateY(-4px)' },
         },
-        'hex-float': {
-          '0%, 100%': { transform: 'translateY(0) rotate(0deg)' },
-          '33%':       { transform: 'translateY(-6px) rotate(1deg)' },
-          '66%':       { transform: 'translateY(3px) rotate(-0.5deg)' },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%':      { transform: 'translateY(-8px)' },
         },
         'loading-bar': {
           '0%':   { transform: 'translateX(-100%)' },
@@ -328,8 +300,7 @@ export default {
       },
 
       animation: {
-        'amber-pulse':     'amber-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'honey-shimmer':   'honey-shimmer 2.5s linear infinite',
+        'pulse-ring':      'pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'fade-in':         'fade-in 0.2s ease-out both',
         'fade-in-slow':    'fade-in 0.4s ease-out both',
         'fade-in-up':      'fade-in-up 0.3s ease-out both',
@@ -339,48 +310,22 @@ export default {
         'slide-in-left':   'slide-in-left 0.25s ease-out both',
         'spin-slow':       'spin-slow 3s linear infinite',
         'bounce-subtle':   'bounce-subtle 2s ease-in-out infinite',
-        'hex-float':       'hex-float 6s ease-in-out infinite',
+        'float':           'float 6s ease-in-out infinite',
+        'float-slow':      'float 8s ease-in-out infinite',
         'loading-bar':     'loading-bar 1.5s ease-in-out infinite',
         'skeleton':        'skeleton 1.8s ease-in-out infinite',
         none:              'none',
       },
 
-      // ─── Gradients (background images) ───────────────────────────────────────
       backgroundImage: {
-        // Brand gradients
-        'gradient-amber':       'linear-gradient(135deg, #E07B30 0%, #F5C842 100%)',
-        'gradient-navy':        'linear-gradient(135deg, #1E2D4A 0%, #2E4470 100%)',
-        'gradient-navy-deep':   'linear-gradient(180deg, #1E2D4A 0%, #0D1520 100%)',
-        'gradient-cream':       'linear-gradient(180deg, #FFFFFF 0%, #F9F5EE 100%)',
-        'gradient-amber-soft':  'linear-gradient(135deg, #FEF6EE 0%, #FDE9D5 100%)',
-        'gradient-hero':        'linear-gradient(135deg, #1E2D4A 0%, #2E4470 60%, #3B4F7D 100%)',
-        'gradient-honey-shine': 'linear-gradient(90deg, transparent 0%, #F5C842 50%, transparent 100%)',
-        // Skeleton loading
-        'skeleton':             'linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%)',
-        // Glass effect
-        'glass-amber':          'linear-gradient(135deg, rgb(224 123 48 / 0.1) 0%, rgb(245 200 66 / 0.05) 100%)',
-        'glass-navy':           'linear-gradient(135deg, rgb(30 45 74 / 0.8) 0%, rgb(46 68 112 / 0.8) 100%)',
-        'none':                 'none',
+        'skeleton': 'linear-gradient(90deg, #F3F5FB 25%, #E3E7F1 50%, #F3F5FB 75%)',
       },
 
-      // ─── Screens / breakpoints ────────────────────────────────────────────────
       screens: {
         xs:  '375px',
-        sm:  '640px',
-        md:  '768px',
-        lg:  '1024px',
-        xl:  '1280px',
-        '2xl': '1536px',
       },
 
-      // ─── Z-index scale ───────────────────────────────────────────────────────
       zIndex: {
-        0:    '0',
-        10:   '10',
-        20:   '20',
-        30:   '30',
-        40:   '40',
-        50:   '50',
         header:  '100',
         dropdown:'200',
         overlay: '300',
@@ -389,34 +334,16 @@ export default {
         tooltip: '600',
       },
 
-      // ─── Aspect ratios ───────────────────────────────────────────────────────
       aspectRatio: {
-        auto:    'auto',
-        square:  '1 / 1',
-        video:   '16 / 9',
         portrait:'3 / 4',
-        post:    '4 / 5',  // Instagram portrait post ratio
+        post:    '4 / 5',
         banner:  '3 / 1',
       },
 
-      // ─── Max widths ──────────────────────────────────────────────────────────
       maxWidth: {
-        xs:   '20rem',   // 320px
-        sm:   '24rem',   // 384px
-        md:   '28rem',   // 448px
-        lg:   '32rem',   // 512px
-        xl:   '36rem',   // 576px
-        '2xl':'42rem',   // 672px
-        '3xl':'48rem',   // 768px
-        '4xl':'56rem',   // 896px
-        '5xl':'64rem',   // 1024px
-        '6xl':'72rem',   // 1152px
-        '7xl':'80rem',   // 1280px
-        full: '100%',
-        prose:'65ch',    // readable body copy
-        none: 'none',
+        prose:'65ch',
+        site: '75rem', // 1200px marketing max width
       },
-
     },
   },
 

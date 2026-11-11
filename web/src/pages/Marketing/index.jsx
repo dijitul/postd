@@ -1,386 +1,267 @@
-import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Check, Star, Zap, Globe, MessageSquare, TrendingUp, Clock } from 'lucide-react'
-import Logo from '../../components/ui/Logo.jsx'
+import { ArrowRight, Check, Sparkles, Zap, Globe, MessageSquare, CalendarClock } from 'lucide-react'
 import PlatformIcon from '../../components/ui/PlatformIcon.jsx'
+import SiteHeader from '../../components/marketing/SiteHeader.jsx'
 import SiteFooter from '../../components/marketing/SiteFooter.jsx'
 import HomeFaq, { HomeSeo } from './HomeFaq.jsx'
 import PricingSection from './PricingSection.jsx'
-import OfficePromo, { OFFICE_URL } from './OfficePromo.jsx'
+import OfficePromo from './OfficePromo.jsx'
 import { pricingJsonLdOffers } from '../../lib/plans.js'
 
-// ── Animated post card ────────────────────────────────────────────────────────
-function AnimatedPostCard({ platform, content, delay = 0, className = '' }) {
+// ── Floating post card (decorative) ──────────────────────────────────────────
+// Each card is one post as postd would write it: the violet chip marks the
+// words as AI-written, the second chip shows where it is in the schedule.
+function FloatingPost({ platform, platformName, business, text, status, className = '', delay = 0 }) {
   return (
     <div
-      className={`bg-white rounded-2xl p-4 shadow-lg border border-cream-300 animate-fade-in-up ${className}`}
-      style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
+      className={`card-marketing p-4 sm:p-5 w-full max-w-[20rem] motion-safe:animate-float ${className}`}
+      style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="flex items-center gap-2 mb-3">
-        <PlatformIcon platform={platform} size="sm" />
-        <div className="flex-1 min-w-0">
-          <div className="h-2.5 bg-slate-200 rounded-full w-24 mb-1" />
-          <div className="h-2 bg-slate-100 rounded-full w-16" />
+      <div className="flex items-center gap-3">
+        <PlatformIcon platform={platform} size="md" container="soft" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-navy-900 leading-tight truncate">{business}</p>
+          <p className="text-xs text-slate-500 leading-tight mt-0.5">{platformName}</p>
         </div>
-        <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
-          Live
-        </span>
       </div>
-      <p className="text-xs text-slate-600 leading-relaxed">{content}</p>
+      <p className="mt-3 text-sm text-navy-900 leading-relaxed">{text}</p>
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <span className="chip chip-ai">
+          <Sparkles className="w-3 h-3" aria-hidden="true" />
+          Written by postd
+        </span>
+        {status === 'posted' ? (
+          <span className="chip chip-success">
+            <Check className="w-3 h-3" aria-hidden="true" />
+            Posted
+          </span>
+        ) : (
+          <span className="chip chip-cobalt">
+            <CalendarClock className="w-3 h-3" aria-hidden="true" />
+            {status}
+          </span>
+        )}
+      </div>
     </div>
   )
 }
 
-// ── Hero illustration ─────────────────────────────────────────────────────────
+// ── Hero illustration ────────────────────────────────────────────────────────
 function HeroIllustration() {
   return (
-    <div className="relative w-full max-w-md mx-auto lg:max-w-none" aria-hidden="true">
-      {/* Central hub */}
-      <div className="relative flex items-center justify-center h-80 sm:h-96">
-        {/* Glow ring */}
-        <div className="absolute w-40 h-40 rounded-full bg-amber-500/10 animate-pulse" />
-        <div className="absolute w-56 h-56 rounded-full bg-amber-500/5" />
+    <div className="relative w-full" aria-hidden="true">
+      {/* Cloud panel the cards float over */}
+      <div className="absolute inset-x-0 top-6 bottom-6 sm:inset-x-6 lg:inset-x-0 lg:top-0 lg:bottom-0 rounded-[2rem] bg-cloud" />
+      <div className="absolute right-6 top-4 w-14 h-14 rounded-full bg-sun-400 hidden lg:block" />
 
-        {/* Centre logo mark */}
-        <div className="relative z-10 w-20 h-20 bg-amber-500 rounded-3xl flex items-center justify-center shadow-amber-lg">
-          <svg viewBox="0 0 64 64" className="w-12 h-12" fill="none">
-            <rect x="8" y="16" width="32" height="22" rx="6" fill="white" />
-            <path d="M14 38 L11 48 L23 38 Z" fill="white" />
-            <path d="M26 20 L20 30 L24.5 30 L22 37 L28 26 L23.5 26 Z" fill="#E07B30" />
-          </svg>
-        </div>
-
-        {/* Platform cards orbiting */}
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 -translate-y-2 animate-bounce-subtle" style={{ animationDelay: '0ms' }}>
-          <PlatformIcon platform="facebook" size="lg" className="shadow-lg rounded-2xl" />
-        </div>
-        <div className="absolute top-1/2 right-4 -translate-y-1/2 animate-bounce-subtle" style={{ animationDelay: '400ms' }}>
-          <PlatformIcon platform="linkedin" size="lg" className="shadow-lg rounded-2xl" />
-        </div>
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 translate-y-2 animate-bounce-subtle" style={{ animationDelay: '200ms' }}>
-          <PlatformIcon platform="google" size="lg" className="shadow-lg rounded-2xl" />
-        </div>
-        <div className="absolute top-1/2 left-4 -translate-y-1/2 animate-bounce-subtle" style={{ animationDelay: '600ms' }}>
-          <PlatformIcon platform="x" size="lg" className="shadow-lg rounded-2xl" />
-        </div>
-
-        {/* Connector lines (decorative) */}
-        <svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 320 320">
-          <line x1="160" y1="160" x2="160" y2="20" stroke="#E07B30" strokeWidth="1.5" strokeDasharray="4 4" />
-          <line x1="160" y1="160" x2="290" y2="160" stroke="#E07B30" strokeWidth="1.5" strokeDasharray="4 4" />
-          <line x1="160" y1="160" x2="160" y2="300" stroke="#E07B30" strokeWidth="1.5" strokeDasharray="4 4" />
-          <line x1="160" y1="160" x2="30" y2="160" stroke="#E07B30" strokeWidth="1.5" strokeDasharray="4 4" />
-        </svg>
-      </div>
-
-      {/* Sample post cards — staggered */}
-      <div className="absolute -bottom-4 -left-4 w-56 hidden sm:block">
-        <AnimatedPostCard
-          platform="facebook"
-          content="Fantastic service from our team today — our customers keep coming back for a reason!"
-          delay={600}
-        />
-      </div>
-      <div className="absolute -top-4 -right-4 w-52 hidden lg:block">
-        <AnimatedPostCard
+      <div className="relative flex flex-col items-center gap-4 py-10 px-4 lg:block lg:h-[38rem] lg:py-0">
+        <FloatingPost
           platform="google"
-          content="Quality you can see. Expertise you can trust. Come and see us today!"
+          platformName="Google Business Profile"
+          business="Hart and Sons Bakery"
+          text="Our sourdough is back on the shelves from 8am. Bake days are Tuesday, Thursday and Saturday, so pop in early."
+          status="posted"
+          className="lg:absolute lg:left-0 lg:top-8"
+        />
+        <FloatingPost
+          platform="facebook"
+          platformName="Facebook"
+          business="Hart and Sons Bakery"
+          text={'"Best custard slice in Mansfield, hands down." Thank you, Sarah. We will have a fresh batch ready for you on Friday.'}
+          status="Fri 9:30am"
+          className="lg:absolute lg:right-0 lg:top-[15rem]"
           delay={900}
+        />
+        <FloatingPost
+          platform="linkedin"
+          platformName="LinkedIn"
+          business="Hart and Sons Bakery"
+          text="We now supply fresh bread to three offices in town. Weekly orders, delivered before 9."
+          status="Mon 8:00am"
+          className="hidden sm:block lg:absolute lg:left-6 lg:bottom-2"
+          delay={1800}
         />
       </div>
     </div>
   )
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
-//
-// SEO META TAGS — add these via React Helmet (or a Helmet wrapper component) once available:
-//
-// Page title:
-//   "AI Social Media Automation for UK Small Businesses | postd.uk"
-//
-// Meta description:
-//   "postd.uk automatically writes and posts social media content for UK small businesses.
-//    Connect Google Business Profile, Facebook, LinkedIn and X. From £15/month. 14-day free trial."
-//
-// Open Graph og:title  — same as page title above
-// Open Graph og:description — same as meta description above
-// Open Graph og:type   — "website"
-//
+const TRUST = ['No card required', 'Cancel anytime', 'UK-based team', 'GDPR compliant']
+
+const PLATFORMS = [
+  { id: 'google', label: 'Google Business', badge: null },
+  { id: 'facebook', label: 'Facebook', badge: null },
+  { id: 'linkedin', label: 'LinkedIn', badge: null },
+  { id: 'x', label: 'X (Twitter)', badge: null },
+]
+
+const STEPS = [
+  {
+    number: '01',
+    icon: MessageSquare,
+    title: 'Tell us about your business',
+    body: 'Your business name, industry, and website URL. That is genuinely all we need to get started.',
+  },
+  {
+    number: '02',
+    icon: Globe,
+    title: 'Connect your platforms',
+    body: 'Link your Google Business Profile, Facebook, LinkedIn and X (Twitter) in a few taps. We handle the rest.',
+  },
+  {
+    number: '03',
+    icon: Zap,
+    title: 'Your AI social media posts go live automatically',
+    body: 'Our AI reads your website and reviews, writes platform-native content for Google Business Profile, Facebook, LinkedIn and X, and publishes it all on a sensible schedule, fully automated.',
+  },
+]
+
 export default function MarketingPage() {
-  const [scrolled, setScrolled] = useState(false)
-
-  useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20)
-    window.addEventListener('scroll', handler, { passive: true })
-    return () => window.removeEventListener('scroll', handler)
-  }, [])
-
-  const platforms = [
-    { id: 'google', label: 'Google Business', badge: null },
-    { id: 'facebook', label: 'Facebook', badge: null },
-    { id: 'linkedin', label: 'LinkedIn', badge: null },
-    { id: 'x', label: 'X (Twitter)', badge: null }
-  ]
-
-  const steps = [
-    {
-      number: '01',
-      icon: MessageSquare,
-      title: 'Tell us about your business',
-      body: 'Your business name, industry, and website URL. That is genuinely all we need to get started.'
-    },
-    {
-      number: '02',
-      icon: Globe,
-      title: 'Connect your platforms',
-      body: 'Link your Google Business Profile, Facebook, LinkedIn and X (Twitter) in a few taps. We handle the rest.'
-    },
-    {
-      number: '03',
-      icon: Zap,
-      title: 'Your AI social media posts go live automatically',
-      body: 'Our AI reads your website and reviews, writes platform-native content for Google Business Profile, Facebook, LinkedIn and X, and publishes it all on a sensible schedule, fully automated.'
-    }
-  ]
-
   return (
-    <div className="min-h-screen bg-cream-200 honeycomb-bg">
+    <div className="min-h-screen bg-white">
       <HomeSeo />
 
-      {/* ── Nav ──────────────────────────────────────────────────────────────── */}
-      <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-cream-300' : 'bg-transparent'
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-18">
-            <Logo size="md" />
+      <SiteHeader />
 
-            <nav className="hidden sm:flex items-center gap-6">
-              <a href="#how-it-works" className="text-sm font-medium text-navy-700 hover:text-amber-500 transition-colors">
-                How it works
-              </a>
-              <a href="#platforms" className="text-sm font-medium text-navy-700 hover:text-amber-500 transition-colors">
-                Platforms
-              </a>
-              <a href="#pricing" className="text-sm font-medium text-navy-700 hover:text-amber-500 transition-colors">
-                Pricing
-              </a>
-              <Link to="/guides" className="text-sm font-medium text-navy-700 hover:text-amber-500 transition-colors">
-                Guides
-              </Link>
-              <a href={OFFICE_URL} className="hidden lg:inline-flex items-center gap-1.5 text-sm font-medium text-navy-700 hover:text-amber-500 transition-colors">
-                Postd Office
-                <span className="text-2xs font-bold uppercase tracking-wide bg-honey-400 text-navy-800 px-1.5 py-0.5 rounded-full">New</span>
-              </a>
-            </nav>
+      <main>
+        {/* ── Hero ──────────────────────────────────────────────────────────── */}
+        <section className="relative overflow-hidden bg-white">
+          <div className="container-brand pt-10 pb-16 sm:pt-16 lg:pt-20 lg:pb-24">
+            <div className="grid lg:grid-cols-[1.05fr_1fr] gap-10 lg:gap-14 items-center">
 
-            <div className="flex items-center gap-3">
-              <Link to="/login" className="text-sm font-semibold text-navy-700 hover:text-amber-500 transition-colors px-3 py-2 hidden sm:block">
-                Log in
-              </Link>
-              <Link
-                to="/register"
-                className="inline-flex items-center gap-2 bg-amber-500 text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-amber-700 active:scale-[0.97] transition-all duration-200"
-                style={{ boxShadow: '0 4px 16px rgb(224 123 48 / 0.3)' }}
-              >
-                Start free trial
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+              <div className="min-w-0 text-center lg:text-left">
+                <p className="inline-flex items-center gap-2 bg-cobalt-50 text-cobalt-700 text-xs font-semibold px-3.5 py-1.5 rounded-full mb-6">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cobalt-600" aria-hidden="true" />
+                  AI social media automation for UK small businesses
+                </p>
 
-      {/* ── Hero ─────────────────────────────────────────────────────────────── */}
-      <section className="relative pt-28 sm:pt-32 pb-16 sm:pb-24 overflow-hidden">
-        {/* Background gradient blob */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-honey-400/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/3 pointer-events-none" />
+                <h1 className="display text-balance mb-6">
+                  Post every week without{' '}
+                  <span className="highlight">thinking</span>{' '}
+                  about it.
+                </h1>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                <p className="lead max-w-xl mx-auto lg:mx-0 mb-8 text-pretty">
+                  Give us your website, your Google Reviews link, and a bit about your business.
+                  Our AI writes and automatically posts content to Google Business Profile, Facebook, LinkedIn and X every week, so you never have to think about social media again.
+                </p>
 
-            {/* Left — copy */}
-            <div className="text-center lg:text-left animate-fade-in-up">
-              <div className="inline-flex items-center gap-2 bg-amber-500/10 text-amber-700 text-xs font-bold px-4 py-2 rounded-full mb-6 border border-amber-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                Built for UK small businesses
-              </div>
-
-              <h1 className="font-display font-black text-navy-800 mb-6 text-balance" style={{ fontSize: 'clamp(2.25rem, 5vw, 3.75rem)', lineHeight: '1.1' }}>
-                AI social media automation
-                <br />
-                <span className="text-gradient-amber">for UK small businesses.</span>
-              </h1>
-
-              <p className="text-lg sm:text-xl text-slate-600 mb-8 max-w-xl mx-auto lg:mx-0 text-pretty leading-relaxed">
-                Give us your website, your Google Reviews link, and a bit about your business.
-                Our AI writes and automatically posts content to Google Business Profile, Facebook, LinkedIn and X every week, so you never have to think about social media again.
-              </p>
-
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mb-10">
-                <Link
-                  to="/register"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-amber-500 text-white font-bold text-base px-8 py-4 rounded-2xl hover:bg-amber-700 active:scale-[0.98] transition-all duration-200"
-                  style={{ boxShadow: '0 8px 24px rgb(224 123 48 / 0.35)' }}
-                >
-                  Start free 14-day trial
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
-                <a
-                  href="#how-it-works"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 border border-navy-200 text-navy-700 font-semibold text-base px-8 py-4 rounded-2xl hover:bg-white hover:border-navy-300 transition-all duration-200"
-                >
-                  See how it works
-                </a>
-              </div>
-
-              {/* Trust signals */}
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-5 text-sm text-slate-500">
-                <span className="flex items-center gap-1.5">
-                  <Check className="w-4 h-4 text-green-500" />
-                  No card required
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Check className="w-4 h-4 text-green-500" />
-                  Cancel anytime
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Check className="w-4 h-4 text-green-500" />
-                  UK-based team
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Check className="w-4 h-4 text-green-500" />
-                  GDPR compliant
-                </span>
-              </div>
-            </div>
-
-            {/* Right — illustration */}
-            <div className="animate-fade-in" style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
-              <HeroIllustration />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── How it works ─────────────────────────────────────────────────────── */}
-      <section id="how-it-works" className="py-20 sm:py-28 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <span className="inline-block text-amber-500 text-sm font-bold uppercase tracking-widest mb-4">Simple as that</span>
-            <h2 className="font-display font-black text-navy-800 text-3xl sm:text-4xl lg:text-5xl mb-4 text-balance">
-              How AI social media automation works
-            </h2>
-            <p className="text-lg text-slate-500 max-w-2xl mx-auto text-pretty">
-              Most social media management tools are a second job. postd.uk is different.
-              Set it up once and your automated social media posts go out every week without any effort from you.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
-            {steps.map((step, i) => (
-              <div
-                key={step.number}
-                className="relative bg-cream-200 rounded-3xl p-8 group hover:-translate-y-1 transition-all duration-300"
-                style={{ animationDelay: `${i * 150}ms` }}
-              >
-                {/* Step connector */}
-                {i < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-12 -right-4 z-10">
-                    <ArrowRight className="w-6 h-6 text-amber-300" />
-                  </div>
-                )}
-
-                <div className="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-200">
-                  <step.icon className="w-6 h-6 text-white" />
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-3 mb-8">
+                  <Link to="/register" className="btn btn-primary btn-lg">
+                    Start free 14-day trial
+                    <ArrowRight className="w-5 h-5" aria-hidden="true" />
+                  </Link>
+                  <a href="#how-it-works" className="btn btn-secondary btn-lg">
+                    See how it works
+                  </a>
                 </div>
 
-                <div className="text-5xl font-display font-black text-amber-500/10 mb-2 leading-none">{step.number}</div>
-
-                <h3 className="font-display font-bold text-lg text-navy-800 mb-3">{step.title}</h3>
-                <p className="text-slate-600 leading-relaxed text-sm">{step.body}</p>
+                <ul className="flex flex-wrap items-center justify-center lg:justify-start gap-x-5 gap-y-2 pl-0 text-sm text-slate-500">
+                  {TRUST.map((t) => (
+                    <li key={t} className="flex items-center gap-1.5 mb-0">
+                      <Check className="w-4 h-4 text-success" aria-hidden="true" />
+                      {t}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* ── Platforms ────────────────────────────────────────────────────────── */}
-      <section id="platforms" className="py-20 sm:py-28">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <span className="inline-block text-amber-500 text-sm font-bold uppercase tracking-widest mb-4">All your channels</span>
-            <h2 className="font-display font-black text-navy-800 text-3xl sm:text-4xl lg:text-5xl mb-4 text-balance">
-              Social media platforms we post to automatically
+              <div className="min-w-0">
+                <HeroIllustration />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── How it works ──────────────────────────────────────────────────── */}
+        <section id="how-it-works" className="section-padding bg-cloud scroll-mt-16">
+          <div className="container-brand">
+            <div className="text-center mb-12 lg:mb-16">
+              <span className="eyebrow mb-3">Simple as that</span>
+              <h2 className="h2-marketing mb-4 text-balance">
+                How AI social media automation works
+              </h2>
+              <p className="lead max-w-2xl mx-auto text-pretty">
+                Most social media management tools are a second job. postd.uk is different.
+                Set it up once and your automated social media posts go out every week without any effort from you.
+              </p>
+            </div>
+
+            <ol className="grid md:grid-cols-3 gap-5 lg:gap-6 pl-0">
+              {STEPS.map((step) => (
+                <li key={step.number} className="card-marketing p-7 lg:p-8 mb-0">
+                  <div className="flex items-center justify-between mb-6">
+                    <span className="w-12 h-12 rounded-full bg-cobalt-50 flex items-center justify-center">
+                      <step.icon className="w-6 h-6 text-cobalt-600" aria-hidden="true" />
+                    </span>
+                    <span className="font-display font-extrabold text-sm text-slate-500 tracking-wide">{step.number}</span>
+                  </div>
+                  <h3 className="font-display font-bold text-xl text-navy-900 mb-3 tracking-tight">{step.title}</h3>
+                  <p className="text-slate-500 leading-relaxed text-[15px]">{step.body}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* ── Platforms ─────────────────────────────────────────────────────── */}
+        <section id="platforms" className="section-padding bg-white scroll-mt-16">
+          <div className="container-brand">
+            <div className="text-center mb-12">
+              <span className="eyebrow mb-3">All your channels</span>
+              <h2 className="h2-marketing mb-4 text-balance">
+                Social media platforms we post to automatically
+              </h2>
+              <p className="lead max-w-2xl mx-auto">
+                Every AI-generated post is written natively for the platform it is published to. No generic copy-paste, no recycled content.
+              </p>
+            </div>
+
+            <ul className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto pl-0">
+              {PLATFORMS.map(({ id, label, badge }) => (
+                <li
+                  key={id}
+                  className="relative card p-6 mb-0 flex flex-col items-center gap-3 transition-shadow duration-200 hover:shadow-marketing"
+                >
+                  {badge && <span className="badge-sun absolute -top-3 left-1/2 -translate-x-1/2">{badge}</span>}
+                  <PlatformIcon platform={id} size="xl" container="soft" />
+                  <span className="text-sm font-semibold text-navy-900 text-center leading-tight">{label}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <PricingSection />
+
+        {/* Sister product: Postd Office */}
+        <OfficePromo />
+
+        <HomeFaq />
+
+        {/* ── Closing call to action (navy band) ────────────────────────────── */}
+        <section className="section-padding bg-navy-900 relative overflow-hidden">
+          <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-sun-400/90 pointer-events-none hidden md:block" aria-hidden="true" />
+          <div className="relative max-w-3xl mx-auto px-4 sm:px-6 text-center">
+            <h2 className="h2-marketing !text-white mb-5 text-balance">
+              Automated social media posting, sorted.
             </h2>
-            <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-              Every AI-generated post is written natively for the platform it is published to. No generic copy-paste, no recycled content.
+            <p className="text-white/80 text-[17px] lg:text-[19px] leading-relaxed mb-9 max-w-xl mx-auto text-pretty">
+              Stop worrying about social media. postd writes and publishes your posts from your
+              own website and reviews, so you can get on with what you do best.
             </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link to="/register" className="btn btn-on-dark btn-lg w-full sm:w-auto">
+                Start your free 14-day trial
+                <ArrowRight className="w-5 h-5" aria-hidden="true" />
+              </Link>
+              <p className="text-white/75 text-sm">No card required. Cancel anytime.</p>
+            </div>
           </div>
+        </section>
+      </main>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            {platforms.map(({ id, label, badge }) => (
-              <div
-                key={id}
-                className={`relative bg-white rounded-2xl p-5 flex flex-col items-center gap-3 border border-cream-300 transition-all duration-200 group ${badge === 'Coming Soon' ? 'opacity-60' : 'hover:-translate-y-1 hover:shadow-lg'}`}
-                style={{ boxShadow: '0 2px 8px rgb(30 45 74 / 0.05)' }}
-              >
-                {badge && (
-                  <span className={`absolute -top-3 left-1/2 -translate-x-1/2 text-2xs font-black uppercase tracking-wide px-3 py-1 rounded-full whitespace-nowrap ${badge === 'Coming Soon' ? 'bg-slate-200 text-slate-600' : 'bg-honey-400 text-navy-800'}`}>
-                    {badge}
-                  </span>
-                )}
-                <PlatformIcon platform={id} size="lg" />
-                <span className="text-xs font-semibold text-navy-700 text-center leading-tight">{label}</span>
-              </div>
-            ))}
-          </div>
-
-        </div>
-      </section>
-
-      {/* ── Pricing ──────────────────────────────────────────────────────────── */}
-      <PricingSection />
-
-      {/* ── Sister product: Postd Office ─────────────────────────────────────── */}
-      <OfficePromo />
-
-      <HomeFaq />
-
-      {/* ── Final CTA ────────────────────────────────────────────────────────── */}
-      <section className="py-20 sm:py-28 bg-gradient-navy relative overflow-hidden">
-        <div className="absolute inset-0 honeycomb-bg opacity-30 pointer-events-none" />
-        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 text-center">
-          <div className="w-16 h-16 bg-amber-500 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-amber-glow">
-            <Zap className="w-8 h-8 text-white" />
-          </div>
-          <h2 className="font-display font-black text-white text-3xl sm:text-4xl lg:text-5xl mb-6 text-balance">
-            Automated social media posting, sorted.
-          </h2>
-          <p className="text-white/70 text-lg sm:text-xl mb-10 max-w-xl mx-auto text-pretty">
-            Stop worrying about social media. postd writes and publishes your posts from your
-            own website and reviews, so you can get on with what you do best.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              to="/register"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-amber-500 text-white font-bold text-base px-8 py-4 rounded-2xl hover:bg-amber-600 active:scale-[0.98] transition-all duration-200"
-              style={{ boxShadow: '0 8px 24px rgb(224 123 48 / 0.4)' }}
-            >
-              Start your free 14-day trial
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-            <div className="text-white/50 text-sm">No card required. Cancel anytime.</div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Structured data (JSON-LD) ────────────────────────────────────────── */}
+      {/* ── Structured data (JSON-LD) ──────────────────────────────────────── */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -405,7 +286,6 @@ export default function MarketingPage() {
         }}
       />
 
-      {/* ── Footer ───────────────────────────────────────────────────────────── */}
       <SiteFooter />
     </div>
   )

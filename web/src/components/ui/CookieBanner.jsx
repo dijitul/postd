@@ -53,21 +53,21 @@ export default function CookieBanner() {
       className="fixed bottom-0 left-0 right-0 z-50 p-4 sm:p-6 animate-in slide-in-from-bottom duration-300"
     >
       <div
-        className="max-w-3xl mx-auto bg-navy-800 text-white rounded-2xl p-5 sm:p-6 border border-white/10"
-        style={{ boxShadow: '0 -4px 40px rgb(0 0 0 / 0.25)' }}
+        className="max-w-3xl mx-auto bg-navy-900 text-white rounded-2xl p-5 sm:p-6 border border-white/10"
+        style={{ boxShadow: '0 -4px 40px rgba(14, 26, 63, .25)' }}
       >
         <div className="flex items-start gap-4">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <Cookie className="w-4 h-4 text-amber-400" />
+          <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <Cookie className="w-4 h-4 text-sun-400" />
           </div>
 
           <div className="flex-1 min-w-0">
             <h2 className="font-display font-bold text-base text-white mb-1">
               We use cookies
             </h2>
-            <p className="text-sm text-white/60 leading-relaxed">
+            <p className="text-sm text-white/75 leading-relaxed">
               We use essential cookies to keep the service running, and optional analytics cookies (Google Analytics) to understand how people use postd.uk so we can improve it. We never use cookies for advertising.{' '}
-              <Link to="/privacy" className="text-amber-400 hover:text-amber-300 underline transition-colors">
+              <Link to="/privacy" className="text-cobalt-300 hover:text-white underline transition-colors">
                 Privacy Policy
               </Link>
             </p>
@@ -75,7 +75,7 @@ export default function CookieBanner() {
             {/* Expandable detail */}
             <button
               onClick={() => setShowDetails(!showDetails)}
-              className="flex items-center gap-1 text-xs text-white/40 hover:text-white/60 mt-2 transition-colors"
+              className="flex items-center gap-1 min-h-[44px] text-xs text-white/70 hover:text-white mt-1 transition-colors"
             >
               {showDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
               {showDetails ? 'Hide details' : 'What cookies do we use?'}
@@ -86,16 +86,16 @@ export default function CookieBanner() {
                 <div className="bg-white/5 rounded-xl p-3">
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-xs font-semibold text-white">Essential cookies</p>
-                    <span className="text-xs text-white/40 bg-white/10 px-2 py-0.5 rounded-full">Always on</span>
+                    <span className="text-xs text-white/70 bg-white/10 px-2 py-0.5 rounded-full">Always on</span>
                   </div>
-                  <p className="text-xs text-white/50">Session management, authentication, and security. The service cannot function without these.</p>
+                  <p className="text-xs text-white/70">Session management, authentication, and security. The service cannot function without these.</p>
                 </div>
                 <div className="bg-white/5 rounded-xl p-3">
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-xs font-semibold text-white">Analytics cookies</p>
-                    <span className="text-xs text-amber-400/80 bg-amber-400/10 px-2 py-0.5 rounded-full">Optional</span>
+                    <span className="text-xs text-navy-900 bg-sun-400 px-2 py-0.5 rounded-full">Optional</span>
                   </div>
-                  <p className="text-xs text-white/50">Google Analytics (G-QLSYF2DZCL) collects anonymised usage data. IP addresses are anonymised. No personal data is shared.</p>
+                  <p className="text-xs text-white/70">Google Analytics (G-QLSYF2DZCL) collects anonymised usage data. IP addresses are anonymised. No personal data is shared.</p>
                 </div>
               </div>
             )}
@@ -103,7 +103,7 @@ export default function CookieBanner() {
 
           <button
             onClick={() => saveConsent(false)}
-            className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors flex-shrink-0"
+            className="w-11 h-11 -mr-2 -mt-2 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors flex-shrink-0"
             aria-label="Reject optional cookies and close"
             title="Reject optional cookies"
           >
@@ -114,14 +114,13 @@ export default function CookieBanner() {
         <div className="flex flex-col sm:flex-row gap-2 mt-4 sm:mt-5">
           <button
             onClick={() => saveConsent(false)}
-            className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-sm font-semibold text-white/60 bg-white/5 hover:bg-white/10 transition-colors border border-white/10"
+            className="btn flex-1 sm:flex-none text-white bg-transparent ring-[1.5px] ring-inset ring-white/25 hover:bg-white/10"
           >
             Reject optional
           </button>
           <button
             onClick={() => saveConsent(true)}
-            className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl text-sm font-bold text-navy-900 bg-amber-500 hover:bg-amber-400 transition-colors"
-            style={{ boxShadow: '0 2px 12px rgb(224 123 48 / 0.3)' }}
+            className="btn btn-on-dark flex-1 sm:flex-none"
           >
             Accept all cookies
           </button>
