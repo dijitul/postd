@@ -4,6 +4,7 @@ seoTitle: "Automated Social Media Posting for UK Small Businesses"
 description: "What automated social media posting can and cannot do for a UK small business, what it costs in pounds, and which jobs to keep human."
 slug: automated-social-media-posting
 date: 2026-10-13
+updated: 2026-11-20
 author: "Olly, dijitul"
 pillar: automation
 type: pillar
@@ -111,7 +112,7 @@ The honest answer is anything from nothing to several thousand pounds a month, d
 |---|---|---|---|
 | Doing it yourself | Your time | Full control | Everything |
 | The platforms' own schedulers | Free | Posts go out at the time you set | Write every post, load each platform separately |
-| A general scheduler, such as Buffer | Buffer's paid plans start at $5 per channel per month, billed in US dollars; its free plan covers three channels and excludes Google Business Profile ([Buffer pricing](https://buffer.com/pricing), checked September 2026) | One place to queue posts for several platforms | Write every post, with optional AI help |
+| A general scheduler, such as Buffer | Buffer's paid plans start at $5 per channel per month, billed in US dollars; its free plan covers three channels, including Google Business Profile, with up to 10 queued posts each ([Buffer pricing](https://buffer.com/pricing) and [Buffer for Google Business Profile](https://buffer.com/google-business-profile), checked November 2026) | One place to queue posts for several platforms | Write every post, with optional AI help |
 | A tool that writes and publishes | From about £15 a month | Posts written from your business information and published on a schedule | Approve or edit, or let it run |
 | A freelancer | £150 to £800 a month, or £15 to £50 an hour | A person planning, writing and often designing | Brief them, answer questions, approve |
 | A regional agency | £400 to £1,500 a month | A team, strategy, reporting, often paid ads | Meetings, approvals, a contract |
