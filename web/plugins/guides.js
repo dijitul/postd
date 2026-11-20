@@ -32,8 +32,11 @@ export const PILLARS = {
   automation: 'Automated social media posting',
   local: 'Social media for local businesses',
   tools: 'Tools and costs',
+  inbox: 'Social media inbox and replies',
 }
 const TYPES = ['pillar', 'cluster', 'comparison', 'trade', 'template']
+// Which product the call to action under the article promotes.
+export const PRODUCTS = ['postd', 'office', 'both']
 const WORDS_PER_MINUTE = 200
 // A table of contents is shown once an article is long enough to need one.
 const TOC_MIN_H2 = 4
@@ -174,6 +177,7 @@ export function loadGuides({ contentDir, includeFuture = false, today = londonTo
     if (fm.updated && !updated) problems.push('updated must be YYYY-MM-DD')
     if (!PILLARS[fm.pillar]) problems.push(`pillar must be one of ${Object.keys(PILLARS).join(', ')}`)
     if (fm.type && !TYPES.includes(fm.type)) problems.push(`type must be one of ${TYPES.join(', ')}`)
+    if (fm.product && !PRODUCTS.includes(fm.product)) problems.push(`product must be one of ${PRODUCTS.join(', ')}`)
     if (seen.has(slug)) problems.push(`duplicate slug "${slug}"`)
 
     if (problems.length) {
@@ -210,6 +214,7 @@ export function loadGuides({ contentDir, includeFuture = false, today = londonTo
       pillar: fm.pillar,
       pillarLabel: PILLARS[fm.pillar],
       type: fm.type || 'cluster',
+      product: fm.product || 'postd',
       primaryKeyword: fm.primaryKeyword ? String(fm.primaryKeyword) : null,
       readingMinutes: Math.max(1, Math.round(words / WORDS_PER_MINUTE)),
       scheduled,

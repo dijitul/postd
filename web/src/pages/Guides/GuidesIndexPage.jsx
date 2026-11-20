@@ -14,6 +14,7 @@ const PILLAR_INTROS = {
   automation: 'How automated and AI-written social media posting works for a small business, and where it helps or does not.',
   local: 'Practical, UK-flavoured ideas for trades, salons, cafés and other local businesses.',
   tools: 'Honest comparisons of social media tools and what they cost a UK small business.',
+  inbox: 'Keeping up with DMs and comments on Facebook, Instagram and TikTok, and when AI replies help.',
 }
 
 const TYPE_LABELS = {

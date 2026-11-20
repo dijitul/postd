@@ -126,7 +126,7 @@ async function main() {
   const llmsPath = path.join(distDir, 'llms.txt')
   if (fs.existsSync(llmsPath)) {
     let llms = fs.readFileSync(llmsPath, 'utf8').replace(/\r\n/g, '\n')
-    const guidesLink = `- [Guides](${SITE_URL}/guides): practical guides to Google Business Profile posts, automated posting and social media for UK local businesses`
+    const guidesLink = `- [Guides](${SITE_URL}/guides): practical guides to Google Business Profile posts, automated posting, social media inboxes, tool comparisons and social media for UK local businesses`
     if (!llms.includes(`${SITE_URL}/guides)`)) {
       llms = llms.replace(/(- \[Home\]\([^\n]*\n)/, `$1${guidesLink}\n`)
     }

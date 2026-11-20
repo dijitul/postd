@@ -14,7 +14,7 @@ import { readGuide, relatedGuides, formatDate } from '../../lib/guides.js'
 import SiteHeader from '../../components/marketing/SiteHeader.jsx'
 import SiteFooter from '../../components/marketing/SiteFooter.jsx'
 import NotFoundPage from '../NotFoundPage.jsx'
-import GuideCta from './GuideCta.jsx'
+import GuideCta, { officeHref } from './GuideCta.jsx'
 
 function authorParts(author) {
   // Frontmatter author is "Olly, dijitul": a person, then who they work for.
@@ -239,13 +239,28 @@ export default function GuidePage() {
               </div>
 
               <div className="mt-10">
-                <GuideCta slug={guide.slug} />
+                <GuideCta slug={guide.slug} product={guide.product} />
               </div>
             </article>
 
             <aside className="hidden lg:block lg:col-span-4">
               <div className="sticky top-24 space-y-8">
                 {hasToc && <TableOfContents toc={guide.toc} />}
+                {guide.product === 'office' ? (
+                <div className="bg-white rounded-2xl border border-line p-5">
+                  <p className="font-display font-bold text-navy-900 mb-2">Answer every DM from one inbox</p>
+                  <p className="text-sm text-slate-600 mb-4">
+                    Postd Office: Facebook, Instagram and TikTok messages and comments, with replies ready to send.
+                  </p>
+                  <a
+                    href={officeHref(guide.slug, 'guide-sidebar')}
+                    className="min-h-[44px] font-display inline-flex items-center gap-2 bg-cobalt-600 text-white text-sm font-semibold px-4 py-2.5 rounded-full hover:bg-cobalt-700 transition-colors"
+                  >
+                    See Postd Office
+                    <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                  </a>
+                </div>
+                ) : (
                 <div className="bg-white rounded-2xl border border-line p-5">
                   <p className="font-display font-bold text-navy-900 mb-2">Let postd.uk post for you</p>
                   <p className="text-sm text-slate-600 mb-4">
@@ -259,6 +274,7 @@ export default function GuidePage() {
                     <ArrowRight className="w-4 h-4" aria-hidden="true" />
                   </Link>
                 </div>
+                )}
               </div>
             </aside>
           </div>
