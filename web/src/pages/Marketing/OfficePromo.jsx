@@ -11,7 +11,7 @@ export const OFFICE_URL = 'https://office.postd.uk'
 export const OFFICE_PRICING_URL = `${OFFICE_URL}/#pricing`
 
 const POINTS = [
-  'Facebook, Instagram and TikTok DMs and comments in one inbox',
+  'Facebook and Instagram DMs and comments, plus TikTok comments, in one inbox',
   'AI replies drafted from answers you have approved',
   'Automatic translation, with abuse and spam flagged for you',
   'Unlimited team seats and a 30-day money-back guarantee',
@@ -99,7 +99,7 @@ const officeJsonLd = {
   operatingSystem: 'Web',
   inLanguage: 'en-GB',
   description:
-    'One inbox for Facebook, Instagram and TikTok DMs and comments, with AI replies drafted from answers the business has approved, automatic translation, abuse and spam flagging, and optional autopilot.',
+    'One inbox for Facebook and Instagram DMs and comments, plus TikTok comments, with AI replies drafted from answers the business has approved, automatic translation, abuse and spam flagging, and optional autopilot.',
   offers: {
     '@type': 'Offer',
     name: 'Sorting Office',
